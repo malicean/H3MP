@@ -1,4 +1,6 @@
 using System;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -9,7 +11,7 @@ namespace H3MP.Server
 	{
 		public static void Main()
 		{
-			var listener = new EventBasedNetListener();
+			var listener = new NetEventListener();
 			var server = new NetManager(listener);
 
 			Console.Write("key: ");
@@ -30,11 +32,13 @@ namespace H3MP.Server
 				var writer = new NetDataWriter();
 				writer.Put(response);
 				peer.Send(writer, DeliveryMethod.ReliableSequenced);
+
+				Console.WriteLine("sent");
 			};
 
 			server.Start(9099);
 
-			while (!Console.KeyAvailable && Console.ReadKey().Key != ConsoleKey.Q) 
+			while (!Console.KeyAvailable || Console.ReadKey().Key != ConsoleKey.Q) 
 			{
 				server.PollEvents();
 				Thread.Sleep(10);
