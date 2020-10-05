@@ -34,7 +34,7 @@ namespace H3MP.Server
 
 			server.Start(9099);
 
-			while (Console.ReadKey().Key != ConsoleKey.Q) 
+			while (!Console.KeyAvailable && Console.ReadKey().Key != ConsoleKey.Q) 
 			{
 				server.PollEvents();
 				Thread.Sleep(10);
