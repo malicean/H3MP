@@ -20,6 +20,7 @@ namespace H3MP.Server
 			kernel
 				.Bind<Logger>()
 				.ToMethod(x => new LoggerConfiguration()
+					.MinimumLevel.Verbose()
 					.WriteTo
 					.Console()
 					.CreateLogger())
