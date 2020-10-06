@@ -5,6 +5,10 @@ using BepInEx;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
+using BepInEx.Configuration;
+using H3MP.Common.Messages;
+using System.Collections;
+using UnityEngine;
 
 namespace H3MP.Client
 {
@@ -12,24 +16,61 @@ namespace H3MP.Client
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
 	{
-		public Pool<NetDataWriter> Writers { get; private set; }
+		private readonly ConfigEntry<string> _configAddress;
+		private readonly ConfigEntry<ushort> _configPort;
+		private readonly ConfigEntry<string?> _configPassword;
 
-		public NetworkTime Time { get; private set; }
+		public Pool<NetDataWriter> Writers { get; }
 
-		public NetManager Network { get; private set; }
+		public NetworkTime Time { get; }
 
-		private void Awake()
+		public NetManager Client { get; }
+
+		public NetPeer Server { get; private set; }
+
+		public Plugin()
 		{
+			_configAddress = Config.Bind("h3mp", "address", "localhost", "Address to connect to");
+			_configPort = Config.Bind("h3mp", "port", (ushort) 7777, "Port to connect to");
+			_configPassword = Config.Bind("h3mp", "passphrase", (string) null, "Passphrase (if any) to connect with");
+
 			Writers = new Pool<NetDataWriter>(new NetDataWriterPoolSource());
 			Time = new NetworkTime(Logger, Writers);
 
 			var listener = new NetEventListener(Logger, Time);
-			Network = new NetManager(listener);
+			Client = new NetManager(listener);
+		}
+
+		private void Start()
+		{
+			Client.Start();
+
+			Writers.Borrow(out var writer);
+			writer.Put(new ConnectionData(_configPassword.Value));
+
+			Server = Client.Connect(_configAddress.Value, _configPort.Value, writer);
+
+			StartCoroutine(nameof(_TestPings));
+		}
+
+		private IEnumerator _TestPings()
+		{
+			for (var i = 0; i < 10; ++i)
+			{
+				Time.StartUpdate(Server);
+
+				yield return new WaitForSeconds(5f);
+			}
 		}
 
 		private void Update()
 		{
-			Network.PollEvents();
+			Client.PollEvents();
+		}
+
+		private void OnDestroy()
+		{
+			Client.Stop();
 		}
 	}
 }

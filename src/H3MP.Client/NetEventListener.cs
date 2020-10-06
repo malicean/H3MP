@@ -45,12 +45,14 @@ namespace H3MP.Client
 						PongMessage pong;
 						try
 						{
-							reader.Get<PongMessage>();
+							pong = reader.Get<PongMessage>();
 						}
 						catch
 						{
 							break;
 						}
+
+						_time.FinishUpdate(pong);
 					}
 					break;
 
