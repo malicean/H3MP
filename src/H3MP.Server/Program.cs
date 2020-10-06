@@ -41,10 +41,15 @@ namespace H3MP.Server
 				})
 				.InSingletonScope();
 
-			// construct bindings
+			var logger = kernel.Get<Logger>();
+
+			logger.Debug("Instantiating network...");
 			var server = kernel.Get<NetManager>();
+
+			logger.Debug("Starting network...");
 			server.Start(7777);
 
+			logger.Debug("Awaiting clients...");
 			while (true) 
 			{
 				server.PollEvents();
