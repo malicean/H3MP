@@ -10,15 +10,20 @@ namespace H3MP.Common
 {
 	public class NetworkTimeSynchronizer
 	{
-		private static Stopwatch _watch = Stopwatch.StartNew();
+		private readonly static Stopwatch _watch = Stopwatch.StartNew();
 
-		public static double Value { get; private set; }
+		private readonly Pool<NetDataWriter> _pool;
+
+		public double Value { get; private set; }
+
+		public NetworkTimeSynchronizer(Pool<NetDataWriter> pool) 
+		{
+			_pool = pool;
+		}
 
 		public void StartUpdate(NetPeer peer)
 		{
-			var writer = new NetDataWriter();
 
-			peer.Send(, DeliveryMethod.ReliableSequenced);
 		}
 	}
 }

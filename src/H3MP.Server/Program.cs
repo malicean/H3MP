@@ -1,9 +1,18 @@
+using H3MP.Common;
+using H3MP.Common.Utils;
+
 using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+
 using LiteNetLib;
 using LiteNetLib.Utils;
+
+using Ninject;
+
+using Serilog;
+using Serilog.Core;
 
 namespace H3MP.Server
 {
@@ -11,37 +20,36 @@ namespace H3MP.Server
 	{
 		public static void Main()
 		{
-			var listener = new NetEventListener();
-			var server = new NetManager(listener);
+			var kernel = new StandardKernel();
+			kernel
+				.Bind<Logger>()
+				.ToMethod(x => new LoggerConfiguration().WriteTo.Console().CreateLogger())
+				.InSingletonScope();
+			kernel
+				.Bind<IConnectionSettings>()
+				.To<Settings>()
+				.InSingletonScope();
+			kernel
+				.Bind<Pool<NetDataWriter>>()
+				.ToMethod(x => new Pool<NetDataWriter>(new NetDataWriterPoolSource()))
+				.InSingletonScope();
+			kernel
+				.Bind<INetEventListener>()
+				.To<NetEventListener>()
+				.InSingletonScope();
+			kernel
+				.Bind<NetManager>()
+				.ToMethod(x => new NetManager(x.Kernel.Get<INetEventListener>()))
+				.InSingletonScope();
 
-			Console.Write("key: ");
-			var key = Console.ReadLine();
+			// construct bindings
+			var server = kernel.Get<NetManager>();
+			server.Start(9009);
 
-			listener.ConnectionRequestEvent += request => 
-			{
-				request.AcceptIfKey(key);
-			};
-
-			listener.PeerConnectedEvent += peer => 
-			{
-				Console.WriteLine($"Peer connected: {peer.EndPoint}");
-
-				Console.Write("Type a response: ");
-				var response = Console.ReadLine();
-
-				var writer = new NetDataWriter();
-				writer.Put(response);
-				peer.Send(writer, DeliveryMethod.ReliableSequenced);
-
-				Console.WriteLine("sent");
-			};
-
-			server.Start(9099);
-
-			while (!Console.KeyAvailable || Console.ReadKey().Key != ConsoleKey.Q) 
+			while (true) 
 			{
 				server.PollEvents();
-				Thread.Sleep(10);
+				Thread.Sleep(1);
 			}
 		}
 	}
