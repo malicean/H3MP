@@ -1,10 +1,11 @@
-using BepInEx.Logging;
+using H3MP.Client.Extensions;
 using H3MP.Common.Messages;
 using H3MP.Common.Utils;
 
+using BepInEx.Logging;
+
 using LiteNetLib;
 using LiteNetLib.Utils;
-using System;
 
 namespace H3MP.Client.Utils
 {
@@ -35,7 +36,7 @@ namespace H3MP.Client.Utils
 			_writers.Borrow(out var writer);
 
 			_lastSend = LocalTime.Now;
-			writer.Put(new PingMessage(_lastSend));
+			writer.PutTyped(new PingMessage(_lastSend));
 
 			peer.Send(writer, DeliveryMethod.ReliableSequenced);
 		}
