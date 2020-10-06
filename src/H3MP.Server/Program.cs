@@ -44,7 +44,7 @@ namespace H3MP.Server
 
 			// construct bindings
 			var server = kernel.Get<NetManager>();
-			server.Start(9009);
+			server.Start(7777);
 
 			while (true) 
 			{

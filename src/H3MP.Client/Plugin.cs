@@ -18,7 +18,7 @@ namespace H3MP.Client
 	{
 		private readonly ConfigEntry<string> _configAddress;
 		private readonly ConfigEntry<ushort> _configPort;
-		private readonly ConfigEntry<string?> _configPassword;
+		private readonly ConfigEntry<string> _configPassword;
 
 		public Pool<NetDataWriter> Writers { get; }
 
