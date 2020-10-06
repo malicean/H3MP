@@ -3,15 +3,11 @@ using H3MP.Client.Utils;
 using H3MP.Common.Utils;
 using H3MP.Common.Messages;
 
-using System.Collections;
-
 using BepInEx;
 using BepInEx.Configuration;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
-
-using UnityEngine;
 
 namespace H3MP.Client
 {
@@ -22,6 +18,8 @@ namespace H3MP.Client
 		private readonly ConfigEntry<string> _configAddress;
 		private readonly ConfigEntry<ushort> _configPort;
 		private readonly ConfigEntry<string> _configPassword;
+
+		private readonly LoopTimer _pingTimer;
 
 		public Pool<NetDataWriter> Writers { get; }
 
@@ -39,6 +37,8 @@ namespace H3MP.Client
 			_configPassword = Config.Bind("h3mp", "passphrase", string.Empty, "Passphrase (if any) to connect with");
 
 			Logger.LogDebug("Initializing utilities...");
+			_pingTimer = new LoopTimer(1);
+
 			Writers = new Pool<NetDataWriter>(new NetDataWriterPoolSource());
 			Time = new NetworkTime(Logger, Writers);
 
@@ -60,24 +60,19 @@ namespace H3MP.Client
 			Logger.LogDebug($"Connecting to {address}:{port}...");
 			Server = Client.Connect(address, port, writer);
 
-			Logger.LogDebug("Running tests...");
-			StartCoroutine(nameof(_TestPings));
-		}
-
-		private IEnumerator _TestPings()
-		{
-			for (var i = 0; i < 10; ++i)
-			{
-				Logger.LogDebug($"Test iteration {i}...");
-				Time.StartUpdate(Server);
-
-				yield return new WaitForSeconds(5f);
-			}
+			Logger.LogDebug("Preparing ping timer...");
+			_pingTimer.Reset();
 		}
 
 		private void Update()
 		{
 			Client.PollEvents();
+
+			if (_pingTimer.TryReset())
+			{
+				Logger.LogDebug($"Pinging server...");
+				Time.StartUpdate(Server);
+			}
 		}
 
 		private void OnDestroy()

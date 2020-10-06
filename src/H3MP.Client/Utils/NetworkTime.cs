@@ -18,8 +18,6 @@ namespace H3MP.Client.Utils
 		private readonly Pool<NetDataWriter> _writers;
 		private readonly ExponentialMovingAverage _offset;
 
-		private double _lastSend;
-
 		public double Offset { get; private set; }
 
 		public double Now => LocalTime.Now - Offset;
@@ -34,21 +32,13 @@ namespace H3MP.Client.Utils
 		public void StartUpdate(NetPeer peer)
 		{
 			_writers.Borrow(out var writer);
-
-			_lastSend = LocalTime.Now;
-			writer.PutTyped(new PingMessage(_lastSend));
+			writer.PutTyped(new PingMessage(LocalTime.Now));
 
 			peer.Send(writer, DeliveryMethod.ReliableSequenced);
 		}
 
 		public void FinishUpdate(PongMessage pong)
 		{
-			// Old ping.
-			if (pong.SeedTime < _lastSend)
-			{
-				return;
-			}
-
 			var now = LocalTime.Now;
 			// Round trip time
 			var rtt = now - pong.SeedTime;
