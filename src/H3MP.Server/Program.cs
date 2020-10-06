@@ -19,7 +19,10 @@ namespace H3MP.Server
 			var kernel = new StandardKernel();
 			kernel
 				.Bind<Logger>()
-				.ToMethod(x => new LoggerConfiguration().WriteTo.Console().CreateLogger())
+				.ToMethod(x => new LoggerConfiguration()
+					.WriteTo
+					.Console()
+					.CreateLogger())
 				.InSingletonScope();
 			kernel
 				.Bind<IConnectionSettings>()
@@ -43,13 +46,13 @@ namespace H3MP.Server
 
 			var logger = kernel.Get<Logger>();
 
-			logger.Debug("Instantiating network...");
+			logger.Verbose("Instantiating network...");
 			var server = kernel.Get<NetManager>();
 
-			logger.Debug("Starting network...");
+			logger.Verbose("Starting network...");
 			server.Start(7777);
 
-			logger.Debug("Awaiting clients...");
+			logger.Verbose("Awaiting clients...");
 			while (true) 
 			{
 				server.PollEvents();
