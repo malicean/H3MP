@@ -23,7 +23,7 @@ namespace H3MP.Client
 
 		public Pool<NetDataWriter> Writers { get; }
 
-		public NetworkTime Time { get; }
+		public ServerTime Time { get; }
 
 		public NetManager Client { get; }
 
@@ -40,7 +40,7 @@ namespace H3MP.Client
 			_pingTimer = new LoopTimer(1);
 
 			Writers = new Pool<NetDataWriter>(new NetDataWriterPoolSource());
-			Time = new NetworkTime(Logger, Writers);
+			Time = new ServerTime(Logger, Writers);
 
 			Logger.LogDebug("Initializing network...");
 			var listener = new NetEventListener(Logger, Time);

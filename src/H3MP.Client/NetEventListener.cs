@@ -16,9 +16,9 @@ namespace H3MP.Client
 	public class NetEventListener : INetEventListener
 	{
 		private readonly ManualLogSource _logger;
-		private readonly NetworkTime _time;
+		private readonly ServerTime _time;
 
-		public NetEventListener(ManualLogSource logger, NetworkTime time)
+		public NetEventListener(ManualLogSource logger, ServerTime time)
 		{
 			_logger = logger;
 			_time = time;

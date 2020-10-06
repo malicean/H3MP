@@ -5,26 +5,32 @@ namespace H3MP.Common.Messages
 {
 	public struct PongMessage : INetSerializable
 	{
-		public double SeedTime { get; private set; }
+		/// <summary>
+		///		The client's time at the instant the message was sent.
+		/// </summary>
+		public double ClientTime { get; private set; }
 
-		public double ReplyTime { get; private set; }
+		/// <summary>
+		///		The server's time at the instant the server responded.
+		/// </summary>
+		public double ServerTime { get; private set; }
 
 		public PongMessage(double seedTime, double replyTime)
 		{
-			SeedTime = seedTime;
-			ReplyTime = replyTime;
+			ClientTime = seedTime;
+			ServerTime = replyTime;
 		}
 
 		public void Deserialize(NetDataReader reader)
 		{
-			SeedTime = reader.GetDouble();
-			ReplyTime = reader.GetDouble();
+			ClientTime = reader.GetDouble();
+			ServerTime = reader.GetDouble();
 		}
 
 		public void Serialize(NetDataWriter writer)
 		{
-			writer.Put(SeedTime);
-			writer.Put(ReplyTime);
+			writer.Put(ClientTime);
+			writer.Put(ServerTime);
 		}
 	}
 }
