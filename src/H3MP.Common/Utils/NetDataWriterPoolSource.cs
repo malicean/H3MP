@@ -1,8 +1,8 @@
-using LiteNetLib;
+using LiteNetLib.Utils;
 
 namespace H3MP.Common.Utils
 {
-    public class NetDataWriterPoolSource : IStackPoolSource 
+    public class NetDataWriterPoolSource : IPoolSource<NetDataWriter>
     {
         public NetDataWriter Create()
         {
@@ -11,7 +11,7 @@ namespace H3MP.Common.Utils
 
         public void Clean(NetDataWriter item)
         {
-            item.Clear();
+            item.Reset();
         }
     }
 }

@@ -1,4 +1,5 @@
 using H3MP.Common;
+using H3MP.Common.Utils;
 
 using System;
 using System.Collections.Generic;
@@ -28,7 +29,7 @@ namespace H3MP.Server
 		{
 			_log = log;
 			_settings = settings;
-			_writer = writers;
+			_writers = writers;
 			_kernel = kernel;
 		}
 
@@ -69,7 +70,7 @@ namespace H3MP.Server
 			{
 				_log.Error(e, "Connection request from {Endpoint} failed.", request.RemoteEndPoint);
 
-				_writers.Get(out var writer);
+				_writers.Borrow(out var writer);
 				writer.Put((byte) ConnectionError.InternalError);
 				request.RejectForce(writer);
 			}

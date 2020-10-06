@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
 
-using LiteNetLib;
-
 namespace H3MP.Common.Utils
 {
-    public class Pool<T>
+	public class Pool<T>
     {
-        private readonly IPoolSource _source;
+        private readonly IPoolSource<T> _source;
         private readonly Stack<T> _items;
 
-        public Pool(IPoolSource source)
+        public Pool(IPoolSource<T> source)
         {
             _source = source;
             _items = new Stack<T>();
@@ -55,7 +53,7 @@ namespace H3MP.Common.Utils
                     return;
                 }
 
-                _callback(item);
+                _callback(_item);
 
                 _disposed = true;
             }

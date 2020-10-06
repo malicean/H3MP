@@ -1,6 +1,6 @@
 namespace H3MP.Common.Utils
 {
-    public interface IPoolSource 
+    public interface IPoolSource<T>
     {
         T Create();
 

@@ -8,6 +8,5 @@ namespace H3MP.Common
 {
 	public static class NetDataWriterExtensions
 	{
-		public static 
 	}
 }
