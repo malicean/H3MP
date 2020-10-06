@@ -1,18 +1,18 @@
+using H3MP.Server.Extensions;
+
 using H3MP.Common;
+using H3MP.Common.Extensions;
+using H3MP.Common.Messages;
 using H3MP.Common.Utils;
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 using Ninject;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
-
-using Serilog;
 using Serilog.Core;
 
 namespace H3MP.Server
@@ -33,46 +33,72 @@ namespace H3MP.Server
 			_kernel = kernel;
 		}
 
-		private void OnConnectionRequestSafe(ConnectionRequest request) 
+		private ConnectionError? OnConnectionRequestSafe(ConnectionRequest request) 
 		{
 			if (!_settings.Allowed) 
 			{
-				
-				return;
+				return ConnectionError.Closed;
 			}
-			else
-			{
-				var net = _kernel.Get<NetManager>();
+			
+			var net = _kernel.Get<NetManager>();
 
-				if (net.ConnectedPeersCount < _settings.MaxPeers) 
-				{
-					if (!(_settings.Key is null))
-					{
-						request.AcceptIfKey(_settings.Key);
-					}
-					else 
-					{
-						request.Accept();
-					}
-					
-					return;
-				}
+			if (net.ConnectedPeersCount >= _settings.MaxPeers)
+			{
+				return ConnectionError.Full;
 			}
+
+			ConnectionData data;
+			try
+			{
+				data = request.Data.Get<ConnectionData>();
+			}
+			catch
+			{
+				return ConnectionError.MalformedRequest;
+			}
+
+			if (data.ApiVersion != ApiConstants.VERSION)
+			{
+				return ConnectionError.MismatchedVersion;
+			}
+
+			if (data.Passphrase != _settings.Passphrase)
+			{
+				return ConnectionError.MismatchedPassphrase;
+			}
+
+			return null;
 		}
 
 		public void OnConnectionRequest(ConnectionRequest request)
 		{
+			ConnectionError? error;
 			try
 			{
-				OnConnectionRequestSafe(request);
+				error = OnConnectionRequestSafe(request);
 			}
 			catch (Exception e)
 			{
 				_log.Error(e, "Connection request from {Endpoint} failed.", request.RemoteEndPoint);
 
 				_writers.Borrow(out var writer);
-				writer.Put((byte) ConnectionError.InternalError);
+
+				writer.Put(ConnectionError.InternalError);
 				request.RejectForce(writer);
+
+				return;
+			}
+
+			if (error is null)
+			{
+				request.Accept();
+			}
+			else
+			{
+				_writers.Borrow(out var writer);
+
+				writer.Put(error.Value);
+				request.Reject(writer);
 			}
 		}
 
@@ -86,6 +112,32 @@ namespace H3MP.Server
 
 		public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
 		{
+			switch (reader.GetMessageType())
+			{
+				case ClientMessageType.Ping:
+					{
+						PingMessage ping;
+						try
+						{
+							ping = reader.Get<PingMessage>();
+						}
+						catch
+						{
+							break;
+						}
+
+						var reply = new PongMessage(ping.Time, LocalTime.Now);
+
+						_writers.Borrow(out var writer);
+						writer.PutTyped(reply);
+
+						peer.Send(writer, DeliveryMethod.ReliableSequenced);
+					}
+					break;
+
+				default:
+					break;
+			}
 		}
 
 		public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)

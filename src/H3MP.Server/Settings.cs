@@ -6,6 +6,6 @@ namespace H3MP.Server
 
         public int MaxPeers { get; set; } = 4;
 
-		public string? Key { get; set; } = null;
+		public string? Passphrase { get; set; } = null;
     }
 }

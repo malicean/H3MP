@@ -1,4 +1,4 @@
-namespace H3MP
+namespace H3MP.Server
 {
     public interface IConnectionSettings
     {
@@ -6,6 +6,6 @@ namespace H3MP
 
         public int MaxPeers { get; }
 
-        public string? Key { get; }
+        public string? Passphrase { get; }
     }
 }
