@@ -13,6 +13,7 @@ using Ninject;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
+
 using Serilog.Core;
 
 namespace H3MP.Server
@@ -79,7 +80,7 @@ namespace H3MP.Server
 			}
 			catch (Exception e)
 			{
-				_log.Error(e, "Connection request from {Endpoint} failed.", request.RemoteEndPoint);
+				_log.Error(e, "Failed connection request from {Endpoint}.", request.RemoteEndPoint);
 
 				_writers.Borrow(out var writer);
 
@@ -95,6 +96,8 @@ namespace H3MP.Server
 			}
 			else
 			{
+				_log.Information("Denied connection request from {Endpoint} with reason: {Reason}", request.RemoteEndPoint, error.Value);
+
 				_writers.Borrow(out var writer);
 
 				writer.Put(error.Value);
@@ -146,12 +149,12 @@ namespace H3MP.Server
 
 		public void OnPeerConnected(NetPeer peer)
 		{
-			_log.Information("Connection from {Endpoint}.", peer.EndPoint);
+			_log.Information("Connected to {Endpoint}.", peer.EndPoint);
 		}
 
 		public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
 		{
-			_log.Information("Disconnection from {Endpoint}.", peer.EndPoint);
+			_log.Information("Disconnected from {Endpoint} because {Reason}.", peer.EndPoint, disconnectInfo.Reason);
 		}
 	}
 }

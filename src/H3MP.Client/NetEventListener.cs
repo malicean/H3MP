@@ -1,15 +1,15 @@
-using BepInEx.Logging;
 using H3MP.Client.Extensions;
 using H3MP.Client.Utils;
+
 using H3MP.Common.Extensions;
 using H3MP.Common.Messages;
-using LiteNetLib;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
+
+using BepInEx.Logging;
+
+using LiteNetLib;
 
 namespace H3MP.Client
 {
@@ -72,7 +72,28 @@ namespace H3MP.Client
 
 		public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
 		{
-			_logger.LogInfo($"Disconnected from {peer.EndPoint}");
+			switch (disconnectInfo.Reason)
+			{
+				case DisconnectReason.RemoteConnectionClose:
+					{
+						ConnectionError? reason;
+						try
+						{
+							reason = disconnectInfo.AdditionalData.GetConnectionError();
+						}
+						catch
+						{
+							reason = null;
+						}
+
+						_logger.LogInfo($"Connection closed by {peer.EndPoint}. Reason: {reason?.ToString() ?? "not available (malformed response)"}");
+					}
+					break;
+
+				default:
+					_logger.LogInfo($"Disconnected from {peer.EndPoint}. Reason: {disconnectInfo.Reason}");
+					break;
+			}
 		}
 	}
 }
