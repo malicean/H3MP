@@ -30,26 +30,34 @@ namespace H3MP.Client
 
 		public Plugin()
 		{
+			Logger.LogDebug("Binding configs...");
 			_configAddress = Config.Bind("h3mp", "address", "localhost", "Address to connect to");
 			_configPort = Config.Bind("h3mp", "port", (ushort) 7777, "Port to connect to");
 			_configPassword = Config.Bind("h3mp", "passphrase", (string) null, "Passphrase (if any) to connect with");
 
+			Logger.LogDebug("Initializing utilities...");
 			Writers = new Pool<NetDataWriter>(new NetDataWriterPoolSource());
 			Time = new NetworkTime(Logger, Writers);
 
+			Logger.LogDebug("Initializing network...");
 			var listener = new NetEventListener(Logger, Time);
 			Client = new NetManager(listener);
 		}
 
 		private void Start()
 		{
+			Logger.LogDebug("Starting network...");
 			Client.Start();
 
 			Writers.Borrow(out var writer);
 			writer.Put(new ConnectionData(_configPassword.Value));
 
-			Server = Client.Connect(_configAddress.Value, _configPort.Value, writer);
+			var address = _configAddress.Value;
+			var port = _configPort.Value;
+			Logger.LogDebug($"Connecting to {address}:{port}...");
+			Server = Client.Connect(address, port, writer);
 
+			Logger.LogDebug("Running tests...");
 			StartCoroutine(nameof(_TestPings));
 		}
 
@@ -57,6 +65,7 @@ namespace H3MP.Client
 		{
 			for (var i = 0; i < 10; ++i)
 			{
+				Logger.LogDebug($"Test iteration {i}...");
 				Time.StartUpdate(Server);
 
 				yield return new WaitForSeconds(5f);

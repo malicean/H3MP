@@ -1,9 +1,5 @@
-using H3MP.Common;
 using H3MP.Common.Utils;
 
-using System;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading;
 
 using LiteNetLib;
@@ -39,7 +35,10 @@ namespace H3MP.Server
 				.InSingletonScope();
 			kernel
 				.Bind<NetManager>()
-				.ToMethod(x => new NetManager(x.Kernel.Get<INetEventListener>()))
+				.ToMethod(x => new NetManager(x.Kernel.Get<INetEventListener>())
+				{
+					AutoRecycle = true
+				})
 				.InSingletonScope();
 
 			// construct bindings
