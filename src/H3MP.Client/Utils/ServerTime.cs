@@ -25,7 +25,7 @@ namespace H3MP.Client.Utils
 		///		When it is >0.5, latest offset matters more.
 		///		When it is <0.5, history offset matters more.
 		/// </summary>
-		public const double OFFSET_EMA_ALPHA = 2d / 10;
+		private const double OFFSET_EMA_ALPHA = 2d / 10;
 
 		private readonly ManualLogSource _logger;
 		private readonly Pool<NetDataWriter> _writers;
