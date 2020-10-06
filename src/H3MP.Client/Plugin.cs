@@ -1,13 +1,16 @@
 using H3MP.Client.Utils;
+
 using H3MP.Common.Utils;
+using H3MP.Common.Messages;
+
+using System.Collections;
 
 using BepInEx;
+using BepInEx.Configuration;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
-using BepInEx.Configuration;
-using H3MP.Common.Messages;
-using System.Collections;
+
 using UnityEngine;
 
 namespace H3MP.Client
@@ -33,7 +36,7 @@ namespace H3MP.Client
 			Logger.LogDebug("Binding configs...");
 			_configAddress = Config.Bind("h3mp", "address", "localhost", "Address to connect to");
 			_configPort = Config.Bind("h3mp", "port", (ushort) 7777, "Port to connect to");
-			_configPassword = Config.Bind("h3mp", "passphrase", (string) null, "Passphrase (if any) to connect with");
+			_configPassword = Config.Bind("h3mp", "passphrase", string.Empty, "Passphrase (if any) to connect with");
 
 			Logger.LogDebug("Initializing utilities...");
 			Writers = new Pool<NetDataWriter>(new NetDataWriterPoolSource());
