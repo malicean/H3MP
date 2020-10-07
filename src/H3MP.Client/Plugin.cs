@@ -8,7 +8,6 @@ using BepInEx.Configuration;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
-using UnityEngine.SceneManagement;
 
 namespace H3MP.Client
 {
@@ -20,65 +19,57 @@ namespace H3MP.Client
 		private readonly ConfigEntry<ushort> _configPort;
 		private readonly ConfigEntry<string> _configPassword;
 
-		private readonly LoopTimer _pingTimer;
+		private NetEventListener _listener;
+		private NetManager _client;
 
 		public Pool<NetDataWriter> Writers { get; }
 
-		public ServerTime Time { get; }
+		public NetPeer Server => _listener.Server;
 
-		public NetManager Client { get; }
-
-		public NetPeer Server { get; private set; }
+		public double Time => _listener.Time;
 
 		public Plugin()
 		{
 			Logger.LogDebug("Binding configs...");
-			_configAddress = Config.Bind("h3mp", "address", "localhost", "Address to connect to");
-			_configPort = Config.Bind("h3mp", "port", (ushort) 7777, "Port to connect to");
-			_configPassword = Config.Bind("h3mp", "passphrase", string.Empty, "Passphrase (if any) to connect with");
+			_configAddress = Config.Bind("H3MP", "address", "localhost", "Address to connect to");
+			_configPort = Config.Bind("H3MP", "port", (ushort) 7777, "Port to connect to");
+			_configPassword = Config.Bind("H3MP", "passphrase", string.Empty, "Passphrase (if any) to connect with");
 
 			Logger.LogDebug("Initializing utilities...");
-			_pingTimer = new LoopTimer(1);
-
 			Writers = new Pool<NetDataWriter>(new NetDataWriterPoolSource());
-			Time = new ServerTime(Logger, Writers);
 
 			Logger.LogDebug("Initializing network...");
-			var listener = new NetEventListener(Logger, Time);
-			Client = new NetManager(listener);
+			_listener = new NetEventListener(Logger, Writers);
+			_client = new NetManager(_listener);
+		}
+
+		public void Connect(string address, int port, string password)
+		{
+			Writers.Borrow(out var writer);
+			writer.Put(new ConnectionRequestMessage(_configPassword.Value));
+
+			Logger.LogDebug($"Connecting to {address}:{port}...");
+			_client.Connect(address, port, writer);
 		}
 
 		private void Start()
 		{
 			Logger.LogDebug("Starting network...");
-			Client.Start();
+			_client.Start();
 
-			Writers.Borrow(out var writer);
-			writer.Put(new ConnectionRequestMessage(_configPassword.Value));
-
-			var address = _configAddress.Value;
-			var port = _configPort.Value;
-			Logger.LogDebug($"Connecting to {address}:{port}...");
-			Server = Client.Connect(address, port, writer);
-
-			Logger.LogDebug("Preparing ping timer...");
-			_pingTimer.Reset();
+			Connect(_configAddress.Value, _configPort.Value, _configPassword.Value);
 		}
 
 		private void Update()
 		{
-			Client.PollEvents();
+			_client.PollEvents();
 
-			if (_pingTimer.TryReset())
-			{
-				Logger.LogDebug($"Pinging server...");
-				Time.StartUpdate(Server);
-			}
+			_listener.Update();
 		}
 
 		private void OnDestroy()
 		{
-			Client.Stop();
+			_client.Stop();
 		}
 	}
 }

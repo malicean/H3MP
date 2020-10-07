@@ -1,4 +1,6 @@
 using H3MP.Common;
+using H3MP.Common.Utils;
+
 using H3MP.Client.Extensions;
 using H3MP.Client.Utils;
 
@@ -13,40 +15,58 @@ using BepInEx.Logging;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
-
-using UnityEngine.SceneManagement;
+using System;
 
 namespace H3MP.Client
 {
-	public class NetEventListener : INetEventListener
+	public class NetEventListener : INetEventListener, IUpdatable
 	{
 		private readonly ManualLogSource _log;
-		private readonly ServerTime _time;
-
+		private readonly Pool<NetDataWriter> _writers;
 		private readonly ReceiveHandler _receiveHandler;
 
-		private ReceiveHandler ReceiveFrom<TMessage>(MessageHandler<TMessage> handler) where TMessage : INetSerializable, new()
+		private NetPeer _server;
+		public NetPeer Server
 		{
-			return handler.ToNetHandler(peer => _log.LogWarning($"Received malformed {typeof(TMessage)} message from server."));
+			get => _time is null ? null : _server;
+			private set
+			{
+				_time = null;
+
+				_server = value;
+			}
 		}
 
-		public NetEventListener(ManualLogSource log, ServerTime time)
+		private ServerTime _time;
+		public double Time => _time?.Now ?? throw new InvalidOperationException("Listener has not fully connected to a server.");
+
+		public NetEventListener(ManualLogSource log, Pool<NetDataWriter> writers)
 		{
 			_log = log;
-			_time = time;
+			_writers = writers;
 
 			_receiveHandler = new DictionaryReceiveHandler<ServerMessageType>(x => x.GetMessageType())
 			{
 				Handlers = new Dictionary<ServerMessageType, ReceiveHandler>
 				{
-					[ServerMessageType.Pong] = ReceiveFrom<PongMessage>((peer, message) => _time.FinishUpdate(message)),
-					[ServerMessageType.SceneChange] = ReceiveFrom<SceneChangeMessage>((peer, message) =>
+					[ServerMessageType.Pong] = ReceiveFrom<PongMessage>((peer, message) =>
 					{
-						var scene = SceneManager.GetSceneByName(message.Scene);
+						if (_time is null)
+						{
+							_time = new ServerTime(_log, _server, _writers, message);
 
-						_log.LogDebug($"Loading scene. Name: {scene.name}; Build Index: {scene.buildIndex}; Path: {scene.path}");
+							_log.LogDebug("Established server time.");
+						}
+						else
+						{
+							_time.ProcessPong(message);
+						}
+					}),
+					[ServerMessageType.LevelChange] = ReceiveFrom<LevelChangeMessage>((peer, message) =>
+					{
+						_log.LogDebug($"Loading level: {message.Name}");
 
-						SteamVR_LoadLevel.Begin(scene.name);
+						SteamVR_LoadLevel.Begin(message.Name);
 					})
 				},
 				OnFallback = (peer, reader, type) =>
@@ -56,6 +76,16 @@ namespace H3MP.Client
 					return true;
 				}
 			}.RootHandler;
+		}
+
+		private ReceiveHandler ReceiveFrom<TMessage>(MessageHandler<TMessage> handler) where TMessage : INetSerializable, new()
+		{
+			return handler.ToNetHandler(peer => _log.LogWarning($"Received malformed {typeof(TMessage)} message from server."));
+		}
+
+		public void Update()
+		{
+			_time?.Update();
 		}
 
 		public void OnConnectionRequest(ConnectionRequest request)
@@ -82,10 +112,16 @@ namespace H3MP.Client
 		public void OnPeerConnected(NetPeer peer)
 		{
 			_log.LogInfo($"Connected to {peer.EndPoint}");
+			Server = peer;
+
+			_writers.Borrow(out var writer);
+			ServerTime.SendPing(_server, writer);
 		}
 
 		public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
 		{
+			Server = null;
+
 			switch (disconnectInfo.Reason)
 			{
 				case DisconnectReason.RemoteConnectionClose:

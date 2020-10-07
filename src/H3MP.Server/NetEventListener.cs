@@ -53,7 +53,7 @@ namespace H3MP.Server
 						_writers.Borrow(out var writer);
 						writer.PutTyped(reply);
 
-						peer.Send(writer, DeliveryMethod.ReliableSequenced);
+						peer.Send(writer, DeliveryMethod.ReliableUnordered);
 					})
 				},
 				OnFallback = (peer, reader, type) =>
@@ -153,7 +153,7 @@ namespace H3MP.Server
 			_log.Information("Connected to {Endpoint}.", peer.EndPoint);
 
 			_writers.Borrow(out var writer);
-			writer.PutTyped(new SceneChangeMessage(_settings.Scene));
+			writer.PutTyped(new LevelChangeMessage(_settings.Scene));
 
 			peer.Send(writer, DeliveryMethod.ReliableSequenced);
 		}

@@ -10,6 +10,6 @@ namespace H3MP.Server
 
 		public string Passphrase { get; set; } = string.Empty;
 
-		public string Scene { get; set; } = "MainMenu3";
+		public string Scene { get; set; } = "IndoorRange";
     }
 }

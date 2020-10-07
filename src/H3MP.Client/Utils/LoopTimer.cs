@@ -6,11 +6,13 @@ namespace H3MP.Client.Utils
 	{
 		public double End { get; private set; }
 
-		public double Duration { get; set; }
+		public double Duration { get; }
 
 		public LoopTimer(double duration)
 		{
 			Duration = duration;
+
+			Reset();
 		}
 
 		public void Reset()

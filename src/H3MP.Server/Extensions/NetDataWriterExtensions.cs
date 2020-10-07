@@ -17,9 +17,9 @@ namespace H3MP.Server.Extensions
 			@this.Put(value);
 		}
 
-		public static void PutTyped(this NetDataWriter @this, SceneChangeMessage value)
+		public static void PutTyped(this NetDataWriter @this, LevelChangeMessage value)
 		{
-			@this.Put(ServerMessageType.SceneChange);
+			@this.Put(ServerMessageType.LevelChange);
 			@this.Put(value);
 		}
 	}

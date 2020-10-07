@@ -8,9 +8,9 @@ namespace H3MP.Common.Utils
 	{
 		private readonly double _alpha;
 
-		private double _lastAverage;
+		public double Value { get; private set; }
 
-		public ExponentialMovingAverage(double alpha)
+		public ExponentialMovingAverage(double initialValue, double alpha)
 		{
 			if (alpha <= 0 || 1 <= alpha)
 			{
@@ -19,10 +19,10 @@ namespace H3MP.Common.Utils
 
 			_alpha = alpha;
 
-			Reset();
+			Value = initialValue;
 		}
 
-		public double Push(double value)
+		public void Push(double value)
 		{
 			// Simplified version of the Wikipedia formula:
 			// Sₜ =	{ Yₜ,					t = 1
@@ -34,14 +34,7 @@ namespace H3MP.Common.Utils
 			// Yₜ			value			(-∞, ∞)	Input value.
 			// Sₜ₋₁			_lastAverage	(-∞, ∞)	Last calculated EMA.
 			//
-			return _lastAverage = double.IsNaN(_lastAverage)
-				? value
-				: (value - _lastAverage) * _alpha + _lastAverage;
-		}
-
-		public void Reset()
-		{
-			_lastAverage = double.NaN;
+			Value = (value - Value) * _alpha + Value;
 		}
 	}
 }
