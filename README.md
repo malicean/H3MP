@@ -1,11 +1,18 @@
 # H3MP
-A WIP multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
+A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
 # Installation
-There are no prebuilt binaries because this mod is not ready. You must build it yourself.
+There are no prebuilt binaries because this mod is not ready. **You must build it yourself.**
 
 ## Client
-Include all the necessary dependencies in the BepInEx plugin. These are libraries that arent part of BepInEx or the game.
+1. Download the [most recent x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract that to your H3VR root folder.
+
+2. Then put the following three files into the BepInEx plugin folder.
+   - H3MP.Common.dll
+   - H3MP.Client.dll
+   - LiteNetLib.dll
+
+3. Run the game and enjoy **nonfunctional multiplayer**.
 
 ## Server
 This is super easy because it's .NET Core and a standalone application:
