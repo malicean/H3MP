@@ -16,5 +16,11 @@ namespace H3MP.Server.Extensions
 			@this.Put(ServerMessageType.Pong);
 			@this.Put(value);
 		}
+
+		public static void PutTyped(this NetDataWriter @this, SceneChangeMessage value)
+		{
+			@this.Put(ServerMessageType.SceneChange);
+			@this.Put(value);
+		}
 	}
 }

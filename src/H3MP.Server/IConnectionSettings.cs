@@ -7,5 +7,7 @@ namespace H3MP.Server
         public int MaxPeers { get; }
 
         public string? Passphrase { get; }
+
+		public string Scene { get; }
     }
 }

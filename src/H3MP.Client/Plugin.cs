@@ -8,6 +8,7 @@ using BepInEx.Configuration;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
+using UnityEngine.SceneManagement;
 
 namespace H3MP.Client
 {
@@ -53,7 +54,7 @@ namespace H3MP.Client
 			Client.Start();
 
 			Writers.Borrow(out var writer);
-			writer.Put(new ConnectionData(_configPassword.Value));
+			writer.Put(new ConnectionRequestMessage(_configPassword.Value));
 
 			var address = _configAddress.Value;
 			var port = _configPort.Value;

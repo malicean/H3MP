@@ -8,6 +8,7 @@ using H3MP.Common.Utils;
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Generic;
 
 using Ninject;
 
@@ -25,6 +26,13 @@ namespace H3MP.Server
 		private readonly Pool<NetDataWriter> _writers;
 		private readonly IKernel _kernel;
 
+		private readonly ReceiveHandler _receiveHandler;
+
+		private ReceiveHandler ReceiveFrom<TMessage>(MessageHandler<TMessage> handler) where TMessage : INetSerializable, new()
+		{
+			return handler.ToNetHandler(peer => _log.Warning("Received malformed {Type} message from peer {Endpoint}.", typeof(TMessage), peer.EndPoint));
+		}
+
 		// I don't like passing kernels, but NetManager provides a chicken and egg dependency problem that can be resolved out of the constructor.
 		public NetEventListener(Logger log, IConnectionSettings settings, Pool<NetDataWriter> writers, IKernel kernel)
 		{
@@ -32,6 +40,29 @@ namespace H3MP.Server
 			_settings = settings;
 			_writers = writers;
 			_kernel = kernel;
+
+			_receiveHandler = new DictionaryReceiveHandler<ClientMessageType>(x => x.GetMessageType())
+			{
+				Handlers = new Dictionary<ClientMessageType, ReceiveHandler>
+				{
+					[ClientMessageType.Ping] = ReceiveFrom<PingMessage>((peer, message) =>
+					{
+						var now = LocalTime.Now;
+						var reply = new PongMessage(message.Time, now);
+
+						_writers.Borrow(out var writer);
+						writer.PutTyped(reply);
+
+						peer.Send(writer, DeliveryMethod.ReliableSequenced);
+					})
+				},
+				OnFallback = (peer, reader, type) =>
+				{
+					_log.Warning("Received unknown message from peer {Endpoint}: {Type} with {MessageLength} bytes.", peer.EndPoint, (byte) type, reader.AvailableBytes);
+
+					return true;
+				}
+			}.RootHandler;
 		}
 
 		private ConnectionError? OnConnectionRequestSafe(ConnectionRequest request) 
@@ -48,22 +79,17 @@ namespace H3MP.Server
 				return ConnectionError.Full;
 			}
 
-			ConnectionData data;
-			try
-			{
-				data = request.Data.Get<ConnectionData>();
-			}
-			catch
+			if (!request.Data.TryCatchGet<ConnectionRequestMessage>(out var message))
 			{
 				return ConnectionError.MalformedRequest;
 			}
-
-			if (data.ApiVersion != ApiConstants.VERSION)
+			
+			if (message.ApiVersion != ApiConstants.VERSION)
 			{
 				return ConnectionError.MismatchedVersion;
 			}
 
-			if (data.Passphrase != _settings.Passphrase)
+			if (message.Passphrase != _settings.Passphrase)
 			{
 				return ConnectionError.MismatchedPassphrase;
 			}
@@ -115,32 +141,7 @@ namespace H3MP.Server
 
 		public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
 		{
-			switch (reader.GetMessageType())
-			{
-				case ClientMessageType.Ping:
-					{
-						PingMessage ping;
-						try
-						{
-							ping = reader.Get<PingMessage>();
-						}
-						catch
-						{
-							break;
-						}
-
-						var reply = new PongMessage(ping.Time, LocalTime.Now);
-
-						_writers.Borrow(out var writer);
-						writer.PutTyped(reply);
-
-						peer.Send(writer, DeliveryMethod.ReliableSequenced);
-					}
-					break;
-
-				default:
-					break;
-			}
+			_receiveHandler(peer, reader);
 		}
 
 		public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -150,6 +151,11 @@ namespace H3MP.Server
 		public void OnPeerConnected(NetPeer peer)
 		{
 			_log.Information("Connected to {Endpoint}.", peer.EndPoint);
+
+			_writers.Borrow(out var writer);
+			writer.PutTyped(new SceneChangeMessage(_settings.Scene));
+
+			peer.Send(writer, DeliveryMethod.ReliableSequenced);
 		}
 
 		public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
