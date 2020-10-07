@@ -1,9 +1,12 @@
 using H3MP.Common.Utils;
 
+using System.IO;
 using System.Threading;
 
 using LiteNetLib;
 using LiteNetLib.Utils;
+
+using Newtonsoft.Json;
 
 using Ninject;
 
@@ -27,7 +30,12 @@ namespace H3MP.Server
 				.InSingletonScope();
 			kernel
 				.Bind<IConnectionSettings>()
-				.To<Settings>()
+				.ToMethod(x =>
+				{
+					return File.Exists("settings.json")
+						? JsonConvert.DeserializeObject<Settings>(File.ReadAllText("settings.json"))
+						: new Settings();
+				})
 				.InSingletonScope();
 			kernel
 				.Bind<Pool<NetDataWriter>>()
@@ -47,11 +55,14 @@ namespace H3MP.Server
 
 			var logger = kernel.Get<Logger>();
 
+			logger.Verbose("Loading settings...");
+			var settings = kernel.Get<Settings>();
+
 			logger.Verbose("Instantiating network...");
 			var server = kernel.Get<NetManager>();
 
 			logger.Verbose("Starting network...");
-			server.Start(7777);
+			server.Start(settings.Port);
 
 			logger.Verbose("Awaiting clients...");
 			while (true) 
