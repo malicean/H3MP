@@ -30,12 +30,9 @@ namespace H3MP.Server
 				.InSingletonScope();
 			kernel
 				.Bind<IConnectionSettings>()
-				.ToMethod(x =>
-				{
-					return File.Exists("settings.json")
+				.ToMethod(x => File.Exists("settings.json")
 						? JsonConvert.DeserializeObject<Settings>(File.ReadAllText("settings.json"))
-						: new Settings();
-				})
+						: new Settings())
 				.InSingletonScope();
 			kernel
 				.Bind<Pool<NetDataWriter>>()
