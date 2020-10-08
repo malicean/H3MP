@@ -1,14 +1,21 @@
-using H3MP.Common.Messages;
-
+using H3MP.Utils;
 using LiteNetLib.Utils;
 
-namespace H3MP.Client.Extensions
+namespace H3MP
 {
-	public static partial class NetDataReaderExtensions
+	public static class NetDataReaderExtensions
 	{
-		public static ServerMessageType GetMessageType(this NetDataReader @this)
+		internal static JoinError GetJoinError(this NetDataReader @this)
 		{
-			return (ServerMessageType) @this.GetByte();
+			return (JoinError) @this.GetByte();
+		}
+
+		public static ConnectionKey GetConnectionKey(this NetDataReader @this)
+		{
+			var data = new byte[ConnectionKey.SIZE];
+			@this.GetBytes(data, ConnectionKey.SIZE);
+
+			return ConnectionKey.FromBytes(data);
 		}
 	}
 }

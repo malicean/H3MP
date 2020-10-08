@@ -1,6 +1,4 @@
-using H3MP.Common.Utils;
-
-namespace H3MP.Client.Utils
+namespace H3MP.Utils
 {
 	public class LoopTimer
 	{

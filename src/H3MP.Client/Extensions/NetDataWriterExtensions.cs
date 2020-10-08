@@ -1,20 +1,18 @@
-using H3MP.Common.Messages;
-
+using H3MP.Utils;
 using LiteNetLib.Utils;
 
-namespace H3MP.Client.Extensions
+namespace H3MP
 {
-	public static partial class NetDataWriterExtensions
+	public static class NetDataWriterExtensions
 	{
-		public static void Put(this NetDataWriter @this, ClientMessageType value)
+		internal static void Put(this NetDataWriter @this, JoinError value)
 		{
 			@this.Put((byte) value);
 		}
 
-		public static void PutTyped(this NetDataWriter @this, PingMessage value)
+		internal static void Put(this NetDataWriter @this, ConnectionKey value)
 		{
-			@this.Put(ClientMessageType.Ping);
-			@this.Put(value);
+			@this.Put(value.Data);
 		}
 	}
 }
