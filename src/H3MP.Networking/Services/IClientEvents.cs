@@ -6,10 +6,10 @@ using System.Text;
 
 namespace H3MP.Networking
 {
-	public interface IMessageClientEvents
+	public interface IClientEvents
 	{
-		void OnConnected();
+		void OnConnected(Client client);
 
-		void OnDisconnected(DisconnectInfo info);
+		void OnDisconnected(Client client, DisconnectInfo info);
 	}
 }

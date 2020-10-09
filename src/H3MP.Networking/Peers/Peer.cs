@@ -6,12 +6,12 @@ using System.Collections.Generic;
 
 namespace H3MP.Networking
 {
-	public class MessagePeer
+	public class Peer
 	{
 		private readonly NetPeer _peer;
 		private readonly Dictionary<Type, MessageDefinition> _definitions;
 
-		public MessagePeer(NetPeer peer, Dictionary<Type, MessageDefinition> definitions)
+		public Peer(NetPeer peer, Dictionary<Type, MessageDefinition> definitions)
 		{
 			_peer = peer;
 			_definitions = definitions;
@@ -29,6 +29,11 @@ namespace H3MP.Networking
 				definition.Send(_peer, writer, message);
 			}
 		}
+
+        public override int GetHashCode()
+        {
+            return _peer.Id;
+        }
 
 		public override string ToString()
 		{

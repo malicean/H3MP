@@ -7,7 +7,7 @@ using LiteNetLib.Utils;
 
 namespace H3MP
 {
-	public class MessageServerEvents : IMessageServerEvents
+	public class MessageServerEvents : IServerEvents
 	{
 		private readonly ManualLogSource _log;
 		private readonly MessageDefinition _pong;
@@ -50,13 +50,13 @@ namespace H3MP
 			}
 		}
 
-		public void OnPeerConnected(MessagePeer peer)
+		public void OnClientConnected(Peer peer)
 		{
 			// TODO: hook to SteamVR_LoadLevel.Begin(string) and store the last result, + invoke a send if hosting.
 			peer.Send(new LevelChangeMessage("IndoorRange"));
 		}
 
-		public void OnPeerDisconnected(MessagePeer peer, DisconnectInfo info)
+		public void OnClientDisconnected(Peer peer, DisconnectInfo info)
 		{
 		}
 	}

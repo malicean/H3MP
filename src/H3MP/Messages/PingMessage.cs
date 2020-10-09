@@ -5,14 +5,16 @@ namespace H3MP.Messages
 {
 	public struct PingMessage : INetSerializable
 	{
+		public static PingMessage Now => new PingMessage(LocalTime.Now);
+
 		/// <summary>
 		///		The client's time at the instant the message was sent.
 		/// </summary>
 		public double ClientTime { get; private set; }
 
-		public PingMessage()
+		private PingMessage(double time)
 		{
-			ClientTime = LocalTime.Now;
+			ClientTime = time;
 		}
 
 		public void Deserialize(NetDataReader reader)

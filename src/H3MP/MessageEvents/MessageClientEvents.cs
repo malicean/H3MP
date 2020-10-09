@@ -3,7 +3,7 @@ using LiteNetLib;
 
 namespace H3MP
 {
-	public class MessageClientEvents : IMessageClientEvents
+	public class MessageClientEvents : IClientEvents
 	{
 		public void OnConnected()
 		{

@@ -24,7 +24,7 @@ namespace H3MP
 		private const double INTERVAL = 3;
 
 		private readonly ManualLogSource _log;
-		private readonly MessagePeer _server;
+		private readonly Peer _server;
 		private readonly LoopTimer _timer;
 
 		private ExponentialMovingAverage _offsetAverage;
@@ -35,7 +35,7 @@ namespace H3MP
 		/// </summary>
 		public double Now => LocalTime.Now - _offsetAverage.Value;
 
-		public ServerTime(ManualLogSource log, MessagePeer server, PongMessage seed) 
+		public ServerTime(ManualLogSource log, Peer server, PongMessage seed) 
 		{
 			_log = log;
 			_server = server;

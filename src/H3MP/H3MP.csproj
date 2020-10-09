@@ -129,6 +129,7 @@
     <Compile Include="Extensions\NetDataWriterExtensions.cs" />
     <Compile Include="MessageEvents\MessageClientEvents.cs" />
     <Compile Include="MessageEvents\MessageServerEvents.cs" />
+    <Compile Include="NetManager.cs" />
     <Compile Include="Utils\ExponentialMovingAverage.cs" />
     <Compile Include="Utils\LocalTime.cs" />
     <Compile Include="Utils\LoopTimer.cs" />
