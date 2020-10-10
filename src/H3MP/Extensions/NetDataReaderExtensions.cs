@@ -1,3 +1,5 @@
+using System;
+using H3MP.Networking;
 using H3MP.Utils;
 using LiteNetLib.Utils;
 
@@ -10,12 +12,22 @@ namespace H3MP
 			return (JoinError) @this.GetByte();
 		}
 
-		public static ConnectionKey GetConnectionKey(this NetDataReader @this)
+		public static Key32 GetKey32(this NetDataReader @this)
 		{
-			var data = new byte[ConnectionKey.SIZE];
-			@this.GetBytes(data, ConnectionKey.SIZE);
+			var data = new byte[Key32.SIZE];
+			@this.GetBytes(data, Key32.SIZE);
 
-			return ConnectionKey.FromBytes(data);
+			if (!Key32.TryFromBytes(data, out var value))
+			{
+				throw new FormatException(nameof(Key32.TryFromBytes) + " returned false (should never happen; data buffer is fixed size).");
+			}
+
+			return value;
+		}
+
+		public static JoinSecret GetJoinSecret(this NetDataReader @this)
+		{
+			return new JoinSecret(@this.GetVersion(), @this.GetIPEndPoint(), @this.GetKey32());
 		}
 	}
 }

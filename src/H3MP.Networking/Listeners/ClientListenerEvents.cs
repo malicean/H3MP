@@ -3,13 +3,13 @@ using LiteNetLib;
 
 namespace H3MP.Networking
 {
-    internal class ClientListenerEvents : IListenerEvents
+    internal class ClientListenerEvents<TClient> : IListenerEvents
 	{
-		private readonly Client _client;
+		private readonly TClient _client;
 		private readonly ManualLogSource _log;
-		private readonly IClientEvents _events;
+		private readonly IClientEvents<TClient> _events;
 
-		public ClientListenerEvents(Client client, ManualLogSource log, IClientEvents events)
+		public ClientListenerEvents(TClient client, ManualLogSource log, IClientEvents<TClient> events)
 		{
 			_client = client;
 			_log = log;

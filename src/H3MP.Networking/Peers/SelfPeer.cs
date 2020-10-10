@@ -27,6 +27,11 @@ namespace H3MP.Networking
 		{
 			if (Manager.IsRunning)
 			{
+				if (Manager.ConnectedPeersCount > 0) 
+				{
+					Manager.DisconnectAll();
+				}
+
 				Manager.Stop();
 			}
 		}

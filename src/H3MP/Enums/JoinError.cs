@@ -4,5 +4,6 @@ namespace H3MP
     {
 		MalformedMessage,
 		MismatchedKey,
+        Full,
     }
 }

@@ -6,11 +6,11 @@ namespace H3MP.Messages
 {
 	public struct ConnectionRequestMessage : INetSerializable
 	{
-		public ConnectionKey Key { get; private set; }
+		public Key32 Key { get; private set; }
 
 		public double ClientTime { get; private set; }
 
-		public ConnectionRequestMessage(ConnectionKey key)
+		public ConnectionRequestMessage(Key32 key)
 		{
 			Key = key;
 			ClientTime = LocalTime.Now;
@@ -18,7 +18,7 @@ namespace H3MP.Messages
 
 		public void Deserialize(NetDataReader reader)
 		{
-			Key = reader.GetConnectionKey();
+			Key = reader.GetKey32();
 			ClientTime = reader.GetDouble();
 		}
 

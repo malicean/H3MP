@@ -12,7 +12,7 @@ namespace H3MP
 	/// <summary>
 	///		Synchronizes the server-localized time in real time on the client.
 	/// </summary>
-	public class ServerTime
+	internal class ServerTime
 	{
 		/// <summary>
 		///		Determines the stability of the offset before it is "squeezed" (technically never, but practically when the range is 2ms).

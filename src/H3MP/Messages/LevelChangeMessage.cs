@@ -6,9 +6,9 @@ namespace H3MP.Messages
 	{
 		public string Name { get; private set; }
 
-		public LevelChangeMessage(string scene)
+		public LevelChangeMessage(string name)
 		{
-			Name = scene;
+			Name = name;
 		}
 
 		public void Deserialize(NetDataReader reader)

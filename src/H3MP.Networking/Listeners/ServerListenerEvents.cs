@@ -5,14 +5,14 @@ using System;
 
 namespace H3MP.Networking
 {
-	internal class ServerListenerEvents : IListenerEvents
+	internal class ServerListenerEvents<TServer> : IListenerEvents
 	{
-		private readonly Server _server;
+		private readonly TServer _server;
 		private readonly ManualLogSource _log;
-		private readonly IServerEvents _events;
+		private readonly IServerEvents<TServer> _events;
 		private readonly Version _version;
 
-		public ServerListenerEvents(Server server, ManualLogSource log, IServerEvents events, Version version)
+		public ServerListenerEvents(TServer server, ManualLogSource log, IServerEvents<TServer> events, Version version)
 		{
 			_server = server;
 			_log = log;
@@ -39,8 +39,7 @@ namespace H3MP.Networking
 				return;
 			}
 
-			// Build/revision doesn't matter
-			if (version.Major != _version.Major || version.Minor != _version.Minor)
+			if (!_version.CompatibleWith(version))
 			{
 				_log.LogWarning($"Connection request from {request.RemoteEndPoint} denied because of version mismatch (server: {_version}; client: {version})");
 

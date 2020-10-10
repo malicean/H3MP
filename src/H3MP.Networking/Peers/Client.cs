@@ -3,22 +3,23 @@ using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;
 using System.Linq;
+using System.Net;
 
 namespace H3MP.Networking
 {
-	public class Client : IUpdatable, IDisposable
+	public abstract class Client<TClient> : IUpdatable, IDisposable where TClient : Client<TClient>
 	{
-		private readonly SelfPeer<Client> _peer;
-		private readonly MessageListener<Client> _listener;
+		private readonly SelfPeer<TClient> _peer;
+		private readonly MessageListener<TClient> _listener;
 
-		public Peer Server => _listener.Peers.First();
+		public Peer Server { get; }
 
-		public Client(ManualLogSource log, PeerMessageList<Client> messages, IClientEvents events, Version version, string address, ushort port, Action<NetDataWriter> payload = null)
+		public Client(ManualLogSource log, PeerMessageList<TClient> messages, IClientEvents<TClient> events, Version version, IPEndPoint endpoint, Action<NetDataWriter> payload = null)
 		{
-			var listenerEvents = new ClientListenerEvents(this, log, events);
-			_listener = new MessageListener<Client>(this, messages, log, listenerEvents);
+			var listenerEvents = new ClientListenerEvents<TClient>((TClient) this, log, events);
+			_listener = new MessageListener<TClient>((TClient) this, messages, log, listenerEvents);
 
-			_peer = new SelfPeer<Client>(messages, _listener);
+			_peer = new SelfPeer<TClient>(messages, _listener);
 
 			using (WriterPool.Instance.Borrow(out var writer))
 			{
@@ -26,16 +27,18 @@ namespace H3MP.Networking
 				payload?.Invoke(writer);
 
 				_peer.Manager.Start();
-				_peer.Manager.Connect(address, port, writer);
+				_peer.Manager.Connect(endpoint, writer);
 			}
+
+			Server = _listener.Peers.First();
 		}
 
-		public void Update()
+		public virtual void Update()
         {
             _peer.Update();
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             _peer.Dispose();
         }

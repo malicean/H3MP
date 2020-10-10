@@ -1,6 +1,7 @@
 using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;
+using System.Net;
 
 namespace H3MP.Networking
 {
@@ -33,6 +34,19 @@ namespace H3MP.Networking
 			{
 				return new Version(major, minor, build, revision);
 			}
+		}
+
+		public static IPAddress GetIPAddress(this NetDataReader @this)
+		{
+			var bytes = new byte[@this.GetByte()];
+			@this.GetBytes(bytes, bytes.Length);
+
+			return new IPAddress(bytes);
+		}
+
+		public static IPEndPoint GetIPEndPoint(this NetDataReader @this)
+		{
+			return new IPEndPoint(@this.GetIPAddress(), @this.GetUShort());
 		}
 
 		public static bool TryGet<TMessage>(this NetDataReader @this, out TMessage value) where TMessage : INetSerializable, new()

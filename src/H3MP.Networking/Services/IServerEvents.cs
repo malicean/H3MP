@@ -3,12 +3,12 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Networking
 {
-	public interface IServerEvents
+	public interface IServerEvents<TServer>
 	{
-		void OnConnectionRequest(Server server, ConnectionRequest request, NetDataWriter rejectionContent);
+		void OnConnectionRequest(TServer server, ConnectionRequest request, NetDataWriter rejectionContent);
 
-		void OnClientConnected(Server server, Peer client);
+		void OnClientConnected(TServer server, Peer client);
 
-		void OnClientDisconnected(Server server, Peer client, DisconnectInfo info);
+		void OnClientDisconnected(TServer server, Peer client, DisconnectInfo info);
 	}
 }

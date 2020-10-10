@@ -1,27 +1,26 @@
-using System.Collections.Generic;
 using LiteNetLib;
 using LiteNetLib.Utils;
 
 namespace H3MP.Networking
 {
-	public delegate void ReaderHandler<in TPeer>(TPeer self, Peer peer, NetDataReader reader);
+    public delegate void ReaderHandler<in TPeer>(TPeer self, Peer peer, NetDataReader reader);
 
 	public delegate void MessageHandler<in TPeer, in TMessage>(TPeer self, Peer peer, TMessage message);
 
-	public class PeerMessageListBuilder
+	public class UniversalMessageList<TClient, TServer>
 	{
-		private readonly ManagerMessageListData<Client> _client;
+		private readonly ManagerMessageListData<TClient> _client;
 
-		private readonly ManagerMessageListData<Server> _server;
+		private readonly ManagerMessageListData<TServer> _server;
 
-		public PeerMessageList<Client> Client => _client.Messages;
+		public PeerMessageList<TClient> Client => _client.Messages;
 
-		public PeerMessageList<Server> Server => _server.Messages;
+		public PeerMessageList<TServer> Server => _server.Messages;
 
-		public PeerMessageListBuilder() 
+		public UniversalMessageList() 
 		{
-			_client = new ManagerMessageListData<Client>();
-			_server = new ManagerMessageListData<Server>();
+			_client = new ManagerMessageListData<TClient>();
+			_server = new ManagerMessageListData<TServer>();
 		}
 
 		private static ReaderHandler<TPeer> CreateReaderFrom<TPeer, TMessage>(MessageHandler<TPeer, TMessage> handler) where TMessage : INetSerializable, new()
@@ -48,16 +47,16 @@ namespace H3MP.Networking
 			receiver.Messages.Handlers.Add(id, reader);
 		}
 
-        public PeerMessageListBuilder AddClient<TMessage>(byte channel, DeliveryMethod delivery, MessageHandler<Server, TMessage> handler) where TMessage : INetSerializable, new()
+        public UniversalMessageList<TClient, TServer> AddClient<TMessage>(byte channel, DeliveryMethod delivery, MessageHandler<TServer, TMessage> handler) where TMessage : INetSerializable, new()
 		{
-			Add<Client, Server, TMessage>(_client, _server, channel, delivery, handler);
+			Add<TClient, TServer, TMessage>(_client, _server, channel, delivery, handler);
 
 			return this;
 		}
 
-		public PeerMessageListBuilder AddServer<TMessage>(byte channel, DeliveryMethod delivery, MessageHandler<Client, TMessage> handler) where TMessage : INetSerializable, new()
+		public UniversalMessageList<TClient, TServer> AddServer<TMessage>(byte channel, DeliveryMethod delivery, MessageHandler<TClient, TMessage> handler) where TMessage : INetSerializable, new()
 		{
-			Add<Server, Client, TMessage>( _server, _client, channel, delivery, handler);
+			Add<TServer, TClient, TMessage>( _server, _client, channel, delivery, handler);
 
 			return this;
 		}

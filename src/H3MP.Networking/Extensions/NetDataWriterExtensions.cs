@@ -1,5 +1,6 @@
 using LiteNetLib.Utils;
 using System;
+using System.Net;
 
 namespace H3MP.Networking
 {
@@ -16,6 +17,20 @@ namespace H3MP.Networking
 			@this.Put(value.Minor);
 			@this.Put(value.Build);
 			@this.Put(value.Revision);
+		}
+
+		public static void Put(this NetDataWriter @this, IPAddress value)
+		{
+			var bytes = value.GetAddressBytes();
+
+			@this.Put((byte) bytes.Length);
+			@this.Put(bytes);
+		}
+
+		public static void Put(this NetDataWriter @this, IPEndPoint value)
+		{
+			@this.Put(value.Address);
+			@this.Put((ushort) value.Port);
 		}
 	}
 }

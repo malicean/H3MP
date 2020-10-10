@@ -44,10 +44,11 @@
 
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />
     <Compile Include="Extensions\NetDataWriterExtensions.cs" />
+    <Compile Include="Extensions\VersionExtensions.cs" />
     <Compile Include="Listeners\ClientListenerEvents.cs" />
     <Compile Include="Listeners\ServerListenerEvents.cs" />
     <Compile Include="Messages\MessageDefinition.cs" />
-    <Compile Include="Messages\MessageList.cs" />
+    <Compile Include="Messages\UniversalMessageList.cs" />
     <Compile Include="Messages\PeerMessageList.cs" />
     <Compile Include="Models\ConnectionError.cs" />
     <Compile Include="Models\MismatchedVersionErrorMessage.cs" />
