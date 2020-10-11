@@ -7,7 +7,7 @@ namespace H3MP.Networking
         public static bool CompatibleWith(this Version @this, Version other)
         {
             // Allow different builds/patches.
-            return @this.Major != other.Major || @this.Minor != other.Minor;
+            return @this.Major == other.Major && @this.Minor == other.Minor;
         }
     }
 }
