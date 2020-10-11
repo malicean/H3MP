@@ -61,7 +61,7 @@ namespace H3MP.Utils
 
         public override string ToString()
         {
-            return EndPoint.Address + " " + EndPoint.Port + " " + Key;
+            return Version.ToString() + " " + EndPoint.Address + " " + EndPoint.Port + " " + Key;
         }
     
 	}
