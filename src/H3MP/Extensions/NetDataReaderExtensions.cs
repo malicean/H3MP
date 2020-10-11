@@ -1,4 +1,5 @@
 using System;
+using Discord;
 using H3MP.Networking;
 using H3MP.Utils;
 using LiteNetLib.Utils;
@@ -28,6 +29,15 @@ namespace H3MP
 		public static JoinSecret GetJoinSecret(this NetDataReader @this)
 		{
 			return new JoinSecret(@this.GetVersion(), @this.GetIPEndPoint(), @this.GetKey32());
+		}
+
+		public static PartySize GetPartySize(this NetDataReader @this)
+		{
+			return new PartySize
+			{
+				CurrentSize = @this.GetByte(),
+				MaxSize = @this.GetByte()
+			};
 		}
 	}
 }

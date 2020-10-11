@@ -9,12 +9,12 @@ namespace H3MP.Networking
 	{
 		public NetManager Manager { get; }
 
-		public SelfPeer(PeerMessageList<TPeer> messages, MessageListener<TPeer> listener)
+		public SelfPeer(byte channelsCount, MessageListener<TPeer> listener)
 		{
 			Manager = new NetManager(listener)
 			{
 				AutoRecycle = true,
-				ChannelsCount = (byte) (messages.Definitions.Values.Max(x => x.Channel) + 1)
+				ChannelsCount = channelsCount
 			};
 		}
 

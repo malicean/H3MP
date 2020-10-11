@@ -1,26 +1,24 @@
-using DiscordRPC;
-using H3MP.Utils;
 using LiteNetLib.Utils;
 
-namespace H3MP
+namespace H3MP.Messages
 {
     public struct PartyChangeMessage : INetSerializable
     {
-        public int Size { get; private set;  }
+        public int CurrentSize { get; private set;  }
 
-        public PartyChangeMessage(int size)
+        public PartyChangeMessage(int currentSize)
         {
-            Size = size;
+            CurrentSize = currentSize;
         }
 
         public void Deserialize(NetDataReader reader)
         {
-            Size = reader.GetByte();
+            CurrentSize = reader.GetByte();
         }
 
         public void Serialize(NetDataWriter writer)
         {
-            writer.Put(Size);
+            writer.Put((byte) CurrentSize);
         }
     }
 }

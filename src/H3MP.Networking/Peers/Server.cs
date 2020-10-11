@@ -16,12 +16,12 @@ namespace H3MP.Networking
 
 		public IEnumerable<Peer> Clients => _listener.Peers;
 
-		public Server(ManualLogSource log, PeerMessageList<TServer> messages, IServerEvents<TServer> events, Version version, IPAddress ipv4, IPAddress ipv6, ushort port)
+		public Server(ManualLogSource log, PeerMessageList<TServer> messages, byte channelsCount, IServerEvents<TServer> events, Version version, IPAddress ipv4, IPAddress ipv6, ushort port)
 		{
 			var listenerEvents = new ServerListenerEvents<TServer>((TServer) this, log, events, version);
 			_listener = new MessageListener<TServer>((TServer) this, messages, log, listenerEvents);
 
-			_peer = new SelfPeer<TServer>(messages, _listener);
+			_peer = new SelfPeer<TServer>(channelsCount, _listener);
 			if (!_peer.Manager.Start(ipv4, ipv6, port))
 			{
 				throw new InvalidOperationException($"Could not bind socket. IPv4: {ipv4}; IPv6: {ipv6}; port: {port}");

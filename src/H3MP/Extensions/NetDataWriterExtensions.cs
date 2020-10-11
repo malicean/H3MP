@@ -1,6 +1,7 @@
 using H3MP.Utils;
 using H3MP.Networking;
 using LiteNetLib.Utils;
+using Discord;
 
 namespace H3MP
 {
@@ -11,16 +12,22 @@ namespace H3MP
 			@this.Put((byte) value);
 		}
 
-		internal static void Put(this NetDataWriter @this, Key32 value)
+		public static void Put(this NetDataWriter @this, Key32 value)
 		{
 			@this.Put(value.Data);
 		}
 
-		internal static void Put(this NetDataWriter @this, JoinSecret secret)
+		public static void Put(this NetDataWriter @this, JoinSecret value)
 		{
-			@this.Put(secret.Version);
-			@this.Put(secret.EndPoint);
-			@this.Put(secret.Key);
+			@this.Put(value.Version);
+			H3MP.Networking.NetDataWriterExtensions.Put(@this, value.EndPoint);
+			@this.Put(value.Key);
+		}
+
+		public static void Put(this NetDataWriter @this, PartySize value)
+		{
+			@this.Put((byte) value.CurrentSize);
+			@this.Put((byte) value.MaxSize);
 		}
 	}
 }

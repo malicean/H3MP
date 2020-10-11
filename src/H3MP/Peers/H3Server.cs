@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Security.Cryptography;
 using BepInEx.Logging;
+using Discord;
 using H3MP.HarmonyPatches;
 using H3MP.Messages;
 using H3MP.Networking;
@@ -19,8 +20,8 @@ namespace H3MP
         private Key32 PartyID { get; }
         public JoinSecret Secret { get; }
 
-        internal H3Server(ManualLogSource log, RandomNumberGenerator rng, PeerMessageList<H3Server> messages, Version version, HostConfig config, IPEndPoint publicEndPoint) 
-            : base(log, messages, new Events(messages.Definitions[typeof(PongMessage)]), version, config.Binding.IPv4.Value, config.Binding.IPv6.Value, config.Binding.Port.Value)
+        internal H3Server(ManualLogSource log, RandomNumberGenerator rng, PeerMessageList<H3Server> messages, byte channelsCount, Version version, HostConfig config, IPEndPoint publicEndPoint) 
+            : base(log, messages, channelsCount, new Events(messages.Definitions[typeof(PongMessage)]), version, config.Binding.IPv4.Value, config.Binding.IPv6.Value, config.Binding.Port.Value)
         {
             _log = log;
             _config = config;
@@ -87,8 +88,13 @@ namespace H3MP
             public void OnClientConnected(H3Server server, Peer peer)
             {
                 var count = server.ClientsCount;
+                var size = new PartySize
+                {
+                    CurrentSize = (byte) count,
+                    MaxSize = (byte) server._config.PlayerLimit.Value
+                };
 
-                peer.Send(new PartyInitMessage(server.PartyID, (byte) count, (byte) server._config.PlayerLimit.Value, server.Secret));
+                peer.Send(new PartyInitMessage(server.PartyID, size, server.Secret));
                 peer.Send(new LevelChangeMessage(LoadLevelPatch.CurrentName));
 
                 // upsize party

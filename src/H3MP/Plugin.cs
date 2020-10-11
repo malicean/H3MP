@@ -1,5 +1,5 @@
 using BepInEx;
-using DiscordRPC;
+using Discord;
 using H3MP.Utils;
 using System.Security.Cryptography;
 using H3MP.Networking;
@@ -11,56 +11,58 @@ using H3MP.Messages;
 using LiteNetLib;
 using H3MP.HarmonyPatches;
 using UnityEngine;
-using DiscordRPC.Message;
 using System;
 using HarmonyLib;
+using BepInEx.Logging;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace H3MP
 {
-    [BepInPlugin("ash.h3mp", "H3VR Multiplayer", "0.0.0")]
+    [BepInPlugin("ash.h3mp", "H3MP", "0.0.0")]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
 	{
-		private const string DISCORD_APP_ID = "762557783768956929"; // 3rd party RPC application
-		private const string STEAM_APP_ID = "450540"; // H3VR
+		[DllImport("kernel32.dll")]
+    	private static extern IntPtr LoadLibrary(string path);
+
+		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
+		private const uint STEAM_APP_ID = 450540; // H3VR
 
 		// Unity moment
 		public static Plugin Instance { get; private set; }
 
-		private static readonly UniversalMessageList<H3Client, H3Server> _messages = new UniversalMessageList<H3Client, H3Server>()
-			// =======
-			// Client
-			// =======
-			// Dedicated time synchronization
-			.AddClient<PingMessage>(0, DeliveryMethod.Sequenced, H3Server.OnClientPing)
-			// =======
-			// Server
-			// =======
-			// Dedicated time synchronization
-			.AddServer<PongMessage>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
-			// Party management
-			.AddServer<PartyInitMessage>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerPartyInit)
-			.AddServer<PartyChangeMessage>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerPartyChange)
-			// Asset management
-			.AddServer<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnLevelChange);
-
-		private static readonly MessageDefinition _pongDefinition = _messages.Server.Definitions[typeof(PongMessage)];
+		private readonly System.Version _version;
+		private readonly string _name;
 
 		private readonly RootConfig _config;
 
-		private readonly System.Version _version;
-		private readonly RichPresence _presence;
 		private readonly RandomNumberGenerator _rng;
 
-		public DiscordRpcClient Discord { get; }
+		private readonly ManualLogSource _clientLog;
+		private readonly ManualLogSource _serverLog;
+		private readonly ManualLogSource _discordLog;
+		private readonly ManualLogSource _harmonyLog;
+
+		private readonly UniversalMessageList<H3Client, H3Server> _messages;
+		private readonly MessageDefinition _pongDefinition;
+
+		internal ManualLogSource HarmonyLogger => _harmonyLog;
+
+        public Discord.Discord DiscordClient { get; }
+
+		public ActivityManager ActivityManager { get; }
+
+		public StatefulActivity Activity { get; }
 
 		public H3Server Server { get; private set; }
 
 		public H3Client Client { get; private set; }
 
-		public Plugin()
+        public Plugin()
 		{
 			_version = Info.Metadata.Version;
+			_name = Info.Metadata.Name;
 
 			Logger.LogDebug("Binding configs...");
 			{
@@ -76,51 +78,110 @@ namespace H3MP
 			Logger.LogDebug("Initializing utilities...");
 			{
 				_rng = RandomNumberGenerator.Create();
+
+				_clientLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-CL");
+				_serverLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-SV");
+				_discordLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-DC");
+				_harmonyLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-HM");
 			}
 
-			Logger.LogDebug("Initializing Discord rich presence...");
+			Logger.LogDebug("Initializing Discord game SDK...");
 			{
-				_presence = new RichPresence();
-				Discord = new DiscordRpcClient(DISCORD_APP_ID, autoEvents: false, logger: new DiscordLog(Logger));
+				// TODO: when BepInEx next releases (>5.3), uncomment this line and move discord_game_sdk.dll to the plugin folder
+				// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 
-				Discord.OnJoinRequested += OnJoinRequested;
-				Discord.OnJoin += OnJoin;
+				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
+				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) => 
+				{
+					switch (level)
+					{
+						case Discord.LogLevel.Error:
+							_discordLog.LogError(message);
+							break;
+						case Discord.LogLevel.Warn:
+							_discordLog.LogWarning(message);
+							break;
+						case Discord.LogLevel.Info:
+							_discordLog.LogInfo(message);
+							break;
+						case Discord.LogLevel.Debug:
+							_discordLog.LogDebug(message);
+							break;
 
-				Discord.RegisterUriScheme(STEAM_APP_ID);
-				Discord.SetSubscription(DiscordRPC.EventType.Join);
-				Discord.SetPresence(_presence);
-				Discord.Initialize();
+						default:
+							throw new NotImplementedException(level.ToString());
+					}
+				});
+
+				ActivityManager = DiscordClient.GetActivityManager();
+				Activity = new StatefulActivity(ActivityManager, DiscordCallbackHandler);
+
+				ActivityManager.RegisterSteam(STEAM_APP_ID);
+
+				ActivityManager.OnActivityJoinRequest += OnJoinRequested;
+				ActivityManager.OnActivityJoin += OnJoin;
+			}
+
+			Logger.LogDebug("Creating message table...");
+			{
+				_messages = new UniversalMessageList<H3Client, H3Server>(_clientLog, _serverLog)
+					// =======
+					// Client
+					// =======
+					// Dedicated time synchronization
+					.AddClient<PingMessage>(0, DeliveryMethod.Sequenced, H3Server.OnClientPing)
+					// =======
+					// Server
+					// =======
+					// Dedicated time synchronization
+					.AddServer<PongMessage>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
+					// Party management
+					.AddServer<PartyInitMessage>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerInit)
+					.AddServer<PartyChangeMessage>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerPartyChange)
+					// Asset management
+					.AddServer<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnLevelChange);
+
+				_pongDefinition = _messages.Server.Definitions[typeof(PongMessage)];				
 			}
 		}
 
-        private void OnJoin(object sender, JoinMessage args)
+        private void DiscordCallbackHandler(Result result)
         {
-            const string errorPrefix = "Failed to handle Discord join event: ";
+			if (result == Result.Ok)
+			{
+				return;
+			}
 
-            var raw = args.Secret;
-            Logger.LogDebug($"Received Discord join secret \"{raw}\"");
+			Debug.LogError($"Discord activity update failed ({result})");
+        }
 
-            bool success = JoinSecret.TryParse(raw, out var secret, out var version);
+        private void OnJoin(string rawSecret)
+        {
+            const string errorPrefix = "Failed to handle join event: ";
+
+            _discordLog.LogDebug($"Received Discord join secret \"{rawSecret}\"");
+
+            bool success = JoinSecret.TryParse(rawSecret, out var secret, out var version);
             if (!_version.CompatibleWith(version))
             {
-                Logger.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
+                _discordLog.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
                 return;
             }
 
             if (!success)
             {
-                Logger.LogError(errorPrefix + $"failed to parse join secret \"{raw}\"");
+                _discordLog.LogError(errorPrefix + $"failed to parse join secret \"{rawSecret}\"");
                 return;
             }
 
 			ConnectRemote(secret);
         }
 
-        private void OnJoinRequested(object sender, JoinRequestMessage args)
+        private void OnJoinRequested(ref User user)
         {
             // All friends can join
             // TODO: Change this.
-            Discord.Respond(args, true);
+            ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
         }
 
         private IEnumerator _HostUnsafe()
@@ -131,7 +192,7 @@ namespace H3MP
 			var ipv4 = binding.IPv4.Value;
 			var ipv6 = binding.IPv6.Value;
 			var port = binding.Port.Value;
-			var localhost = new IPEndPoint(ipv4 == IPAddress.IPv6Any ? IPAddress.IPv6Loopback : ipv4, port);
+			var localhost = new IPEndPoint(ipv4 == IPAddress.Any ? IPAddress.Loopback : ipv4, port);
 
 			IPEndPoint publicEndPoint;
 			{
@@ -144,7 +205,7 @@ namespace H3MP
 					
 					if (!result.Key) 
 					{
-						Logger.LogFatal($"Failed to get public IP address to host server with: {result.Value}");
+						_serverLog.LogFatal($"Failed to get public IP address to host server with: {result.Value}");
 						yield break;
 					}
 
@@ -161,8 +222,8 @@ namespace H3MP
 				publicEndPoint = new IPEndPoint(publicAddress, publicPort);
 			}
 
-			Server = new H3Server(Logger, _rng, _messages.Server, _version, _config.Host, publicEndPoint);
-			Logger.LogInfo($"Now hosting on {publicEndPoint}!");
+			Server = new H3Server(_serverLog, _rng, _messages.Server, _messages.ChannelsCount, _version, _config.Host, publicEndPoint);
+			_serverLog.LogInfo($"Now hosting on {publicEndPoint}!");
 
 			ConnectLocal(localhost, Server.Secret.Key);
 		}
@@ -180,16 +241,17 @@ namespace H3MP
 			return _HostUnsafe();
 		}
 
-		private void Connect(IPEndPoint endPoint, Key32 key, OnH3ClientDisconnect onDisconnect)
+		private void Connect(IPEndPoint endPoint, Key32 key, bool isHost, OnH3ClientDisconnect onDisconnect)
         {
-            Client = new H3Client(Logger, Discord, _messages.Client, _version, endPoint, new ConnectionRequestMessage(key), onDisconnect);
+			_clientLog.LogInfo($"Connecting to {endPoint}...");
+            Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, _version, isHost, endPoint, new ConnectionRequestMessage(key), onDisconnect);
         }
 
 		private void ConnectLocal(IPEndPoint endPoint, Key32 key)
 		{
-			Connect(endPoint, key, info => 
+			Connect(endPoint, key, true, info => 
 			{
-				Logger.LogError("Disconnected from local server. This should never happen. Restarting host...");
+				_clientLog.LogError("Disconnected from local server. Something probably caused the frame to hang for more than 5s (debugging breakpoint?). Restarting host...");
 				
 				StartCoroutine(_Host());
 			});
@@ -198,10 +260,10 @@ namespace H3MP
 		private void ConnectRemote(JoinSecret secret)
 		{
 			Client?.Dispose();
-			Connect(secret.EndPoint, secret.Key, info => 
+			Connect(secret.EndPoint, secret.Key, false, info => 
 			{
-				Logger.LogError("Disconnected from remote server.");
-				Logger.LogDebug("Killing client...");
+				_clientLog.LogError("Disconnected from remote server.");
+				_clientLog.LogDebug("Suiciding...");
 
 				Client?.Dispose();
 				Client = null;
@@ -234,7 +296,7 @@ namespace H3MP
 
 		private void Update()
 		{
-			Discord.Invoke();
+			DiscordClient.RunCallbacks();
 
 			Client?.Update();
 			Server?.Update();
@@ -242,7 +304,7 @@ namespace H3MP
 
 		private void OnDestroy()
 		{
-			Discord.Dispose();
+			DiscordClient.Dispose();
 
 			Server?.Dispose();
 			Client?.Dispose();

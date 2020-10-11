@@ -1,11 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using BepInEx.Logging;
-using DiscordRPC;
+using Discord;
 using H3MP.Messages;
 using H3MP.Networking;
+using H3MP.Utils;
 using LiteNetLib;
-using LiteNetLib.Utils;
 
 namespace H3MP
 {
@@ -13,28 +14,57 @@ namespace H3MP
 
     public class H3Client : Client<H3Client>
     {
+        // All the scenes with rich presence assets and their names.
+        private static readonly Dictionary<string, string> _sceneNames = new Dictionary<string, string>
+        {
+            ["MainMenu3"] = "Main Menu"
+        };
+
         private readonly ManualLogSource _log;
-        private readonly DiscordRpcClient _discord;
+        private readonly StatefulActivity _discord;
+        private readonly bool _isHost;
+
         private readonly OnH3ClientDisconnect _onDisconnected;
+
+        private readonly LoopTimer _timer;
 
         private ServerTime _time;
 
         public double Time => _time?.Now ?? 0;
 
-        internal H3Client(ManualLogSource log, DiscordRpcClient discord, PeerMessageList<H3Client> messages, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
-            : base(log, messages, new Events(), version, endpoint, x => x.Put(request))
+        internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, Version version, bool isHost, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
+            : base(log, messages, channelsCount, new Events(), version, endpoint, x => x.Put(request))
         {
             _log = log;
             _discord = discord;
+            _isHost = isHost;
+
             _onDisconnected = onDisconnected;
+
+            _timer = new LoopTimer(2);
+        }
+
+        public override void Update()
+        {
+            base.Update();
+
+            if (_timer.TryReset())
+            {
+                Server.Send(PingMessage.Now);
+            }
         }
 
         public override void Dispose()
         {
             base.Dispose();
 
-            _discord.UpdateParty(new DiscordRPC.Party());
-            _discord.UpdateSecrets(new DiscordRPC.Secrets());
+            _discord.Update(x => 
+            {
+                x.Party = default;
+                x.Secrets = default;
+
+                return x;
+            });
         }
 
         internal static void OnServerPong(H3Client self, Peer peer, PongMessage message)
@@ -51,27 +81,69 @@ namespace H3MP
 
         internal static void OnLevelChange(H3Client self, Peer peer, LevelChangeMessage message)
         {
-            SteamVR_LoadLevel.Begin(message.Name);
+            var levelName = message.Name;
+
+            {
+                string asset;
+                if (_sceneNames.TryGetValue(levelName, out var tooltip))
+                {
+                    asset = levelName.ToLower();
+                }
+                else
+                {
+                    asset = "unknown";
+                    tooltip = levelName;
+                }
+
+                self._discord.Update(x =>
+                {
+                    x.Assets = new ActivityAssets
+                    {
+                        LargeImage = "scene_" + asset,
+                        LargeText = tooltip
+                    };
+                    x.Timestamps = new Discord.ActivityTimestamps
+                    {
+                        Start = DateTime.UtcNow.ToUnixTimestamp()
+                    };
+
+                    return x;
+                });
+            }
+
+            if (self._isHost)
+            {
+                return;
+            }
+
+            SteamVR_LoadLevel.Begin(levelName);
         }
 
-        internal static void OnServerPartyInit(H3Client self, Peer peer, PartyInitMessage message)
+        internal static void OnServerInit(H3Client self, Peer peer, PartyInitMessage message)
         {
-            self._discord.UpdateParty(new Party
+            self._log.LogDebug("Initializing Discord party...");
+            self._discord.Update(x =>
             {
-                ID = message.ID.ToString(),
-                Size = message.Size,
-                Max = message.Max
-            });
+                x.State = "In party";
+                x.Party = new Discord.ActivityParty
+                {
+                    Id = message.ID.ToString(),
+                    Size = message.Size
+                };
+                x.Secrets.Join = message.Secret.ToString();
 
-            self._discord.UpdateSecrets(new Secrets
-            {
-                JoinSecret = message.Secret.ToString()
+                return x;
             });
         }
 
         internal static void OnServerPartyChange(H3Client self, Peer peer, PartyChangeMessage message)
         {
-            self._discord.UpdatePartySize(message.Size);
+            self._discord.Update(x =>
+            {
+                x.Party.Size.CurrentSize = message.CurrentSize;
+
+                return x;
+            });
         }
 
         internal class Events : IClientEvents<H3Client>

@@ -12,14 +12,14 @@ namespace H3MP.Networking
 		private readonly SelfPeer<TClient> _peer;
 		private readonly MessageListener<TClient> _listener;
 
-		public Peer Server { get; }
+		public Peer Server => _listener.Peers.First();
 
-		public Client(ManualLogSource log, PeerMessageList<TClient> messages, IClientEvents<TClient> events, Version version, IPEndPoint endpoint, Action<NetDataWriter> payload = null)
+		public Client(ManualLogSource log, PeerMessageList<TClient> messages, byte channelsCount, IClientEvents<TClient> events, Version version, IPEndPoint endpoint, Action<NetDataWriter> payload = null)
 		{
 			var listenerEvents = new ClientListenerEvents<TClient>((TClient) this, log, events);
 			_listener = new MessageListener<TClient>((TClient) this, messages, log, listenerEvents);
 
-			_peer = new SelfPeer<TClient>(messages, _listener);
+			_peer = new SelfPeer<TClient>(channelsCount, _listener);
 
 			using (WriterPool.Instance.Borrow(out var writer))
 			{
@@ -29,8 +29,6 @@ namespace H3MP.Networking
 				_peer.Manager.Start();
 				_peer.Manager.Connect(endpoint, writer);
 			}
-
-			Server = _listener.Peers.First();
 		}
 
 		public virtual void Update()

@@ -1,6 +1,5 @@
 using H3MP.Utils;
 using LiteNetLib.Utils;
-using System;
 
 namespace H3MP.Messages
 {
