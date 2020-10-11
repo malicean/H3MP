@@ -77,7 +77,7 @@ namespace H3MP
                     yield break;
                 }
 
-                Result = new KeyValuePair<bool, string>(true, request.downloadHandler.text);
+                Result = new KeyValuePair<bool, string>(true, request.downloadHandler.text.Trim());
             }
         }
     }
