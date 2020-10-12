@@ -14,10 +14,36 @@ namespace H3MP
 
     public class H3Client : Client<H3Client>
     {
-        // All the scenes with rich presence assets and their names.
-        private static readonly Dictionary<string, string> _sceneNames = new Dictionary<string, string>
-        {
-            ["MainMenu3"] = "Main Menu"
+		// All the scenes with rich presence assets and their names.
+		private static readonly Dictionary<string, string> _sceneNames = new Dictionary<string, string>
+		{
+			["MainMenu3"] = "Main Menu",
+			["ArizonaTargets"] = "Arizona Range - Day",
+			["ArizonaTargets_Night"] = "Arizona Range - Night",
+			["BreachAndClear_TestScene1"] = "Breaching Proto",
+			["Cappocolosseum"] = "Cappocolosseum",
+			["GrenadeSkeeball"] = "Boomskee",
+			["HickokRange"] = "Friendly 45",
+			["IndoorRange"] = "Indoor Range",
+			["MeatGrinder"] = "Meat Grinder",
+			["MeatGrinder_StartingScene"] = "Starting Meat Grinder",
+			["MF2_MainScene"] = "Meat Fortress 2",
+			["ObstacleCourseScene1"] = "The Gunnasium",
+			["ObstacleCourseScene2"] = "Mini-Arena",
+			//["OmnisequencerTesting3"] = "" is this an accessible scene?
+			["ProvingGround"] = "Proving Grounds",
+			["SniperRange"] = "Sniper Range",
+			["ReturnOfTheRotwieners"] = "Rise of the Rotwieners",
+			["RotWienersStagingScene"] = "Starting Rise of the Rotwieners",
+			["SamplerPlatter"] = "Sampler Platter",
+			["TakeAndHold_1"] = "Take & Hold Containment",
+			["TakeAndHold_Lobby_2"] = "Take & Hold Lobby",
+			["TakeAndHoldClassic"] = "Take & Hold",
+			["Testing3_LaserSword"] = "Arcade Proto",
+			["TileSetTest1"] = "Arena Proto",
+			["WarehouseRange_Rebuilt"] = "Warehouse Range",
+			["Wurstwurld1"] = "Wurstwurld",
+			["Xmas"] = "Meatmas Snowglobe"
         };
 
         private readonly ManualLogSource _log;
