@@ -1,8 +1,10 @@
 using System;
 using Discord;
+using H3MP.Models;
 using H3MP.Networking;
 using H3MP.Utils;
 using LiteNetLib.Utils;
+using UnityEngine;
 
 namespace H3MP
 {
@@ -38,6 +40,16 @@ namespace H3MP
 				CurrentSize = @this.GetByte(),
 				MaxSize = @this.GetByte()
 			};
+		}
+
+		public static Vector3 GetVector3(this NetDataReader @this)
+		{
+			return new Vector3(@this.GetFloat(), @this.GetFloat(), @this.GetFloat());
+		}
+
+		public static Quaternion GetQuaternion(this NetDataReader @this)
+		{
+			return new Quaternion(@this.GetFloat(), @this.GetFloat(), @this.GetFloat(), @this.GetFloat());
 		}
 	}
 }

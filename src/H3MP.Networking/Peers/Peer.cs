@@ -10,6 +10,8 @@ namespace H3MP.Networking
 		private readonly NetPeer _peer;
 		private readonly Dictionary<Type, MessageDefinition> _definitions;
 
+		public int ID => _peer.Id;
+
 		public Peer(NetPeer peer, Dictionary<Type, MessageDefinition> definitions)
 		{
 			_peer = peer;

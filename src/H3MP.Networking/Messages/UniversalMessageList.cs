@@ -80,5 +80,5 @@ namespace H3MP.Networking
 
 			public PeerMessageList<TPeer> Messages = new PeerMessageList<TPeer>();
 		}
-	}
+    }
 }

@@ -1,4 +1,5 @@
 using Discord;
+using H3MP.Models;
 using H3MP.Utils;
 using LiteNetLib.Utils;
 

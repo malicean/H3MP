@@ -3,7 +3,7 @@ using H3MP.Messages;
 using H3MP.Networking;
 using H3MP.Utils;
 
-namespace H3MP
+namespace H3MP.Models
 {
 	// Heavily inspired by Mirror Networking for Unity (I loved using this feature).
 	// Sources:
@@ -35,7 +35,7 @@ namespace H3MP
 		/// </summary>
 		public double Now => LocalTime.Now - _offsetAverage.Value;
 
-		public ServerTime(ManualLogSource log, Peer server, PongMessage seed) 
+		public ServerTime(ManualLogSource log, Peer server, Timestamped<PingMessage> seed) 
 		{
 			_log = log;
 			_server = server;
@@ -59,18 +59,21 @@ namespace H3MP
 			_server.Send(new PingMessage());
 		}
 
-		private double ProcessPong(PongMessage message, out DoubleRange bounds)
+		private double ProcessPong(Timestamped<PingMessage> message, out DoubleRange bounds)
 		{
 			var now = LocalTime.Now;
 
+			var server = message.Timestamp;
+			var client = message.Content.Timestamp;
+
 			// The difference between the reply time locally (estimated) and remotely (known).
 			// Calculated by getting the instant equally between when the message was sent and when it was received.
-			var offset = message.ClientTime +
-				(now - message.ClientTime) * 0.5 // estimated time until server response
-				- message.ServerTime;
+			var offset = client +
+				(now - client) * 0.5 // estimated time until server response
+				- server;
 
 			// Basically squeeze theorem: if we absolutely know the range of the real offset, keep shrinking it until the difference is infinitely small (epsilon).
-			bounds = new DoubleRange(message.ClientTime - message.ServerTime, now - message.ServerTime);
+			bounds = new DoubleRange(client - server, now - server);
 
 			return offset;
 		}
@@ -80,7 +83,7 @@ namespace H3MP
 		///		Finishes an offset update.
 		/// </summary>
 		/// <param name="message">The times sent by the server, including the original send time.</param>
-		public void ProcessPong(PongMessage message)
+		public void ProcessPong(Timestamped<PingMessage> message)
 		{
 			var offset = ProcessPong(message, out var offsetBounds);
 

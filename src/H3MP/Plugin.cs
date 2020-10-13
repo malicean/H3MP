@@ -16,6 +16,8 @@ using HarmonyLib;
 using BepInEx.Logging;
 using System.Linq;
 using System.Runtime.InteropServices;
+using H3MP.Peers;
+using H3MP.Models;
 
 namespace H3MP
 {
@@ -45,7 +47,6 @@ namespace H3MP
 		private readonly ManualLogSource _harmonyLog;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
-		private readonly MessageDefinition _pongDefinition;
 
 		internal ManualLogSource HarmonyLogger => _harmonyLog;
 
@@ -128,20 +129,26 @@ namespace H3MP
 					// =======
 					// Client
 					// =======
-					// Dedicated time synchronization
+					// Time synchronization
 					.AddClient<PingMessage>(0, DeliveryMethod.Sequenced, H3Server.OnClientPing)
+					// Player movement
+					.AddClient<Timestamped<PlayerTransformsMessage>>(1, DeliveryMethod.Sequenced, H3Server.OnPlayerMove)
+					// 
 					// =======
 					// Server
 					// =======
-					// Dedicated time synchronization
-					.AddServer<PongMessage>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
+					// Time synchronization
+					.AddServer<Timestamped<PingMessage>>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
 					// Party management
 					.AddServer<PartyInitMessage>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerInit)
 					.AddServer<PartyChangeMessage>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerPartyChange)
 					// Asset management
-					.AddServer<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnLevelChange);
-
-				_pongDefinition = _messages.Server.Definitions[typeof(PongMessage)];				
+					.AddServer<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnLevelChange)
+					.AddServer<PlayerJoinMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnPlayerJoin)
+					.AddServer<PlayerLeaveMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnPlayerLeave)
+					// Player movement
+					.AddServer<PlayerMovesMessage>(3, DeliveryMethod.Sequenced, H3Client.OnPlayersMove)
+				;	
 			}
 		}
 
@@ -295,6 +302,11 @@ namespace H3MP
 		}
 
 		private void Update()
+		{
+			Client?.RenderUpdate();
+		}
+
+		private void FixedUpdate()
 		{
 			DiscordClient.RunCallbacks();
 

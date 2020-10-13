@@ -2,6 +2,8 @@ using H3MP.Utils;
 using H3MP.Networking;
 using LiteNetLib.Utils;
 using Discord;
+using UnityEngine;
+using H3MP.Models;
 
 namespace H3MP
 {
@@ -28,6 +30,21 @@ namespace H3MP
 		{
 			@this.Put((byte) value.CurrentSize);
 			@this.Put((byte) value.MaxSize);
+		}
+
+		public static void Put(this NetDataWriter @this, Vector3 value)
+		{
+			@this.Put(value.x);
+			@this.Put(value.y);
+			@this.Put(value.z);
+		}
+
+		public static void Put(this NetDataWriter @this, Quaternion value)
+		{
+			@this.Put(value.x);
+			@this.Put(value.y);
+			@this.Put(value.z);
+			@this.Put(value.w);
 		}
 	}
 }

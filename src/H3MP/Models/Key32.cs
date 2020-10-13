@@ -1,7 +1,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace H3MP.Utils
+namespace H3MP.Models
 {
 	public readonly struct Key32 : IEquatable<Key32>
 	{

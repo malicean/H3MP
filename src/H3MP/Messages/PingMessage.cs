@@ -10,21 +10,21 @@ namespace H3MP.Messages
 		/// <summary>
 		///		The client's time at the instant the message was sent.
 		/// </summary>
-		public double ClientTime { get; private set; }
+		public double Timestamp { get; private set; }
 
-		private PingMessage(double time)
+		public PingMessage(double time)
 		{
-			ClientTime = time;
+			Timestamp = time;
 		}
 
 		public void Deserialize(NetDataReader reader)
 		{
-			ClientTime = reader.GetDouble();
+			Timestamp = reader.GetDouble();
 		}
 
 		public void Serialize(NetDataWriter writer)
 		{
-			writer.Put(ClientTime);
+			writer.Put(Timestamp);
 		}
 	}
 }

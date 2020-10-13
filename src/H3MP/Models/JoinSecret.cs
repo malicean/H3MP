@@ -2,7 +2,7 @@ using System;
 using System.Net;
 using System.Security.Cryptography;
 
-namespace H3MP.Utils
+namespace H3MP.Models
 {
 	public readonly struct JoinSecret
 	{
@@ -61,7 +61,7 @@ namespace H3MP.Utils
 
         public override string ToString()
         {
-            return Version.ToString() + " " + EndPoint.Address + " " + EndPoint.Port + " " + Key;
+            return Version + " " + EndPoint.Address + " " + EndPoint.Port + " " + Key;
         }
     
 	}

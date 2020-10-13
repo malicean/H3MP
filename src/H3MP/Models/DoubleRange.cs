@@ -1,6 +1,6 @@
 using System;
 
-namespace H3MP.Utils
+namespace H3MP.Models
 {
 	public readonly struct DoubleRange
 	{

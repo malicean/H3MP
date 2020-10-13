@@ -4,15 +4,17 @@ using System.Net;
 using BepInEx.Logging;
 using Discord;
 using H3MP.Messages;
+using H3MP.Models;
 using H3MP.Networking;
 using H3MP.Utils;
 using LiteNetLib;
+using LiteNetLib.Utils;
 
-namespace H3MP
+namespace H3MP.Peers
 {
     internal delegate void OnH3ClientDisconnect(DisconnectInfo info);
 
-    public class H3Client : Client<H3Client>
+    public class H3Client : Client<H3Client>, IRenderUpdatable
     {
         // All the scenes with rich presence assets and their names.
         private static readonly Dictionary<string, string> _sceneNames = new Dictionary<string, string>
@@ -27,6 +29,7 @@ namespace H3MP
         private readonly OnH3ClientDisconnect _onDisconnected;
 
         private readonly LoopTimer _timer;
+        private readonly Dictionary<byte, Puppet> _players;
 
         private ServerTime _time;
 
@@ -42,6 +45,7 @@ namespace H3MP
             _onDisconnected = onDisconnected;
 
             _timer = new LoopTimer(2);
+            _players = new Dictionary<byte, Puppet>();
         }
 
         public override void Update()
@@ -51,6 +55,14 @@ namespace H3MP
             if (_timer.TryReset())
             {
                 Server.Send(PingMessage.Now);
+            }
+        }
+
+        public void RenderUpdate()
+        {
+            foreach (var player in _players.Values)
+            {
+                player.RenderUpdate();
             }
         }
 
@@ -67,7 +79,7 @@ namespace H3MP
             });
         }
 
-        internal static void OnServerPong(H3Client self, Peer peer, PongMessage message)
+        internal static void OnServerPong(H3Client self, Peer peer, Timestamped<PingMessage> message)
         {
             if (self._time is null)
             {
@@ -144,6 +156,27 @@ namespace H3MP
 
                 return x;
             });
+        }
+
+        internal static void OnPlayerJoin(H3Client self, Peer peer, PlayerJoinMessage message)
+        {
+            var puppet = new Puppet(self._time);
+            puppet.ProcessTransforms(message.Transforms);
+
+            self._players.Add(message.ID, puppet);
+        }
+
+        internal static void OnPlayerLeave(H3Client self, Peer peer, PlayerLeaveMessage message)
+        {
+            self._players.Remove(message.ID);
+        }
+
+        internal static void OnPlayersMove(H3Client self, Peer peer, PlayerMovesMessage message)
+        {
+            foreach (KeyValuePair<byte, Timestamped<PlayerTransformsMessage>> delta in message.Players)
+            {
+                self._players[delta.Key].ProcessTransforms(delta.Value);
+            }
         }
 
         internal class Events : IClientEvents<H3Client>
