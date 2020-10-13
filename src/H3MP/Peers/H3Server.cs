@@ -31,6 +31,7 @@ namespace H3MP.Peers
         {
             _log = log;
             _config = config;
+            _peerIDs = new Dictionary<Peer, byte>();
             _husks = new Dictionary<byte, Husk>();
 
             PartyID = Key32.FromRandom(rng);
