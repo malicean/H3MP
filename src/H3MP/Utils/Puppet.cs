@@ -25,7 +25,8 @@ namespace H3MP
             _handLeft.parent = _head;
             _handRight.parent = _head;
 
-            var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => time.Now, 1);
+            _time = time;
+            var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => _time.Now, 1);
             _snapshots = new Snapshots<PlayerTransformsMessage>(killer);
         }
 
