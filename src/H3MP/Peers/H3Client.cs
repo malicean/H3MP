@@ -35,8 +35,8 @@ namespace H3MP.Peers
 			//["OmnisequencerTesting3"] = "" is this an accessible scene?
 			["ProvingGround"] = "Proving Grounds",
 			["SniperRange"] = "Sniper Range",
-			["ReturnOfTheRotwieners"] = "Rise of the Rotwieners",
-			["RotWienersStagingScene"] = "Starting Rise of the Rotwieners",
+			["ReturnOfTheRotwieners"] = "Return of the Rotwieners",
+			["RotWienersStagingScene"] = "Starting Return of the Rotwieners",
 			["SamplerPlatter"] = "Sampler Platter",
 			["TakeAndHold_1"] = "Take & Hold Containment",
 			["TakeAndHold_Lobby_2"] = "Take & Hold Lobby",
