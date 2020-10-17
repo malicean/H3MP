@@ -29,9 +29,9 @@ namespace H3MP.Networking
 		}
 
 		public virtual void Update()
-        {
-            _peer.Update();
-        }
+		{
+			_peer.Update();
+		}
 
 		public void Broadcast<TMessage>(TMessage message) where TMessage : INetSerializable
 		{
@@ -54,9 +54,9 @@ namespace H3MP.Networking
 			}
 		}
 
-        public virtual void Dispose()
-        {
-            _peer.Dispose();
-        }
-    }
+		public virtual void Dispose()
+		{
+			_peer.Dispose();
+		}
+	}
 }

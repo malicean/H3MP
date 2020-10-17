@@ -78,14 +78,14 @@ namespace H3MP.Networking
 			}
 		}
 
-        public void OnPeerConnected(Peer peer)
-        {
-            _events.OnClientConnected(_server, peer);
-        }
+		public void OnPeerConnected(Peer peer)
+		{
+			_events.OnClientConnected(_server, peer);
+		}
 
-        public void OnPeerDisconnected(Peer peer, DisconnectInfo info)
-        {
-            _events.OnClientDisconnected(_server, peer, info);
-        }
-    }
+		public void OnPeerDisconnected(Peer peer, DisconnectInfo info)
+		{
+			_events.OnClientDisconnected(_server, peer, info);
+		}
+	}
 }

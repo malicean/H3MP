@@ -5,16 +5,16 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Networking
 {
-    public delegate void ReaderHandler<in TPeer>(TPeer self, Peer peer, NetDataReader reader);
+	public delegate void ReaderHandler<in TPeer>(TPeer self, Peer peer, NetDataReader reader);
 
 	public delegate void MessageHandler<in TPeer, in TMessage>(TPeer self, Peer peer, TMessage message);
 
 	public class UniversalMessageList<TClient, TServer>
 	{
-        private readonly ManualLogSource _clientLog;
+		private readonly ManualLogSource _clientLog;
 		private readonly ManualLogSource _serverLog;
 
-        private readonly ManagerMessageListData<TClient> _client;
+		private readonly ManagerMessageListData<TClient> _client;
 		private readonly ManagerMessageListData<TServer> _server;
 
 		private byte _maxChannel;
@@ -35,8 +35,8 @@ namespace H3MP.Networking
 		}
 
 		private ReaderHandler<TPeer> CreateReaderFrom<TPeer, TMessage>(MessageHandler<TPeer, TMessage> handler, ManualLogSource log) where TMessage : INetSerializable, new()
-        {
-            return (self, peer, reader) => 
+		{
+			return (self, peer, reader) => 
 			{
 				if (!reader.TryGet<TMessage>(out var message))
 				{
@@ -46,7 +46,7 @@ namespace H3MP.Networking
 
 				handler(self, peer, message);
 			};
-        }
+		}
 
 		private void Add<TSender, TReceiver, TMessage>(ManagerMessageListData<TSender> sender, ManagerMessageListData<TReceiver> receiver, ManualLogSource receiverLog, byte channel, DeliveryMethod delivery, MessageHandler<TReceiver, TMessage> handler) where TMessage : INetSerializable, new()
 		{
@@ -60,7 +60,7 @@ namespace H3MP.Networking
 			_maxChannel = Math.Max(_maxChannel, channel);
 		}
 
-        public UniversalMessageList<TClient, TServer> AddClient<TMessage>(byte channel, DeliveryMethod delivery, MessageHandler<TServer, TMessage> handler) where TMessage : INetSerializable, new()
+		public UniversalMessageList<TClient, TServer> AddClient<TMessage>(byte channel, DeliveryMethod delivery, MessageHandler<TServer, TMessage> handler) where TMessage : INetSerializable, new()
 		{
 			Add<TClient, TServer, TMessage>(_client, _server, _serverLog, channel, delivery, handler);
 
@@ -80,5 +80,5 @@ namespace H3MP.Networking
 
 			public PeerMessageList<TPeer> Messages = new PeerMessageList<TPeer>();
 		}
-    }
+	}
 }

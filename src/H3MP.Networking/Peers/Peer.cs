@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace H3MP.Networking
 {
-    public class Peer
+	public class Peer
 	{
 		private readonly NetPeer _peer;
 		private readonly Dictionary<Type, MessageDefinition> _definitions;
@@ -31,10 +31,10 @@ namespace H3MP.Networking
 			}
 		}
 
-        public override int GetHashCode()
-        {
-            return _peer.Id;
-        }
+		public override int GetHashCode()
+		{
+			return _peer.Id;
+		}
 
 		public override string ToString()
 		{

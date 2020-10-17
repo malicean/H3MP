@@ -32,13 +32,13 @@ namespace H3MP.Networking
 		}
 
 		public virtual void Update()
-        {
-            _peer.Update();
-        }
+		{
+			_peer.Update();
+		}
 
-        public virtual void Dispose()
-        {
-            _peer.Dispose();
-        }
-    }
+		public virtual void Dispose()
+		{
+			_peer.Dispose();
+		}
+	}
 }

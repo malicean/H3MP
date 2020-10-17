@@ -21,12 +21,12 @@ using H3MP.Models;
 
 namespace H3MP
 {
-    [BepInPlugin("ash.h3mp", "H3MP", "0.0.0")]
+	[BepInPlugin("ash.h3mp", "H3MP", "0.0.0")]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
 	{
 		[DllImport("kernel32.dll")]
-    	private static extern IntPtr LoadLibrary(string path);
+		private static extern IntPtr LoadLibrary(string path);
 
 		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
 		private const uint STEAM_APP_ID = 450540; // H3VR
@@ -50,7 +50,7 @@ namespace H3MP
 
 		internal ManualLogSource HarmonyLogger => _harmonyLog;
 
-        public Discord.Discord DiscordClient { get; }
+		public Discord.Discord DiscordClient { get; }
 
 		public ActivityManager ActivityManager { get; }
 
@@ -60,7 +60,7 @@ namespace H3MP
 
 		public H3Client Client { get; private set; }
 
-        public Plugin()
+		public Plugin()
 		{
 			_version = Info.Metadata.Version;
 			_name = Info.Metadata.Name;
@@ -152,46 +152,46 @@ namespace H3MP
 			}
 		}
 
-        private void DiscordCallbackHandler(Result result)
-        {
+		private void DiscordCallbackHandler(Result result)
+		{
 			if (result == Result.Ok)
 			{
 				return;
 			}
 
 			Debug.LogError($"Discord activity update failed ({result})");
-        }
+		}
 
-        private void OnJoin(string rawSecret)
-        {
-            const string errorPrefix = "Failed to handle join event: ";
+		private void OnJoin(string rawSecret)
+		{
+			const string errorPrefix = "Failed to handle join event: ";
 
-            _discordLog.LogDebug($"Received Discord join secret \"{rawSecret}\"");
+			_discordLog.LogDebug($"Received Discord join secret \"{rawSecret}\"");
 
-            bool success = JoinSecret.TryParse(rawSecret, out var secret, out var version);
-            if (!_version.CompatibleWith(version))
-            {
-                _discordLog.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
-                return;
-            }
+			bool success = JoinSecret.TryParse(rawSecret, out var secret, out var version);
+			if (!_version.CompatibleWith(version))
+			{
+				_discordLog.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
+				return;
+			}
 
-            if (!success)
-            {
-                _discordLog.LogError(errorPrefix + $"failed to parse join secret \"{rawSecret}\"");
-                return;
-            }
+			if (!success)
+			{
+				_discordLog.LogError(errorPrefix + $"failed to parse join secret \"{rawSecret}\"");
+				return;
+			}
 
 			ConnectRemote(secret);
-        }
+		}
 
-        private void OnJoinRequested(ref User user)
-        {
-            // All friends can join
-            // TODO: Change this.
-            ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
-        }
+		private void OnJoinRequested(ref User user)
+		{
+			// All friends can join
+			// TODO: Change this.
+			ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+		}
 
-        private IEnumerator _HostUnsafe()
+		private IEnumerator _HostUnsafe()
 		{
 			var config = _config.Host;
 
@@ -249,10 +249,10 @@ namespace H3MP
 		}
 
 		private void Connect(IPEndPoint endPoint, Key32 key, bool isHost, OnH3ClientDisconnect onDisconnect)
-        {
+		{
 			_clientLog.LogInfo($"Connecting to {endPoint}...");
-            Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, _version, isHost, endPoint, new ConnectionRequestMessage(key), onDisconnect);
-        }
+			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, _version, isHost, endPoint, new ConnectionRequestMessage(key), onDisconnect);
+		}
 
 		private void ConnectLocal(IPEndPoint endPoint, Key32 key)
 		{
@@ -321,5 +321,5 @@ namespace H3MP
 			Server?.Dispose();
 			Client?.Dispose();
 		}
-    }
+	}
 }

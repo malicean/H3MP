@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace H3MP.Networking
 {
-    internal class SelfPeer<TPeer> : IUpdatable, IDisposable
+	internal class SelfPeer<TPeer> : IUpdatable, IDisposable
 	{
 		public NetManager Manager { get; }
 

@@ -7,20 +7,20 @@ using UnityEngine.SceneManagement;
 
 namespace H3MP.HarmonyPatches
 {
-    [HarmonyPatch(typeof(SteamVR_LoadLevel), nameof(SteamVR_LoadLevel.Begin))]
-    internal class LoadLevelPatch
-    {
-        private static string _currentName;
+	[HarmonyPatch(typeof(SteamVR_LoadLevel), nameof(SteamVR_LoadLevel.Begin))]
+	internal class LoadLevelPatch
+	{
+		private static string _currentName;
 
-        public static string CurrentName => _currentName ?? (_currentName = SceneManager.GetActiveScene().name);
+		public static string CurrentName => _currentName ?? (_currentName = SceneManager.GetActiveScene().name);
 
 
-        private static void Prefix(string levelName) 
-        {
-            Plugin.Instance.HarmonyLogger.LogDebug($"Loading {levelName ?? "NULL"}...");
+		private static void Prefix(string levelName) 
+		{
+			Plugin.Instance.HarmonyLogger.LogDebug($"Loading {levelName ?? "NULL"}...");
 
-            _currentName = levelName;
-            Plugin.Instance.Server?.Broadcast(new LevelChangeMessage(levelName));
-        }
-    }
+			_currentName = levelName;
+			Plugin.Instance.Server?.Broadcast(new LevelChangeMessage(levelName));
+		}
+	}
 }

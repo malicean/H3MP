@@ -32,9 +32,9 @@ namespace H3MP.Networking
 		}
 
 		public void OnConnectionRequest(ConnectionRequest request)
-        {
-            _events.OnConnectionRequest(request);
-        }
+		{
+			_events.OnConnectionRequest(request);
+		}
 
 		public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
 		{
@@ -88,5 +88,5 @@ namespace H3MP.Networking
 				_peers.Remove(rawPeer);
 			}
 		}
-    }
+	}
 }
