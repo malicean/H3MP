@@ -8,9 +8,9 @@ namespace H3MP
 {
 	public class Puppet : IRenderUpdatable, IDisposable
 	{
-		private readonly Transform _head;
-		private readonly Transform _handLeft;
-		private readonly Transform _handRight;
+		private readonly GameObject _head;
+		private readonly GameObject _handLeft;
+		private readonly GameObject _handRight;
 
 		private readonly ServerTime _time;
 		private readonly Snapshots<PlayerTransformsMessage> _snapshots;
@@ -19,12 +19,12 @@ namespace H3MP
 
 		internal Puppet(ServerTime time)
 		{
-			_head = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
-			_handLeft = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
-			_handRight = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
+			_head = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			_handLeft = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			_handRight = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
-			_handLeft.parent = _head;
-			_handRight.parent = _head;
+			_handLeft.transform.parent = _head.transform;
+			_handRight.transform.parent = _head.transform;
 
 			_time = time;
 			var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => _time.Now, 1);
@@ -40,9 +40,9 @@ namespace H3MP
 		{
 			var snapshot = _snapshots[_time.Now - Interp];
 
-			snapshot.Head.Apply(_head);
-			snapshot.HandLeft.Apply(_head);
-			snapshot.HandRight.Apply(_head);
+			snapshot.Head.Apply(_head.transform);
+			snapshot.HandLeft.Apply(_handLeft.transform);
+			snapshot.HandRight.Apply(_handRight.transform);
 		}
 
 		public void Dispose()
