@@ -96,6 +96,11 @@ namespace H3MP.Peers
         {
             base.Dispose();
 
+            foreach (var player in _players.Values)
+            {
+                player.Dispose();
+            }
+
             _discord.Update(x => 
             {
                 x.Party = default;

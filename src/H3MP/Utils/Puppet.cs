@@ -1,3 +1,4 @@
+using System;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Utils;
@@ -5,7 +6,7 @@ using UnityEngine;
 
 namespace H3MP
 {
-    public class Puppet : IRenderUpdatable
+    public class Puppet : IRenderUpdatable, IDisposable
     {
         private readonly Transform _head;
         private readonly Transform _handLeft;
@@ -42,6 +43,11 @@ namespace H3MP
             snapshot.Head.Apply(_head);
             snapshot.HandLeft.Apply(_head);
             snapshot.HandRight.Apply(_head);
+        }
+
+        public void Dispose()
+        {
+            GameObject.Destroy(_head);
         }
     }
 }
