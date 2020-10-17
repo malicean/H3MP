@@ -20,8 +20,8 @@ namespace H3MP.Peers
 		private static readonly Dictionary<string, string> _sceneNames = new Dictionary<string, string>
 		{
 			["MainMenu3"] = "Main Menu",
-			["ArizonaTargets"] = "Arizona Range - Day",
-			["ArizonaTargets_Night"] = "Arizona Range - Night",
+			["ArizonaTargets"] = "Arizona Range",
+			["ArizonaTargets_Night"] = "Arizona at Night",
 			["BreachAndClear_TestScene1"] = "Breaching Proto",
 			["Cappocolosseum"] = "Cappocolosseum",
 			["GrenadeSkeeball"] = "Boomskee",
@@ -31,7 +31,7 @@ namespace H3MP.Peers
 			["MeatGrinder_StartingScene"] = "Starting Meat Grinder",
 			["MF2_MainScene"] = "Meat Fortress 2",
 			["ObstacleCourseScene1"] = "The Gunnasium",
-			["ObstacleCourseScene2"] = "Mini-Arena",
+			["ObstacleCourseScene2"] = "Arena Proto",
 			["OmnisequencerTesting3"] = "M.E.A.T.S.",
 			["ProvingGround"] = "Proving Grounds",
 			["SniperRange"] = "Sniper Range",
@@ -43,7 +43,7 @@ namespace H3MP.Peers
 			["TakeAndHoldClassic"] = "Take & Hold",
 			["TakeAndHold_WarIsForWieners"] = "Take & Hold - War is for Wieners",
 			["Testing3_LaserSword"] = "Arcade Proto",
-			["TileSetTest1"] = "Arena Proto",
+			["TileSetTest1"] = "Mini-Arena",
 			["TileSetTest_BigHallPerfTest"] = "Take & Hold (Legacy)",
 			["WarehouseRange_Rebuilt"] = "Warehouse Range",
 			["Wurstwurld1"] = "Wurstwurld",
