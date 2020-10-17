@@ -140,9 +140,9 @@ namespace H3MP.Peers
 				}
 
 				// Initialize existing puppets on just-joined client
-				foreach (var player in server._husks.Values) 
+				foreach (KeyValuePair<byte, Husk> husk in server._husks) 
 				{
-					peer.Send(player.Latest);
+					peer.Send(new PlayerJoinMessage(husk.Key, husk.Value.Latest));
 				}
 
 				server._peerIDs.Add(peer, id);
