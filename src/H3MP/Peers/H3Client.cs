@@ -199,7 +199,14 @@ namespace H3MP.Peers
 
 		internal static void OnPlayerLeave(H3Client self, Peer peer, PlayerLeaveMessage message)
 		{
-			self._players.Remove(message.ID);
+			var id = message.ID;
+			if (!self._players.TryGetValue(id, out var player))
+			{
+				return;
+			}
+
+			player.Dispose();
+			self._players.Remove(id);
 		}
 
 		internal static void OnPlayersMove(H3Client self, Peer peer, PlayerMovesMessage message)
