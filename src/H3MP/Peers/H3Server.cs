@@ -62,7 +62,7 @@ namespace H3MP.Peers
 
         internal static void OnPlayerMove(H3Server self, Peer peer, Timestamped<PlayerTransformsMessage> message)
         {
-            self._husks[self._peerIDs[peer]].Delta = message;
+            self._husks[self._peerIDs[peer]].Latest = message;
         }
 
         private class Events : IServerEvents<H3Server>
@@ -127,7 +127,7 @@ namespace H3MP.Peers
                 peer.Send(new PartyInitMessage(server.PartyID, size, server.Secret));
                 peer.Send(new LevelChangeMessage(LoadLevelPatch.CurrentName));
 
-                // upsize party
+                // Upsize party
                 server.BroadcastExcept(peer, new PartyChangeMessage(count));
 
                 byte id;
@@ -139,15 +139,22 @@ namespace H3MP.Peers
                     }
                 }
 
+                // Initialize existing puppets on just-joined client
+                foreach (var player in server._husks.Values) 
+                {
+                    peer.Send(player.Latest);
+                }
+
                 server._peerIDs.Add(peer, id);
                 server._husks.Add(id, new Husk());
 
+                // Initialize just-joined puppet on other clients
                 server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<PlayerTransformsMessage>.Now(default)));
             }
 
             public void OnClientDisconnected(H3Server server, Peer peer, DisconnectInfo info)
             {
-                // downsize party
+                // Downsize party
                 server.Broadcast(new PartyChangeMessage(server.ClientsCount));
 
                 var id = server._peerIDs[peer];

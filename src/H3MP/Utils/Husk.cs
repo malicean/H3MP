@@ -4,6 +4,30 @@ namespace H3MP
 {
     public class Husk
     {
-        public Timestamped<PlayerTransformsMessage>? Delta { get; set; }
+        private bool _moved;
+        public Timestamped<PlayerTransformsMessage>? Delta 
+        {
+            get
+            {
+                if (!_moved) 
+                {
+                    return null;
+                }
+
+                _moved = false;
+                return _latest;
+            }
+        }
+
+        private Timestamped<PlayerTransformsMessage> _latest;
+        public Timestamped<PlayerTransformsMessage> Latest 
+        {
+            get => _latest;
+            set
+            {
+                _moved = true;
+                _latest = value;
+            }
+        }
     }
 }
