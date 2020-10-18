@@ -12,12 +12,14 @@ namespace H3MP
 		private readonly GameObject _handLeft;
 		private readonly GameObject _handRight;
 
-		private readonly ServerTime _time;
+		private readonly Func<ServerTime> _timeGetter;
 		private readonly Snapshots<PlayerTransformsMessage> _snapshots;
+
+		private ServerTime Time => _timeGetter();
 
 		public double Interp { get; set; } = 0.1;
 
-		internal Puppet(ServerTime time)
+		internal Puppet(Func<ServerTime> timeGetter)
 		{
 			_head = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			_handLeft = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -26,8 +28,10 @@ namespace H3MP
 			_handLeft.transform.parent = _head.transform;
 			_handRight.transform.parent = _head.transform;
 
-			_time = time;
-			var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => _time.Now, 1);
+			GameObject.DontDestroyOnLoad(_head);
+
+			_timeGetter = timeGetter;
+			var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => Time.Now, 1);
 			_snapshots = new Snapshots<PlayerTransformsMessage>(killer);
 		}
 
@@ -38,7 +42,13 @@ namespace H3MP
 
 		public void RenderUpdate()
 		{
-			var snapshot = _snapshots[_time.Now - Interp];
+			var time = Time;
+			if (time is null)
+			{
+				return;
+			}
+
+			var snapshot = _snapshots[time.Now - Interp];
 
 			snapshot.Head.Apply(_head.transform);
 			snapshot.HandLeft.Apply(_handLeft.transform);
