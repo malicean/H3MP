@@ -51,7 +51,7 @@ namespace H3MP
 			var baseMat = _head.GetComponent<MeshRenderer>().material;
 			var matLeft = new Material(baseMat);
 			var matRight = new Material(baseMat);
-			
+
 			matLeft.color = Color.red;
 			matRight.color = Color.blue;
 			
@@ -73,7 +73,7 @@ namespace H3MP
 			if (messageDelay > interpDelay)
 			{
 				_interpDelay.Reset(messageDelay);
-				_log.LogDebug($"A puppet's interpolation delay jumped ({interpDelay} -> {messageDelay})");
+				_log.LogDebug($"A puppet's interpolation delay jumped ({interpDelay * 1000:N0}ms -> {messageDelay * 1000:N0}ms)");
 			}
 			else
 			{
