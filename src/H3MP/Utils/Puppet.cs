@@ -40,12 +40,18 @@ namespace H3MP
 			// Trans-scene
 			GameObject.DontDestroyOnLoad(_head);
 
+			// Remove colliders
+			GameObject.Destroy(_head.GetComponent<Collider>());
+			GameObject.Destroy(_handLeft.GetComponent<Collider>());
+			GameObject.Destroy(_handRight.GetComponent<Collider>());
+
 			// Visuals
 			_head.transform.localScale = Vector3.one * 0.1f;
+
 			var baseMat = _head.GetComponent<MeshRenderer>().material;
 			var matLeft = new Material(baseMat);
 			var matRight = new Material(baseMat);
-
+			
 			matLeft.color = Color.red;
 			matRight.color = Color.blue;
 			
