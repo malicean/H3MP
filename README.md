@@ -38,7 +38,7 @@ There are no prebuilt binaries because this mod is not ready. **You must build i
 5. Ensure you have 7777 UDP open if you are hosting.
 
 6. To host, send an invite via Discord after loading the main menu. 
-   - Players can join on a running instance of H3VR
+   - Players can join on a running instance of H3VR.
    - Players can also join without H3VR running, the game will launch and connect.
 
 7. Enjoy **barely functional** multiplayer.
