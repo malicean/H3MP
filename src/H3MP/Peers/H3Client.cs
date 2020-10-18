@@ -23,7 +23,6 @@ namespace H3MP.Peers
 
 		private readonly OnH3ClientDisconnect _onDisconnected;
 
-		private readonly LoopTimer _timer;
 		private readonly Dictionary<byte, Puppet> _players;
 
 		private ServerTime _time;
@@ -38,7 +37,6 @@ namespace H3MP.Peers
 
 			_onDisconnected = onDisconnected;
 
-			_timer = new LoopTimer(2);
 			_players = new Dictionary<byte, Puppet>();
 		}
 
@@ -46,13 +44,10 @@ namespace H3MP.Peers
 		{
 			base.Update();
 
-			if (_timer.TryReset())
-			{
-				Server.Send(PingMessage.Now);
-			}
-
 			if (!(_time is null))
 			{
+				_time.Update();
+
 				var player = GM.CurrentPlayerBody;
 				var transforms = new PlayerTransformsMessage(player.Head, player.LeftHand, player.RightHand);
 				var timestamped = new Timestamped<PlayerTransformsMessage>(_time.Now, transforms);

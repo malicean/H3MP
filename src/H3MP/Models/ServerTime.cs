@@ -20,15 +20,25 @@ namespace H3MP.Models
 		///		When it is >0.5, latest offset matters more.
 		///		When it is <0.5, history offset matters more.
 		/// </summary>
-		private const double OFFSET_EMA_ALPHA = 2d / 10;
-		private const double INTERVAL = 3;
+		private const double OFFSET_EMA_ALPHA = 1d / 5;
+
+		private const double PING_INTERVAL = 3;
+		private const double HEALTH_INTERVAL = 60;
 
 		private readonly ManualLogSource _log;
 		private readonly Peer _server;
-		private readonly LoopTimer _timer;
 
-		private ExponentialMovingAverage _offsetAverage;
+		private readonly LoopTimer _pingTimer;
+		private readonly LoopTimer _healthTimer;
+
+		private readonly ExponentialMovingAverage _offsetAverage;
+		private readonly ExponentialMovingAverage _rttAverage;
+
 		private DoubleRange _offsetBounds;
+		private DoubleRange _rttBounds;
+
+		private byte _sent;
+		private byte _received;
 
 		/// <summary>
 		///		The <see cref="LocalTime.Now" /> value now, in real time, on the server.
@@ -39,10 +49,15 @@ namespace H3MP.Models
 		{
 			_log = log;
 			_server = server;
-			_timer = new LoopTimer(INTERVAL);
 
-			var offset = ProcessPong(seed, out _offsetBounds);
+			_pingTimer = new LoopTimer(PING_INTERVAL);
+			_healthTimer = new LoopTimer(HEALTH_INTERVAL);
+
+			var offset = ProcessPong(seed, out var rtt, out _offsetBounds);
+			_rttBounds = new DoubleRange(rtt, rtt);
+
 			_offsetAverage = new ExponentialMovingAverage(offset, OFFSET_EMA_ALPHA);
+			_rttAverage = new ExponentialMovingAverage(rtt, OFFSET_EMA_ALPHA);
 		}
 
 		/// <summary>
@@ -51,25 +66,40 @@ namespace H3MP.Models
 		/// <param name="server">The server peer.</param>
 		public void Update()
 		{
-			if (_timer is null || !_timer.TryReset())
+			if (_healthTimer.TryReset())
 			{
-				return;
+				var lost = _sent - _received;
+				var loss = (double) lost / _sent;
+
+				_log.LogDebug("=== CONNECTION HEALTH REPORT ===");
+				_log.LogDebug($"RTT: {_rttAverage.Value * 1000:N0}ms");
+				_log.LogDebug($"Packet loss: {loss:P1} ({lost} / {_sent})");
+				_log.LogDebug($"Clock offset: {_offsetBounds.Minimum * 1000:N0}ms <= est. {_offsetAverage.Value * 1000:N0}ms <= {_offsetBounds.Maximum * 1000:N0}ms");
+				_log.LogDebug("=== END HEALTH REPORT ===");
+
+				_sent = 0;
+				_received = 0;
 			}
 
-			_server.Send(new PingMessage());
+			if (_pingTimer.TryReset())
+			{
+				_server.Send(PingMessage.Now);
+				++_sent;
+			}
 		}
 
-		private double ProcessPong(Timestamped<PingMessage> message, out DoubleRange bounds)
+		private double ProcessPong(Timestamped<PingMessage> message, out double rtt, out DoubleRange bounds)
 		{
 			var now = LocalTime.Now;
 
 			var server = message.Timestamp;
 			var client = message.Content.Timestamp;
+			rtt = now - client;
 
 			// The difference between the reply time locally (estimated) and remotely (known).
 			// Calculated by getting the instant equally between when the message was sent and when it was received.
 			var offset = client +
-				(now - client) * 0.5 // estimated time until server response
+				rtt * 0.5 // estimated time until server response
 				- server;
 
 			// Basically squeeze theorem: if we absolutely know the range of the real offset, keep shrinking it until the difference is infinitely small (epsilon).
@@ -85,20 +115,22 @@ namespace H3MP.Models
 		/// <param name="message">The times sent by the server, including the original send time.</param>
 		public void ProcessPong(Timestamped<PingMessage> message)
 		{
-			var offset = ProcessPong(message, out var offsetBounds);
+			++_received;
+
+			var offset = ProcessPong(message, out var rtt, out var offsetBounds);
 
 			_offsetBounds = _offsetBounds.Clamp(offsetBounds);
 
 			if (!_offsetBounds.IsWithin(_offsetAverage.Value)) // Average does not exist or is out of known bounds.
 			{
-				_offsetAverage = new ExponentialMovingAverage(_offsetBounds.Clamp(offset), OFFSET_EMA_ALPHA);
+				_offsetAverage.Reset(_offsetBounds.Clamp(offset));
 			}
 			else if (_offsetBounds.IsWithin(offset)) // New offset is within bounds.
 			{
 				_offsetAverage.Push(offset);
 			}
 
-			_log.LogDebug($"Offset info: {_offsetBounds.Minimum:.000}s <= est. {_offsetAverage.Value:.000}s <= {_offsetBounds.Maximum:.000}s");
+			_rttAverage.Push(rtt);
 		}
 	}
 }

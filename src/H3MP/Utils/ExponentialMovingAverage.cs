@@ -35,5 +35,10 @@ namespace H3MP.Utils
 			//
 			Value = (value - Value) * _alpha + Value;
 		}
+
+		public void Reset(double value)
+		{
+			Value = value;
+		}
 	}
 }
