@@ -64,12 +64,14 @@
     <Compile Include="Models\JoinSecret.cs" />
     <Compile Include="Messages\PartyChangeMessage.cs" />
     <Compile Include="Messages\PartyInitMessage.cs" />
+    <Compile Include="HarmonyPatches\HarmonyState.cs" />
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
     <Compile Include="Peers\H3Client.cs" />
     <Compile Include="Peers\H3Server.cs" />
     <Compile Include="Configs\HostBindingConfig.cs" />
     <Compile Include="Configs\HostConfig.cs" />
-    <Compile Include="Configs\HostPublicConfig.cs" />
+    <Compile Include="Configs\HostPublicBindingConfig.cs" />
+    <Compile Include="Configs\HostPermissionConfig.cs" />
     <Compile Include="Configs\RootConfig.cs" />
     <Compile Include="Enums\JoinError.cs" />
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />

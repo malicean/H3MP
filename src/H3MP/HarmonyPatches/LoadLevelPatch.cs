@@ -10,17 +10,25 @@ namespace H3MP.HarmonyPatches
 	[HarmonyPatch(typeof(SteamVR_LoadLevel), nameof(SteamVR_LoadLevel.Begin))]
 	internal class LoadLevelPatch
 	{
-		private static string _currentName;
-
-		public static string CurrentName => _currentName ?? (_currentName = SceneManager.GetActiveScene().name);
-
-
-		private static void Prefix(string levelName) 
+		private static bool Prefix(string levelName) 
 		{
-			Plugin.Instance.HarmonyLogger.LogDebug($"Loading {levelName ?? "NULL"}...");
+			var plugin = Plugin.Instance;
+			var log = HarmonyState.Log;
 
-			_currentName = levelName;
-			Plugin.Instance.Server?.Broadcast(new LevelChangeMessage(levelName));
+			if (HarmonyState.LockLoadLevel)
+			{
+				log.LogDebug($"Blocking level load ({levelName}) and sending request to server...");
+				plugin.Client.Server.Send(new LevelChangeMessage(levelName));
+
+				return false;
+			}
+			else
+			{
+				log.LogDebug($"Level load triggered: {levelName}");
+			}
+
+			HarmonyState.CurrentLevel = levelName;
+			return true;
 		}
 	}
 }

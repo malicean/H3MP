@@ -19,23 +19,31 @@ namespace H3MP.Peers
 	{
 		private readonly ManualLogSource _log;
 		private readonly HostConfig _config;
+		private readonly Key32 _partyID;
+
 		private readonly Dictionary<Peer, byte> _peerIDs;
 		private readonly Dictionary<byte, Husk> _husks;
 
-		private Key32 PartyID { get; }
+		private int _selfID;
 
 		public JoinSecret Secret { get; }
+
+		public Key32 HostKey { get; }
 
 		internal H3Server(ManualLogSource log, RandomNumberGenerator rng, PeerMessageList<H3Server> messages, byte channelsCount, Version version, HostConfig config, IPEndPoint publicEndPoint) 
 			: base(log, messages, channelsCount, new Events(messages.Definitions[typeof(Timestamped<PingMessage>)]), version, config.Binding.IPv4.Value, config.Binding.IPv6.Value, config.Binding.Port.Value)
 		{
 			_log = log;
 			_config = config;
-			_peerIDs = new Dictionary<Peer, byte>();
-			_husks = new Dictionary<byte, Husk>();
+			_partyID = Key32.FromRandom(rng);
 
-			PartyID = Key32.FromRandom(rng);
+			_peerIDs = new Dictionary<Peer, byte>();
+			_husks = new Dictionary<byte, Husk>();;
+
+			_selfID = -1;
+
 			Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng));
+			HostKey = Key32.FromRandom(rng);
 		}
 
 		public override void Update()
@@ -80,6 +88,8 @@ namespace H3MP.Peers
 			}
 		}
 
+		private Husk this[Peer peer] => _husks[_peerIDs[peer]];
+
 		internal static void OnClientPing(H3Server self, Peer peer, PingMessage message)
 		{
 			peer.Send(Timestamped<PingMessage>.Now(message));
@@ -87,7 +97,34 @@ namespace H3MP.Peers
 
 		internal static void OnPlayerMove(H3Server self, Peer peer, Timestamped<PlayerTransformsMessage> message)
 		{
-			self._husks[self._peerIDs[peer]].Latest = message;
+			self[peer].Latest = message;
+		}
+
+		internal static void OnLevelChange(H3Server self, Peer peer, LevelChangeMessage message)
+		{
+			var husk = self[peer];
+			if (!husk.IsSelf) // self always has permissions
+			{
+				var config = self._config.Permissions;
+
+				// scene reload
+				if (HarmonyState.CurrentLevel == message.Name)
+				{
+					if (!config.SceneReloading.Value)
+					{
+						return;
+					}
+				}
+				else // scene change
+				{
+					if (!config.SceneChanging.Value)
+					{
+						return;
+					}
+				}
+			}
+
+			self.Broadcast(message);
 		}
 
 		private class Events : IServerEvents<H3Server>
@@ -123,7 +160,7 @@ namespace H3MP.Peers
 					return;
 				}
 
-				if (message.Key != server.Secret.Key)
+				if (message.AccessKey != server.Secret.Key)
 				{
 					server._log.LogWarning($"Join request {request.RemoteEndPoint} had an incorrect key.");
 
@@ -133,6 +170,10 @@ namespace H3MP.Peers
 				}
 
 				var peer = request.Accept();
+				if (message.HostKey == server.HostKey)
+				{
+					server._selfID = peer.Id;
+				}
 
 				using (WriterPool.Instance.Borrow(out var writer))
 				{
@@ -149,12 +190,13 @@ namespace H3MP.Peers
 					MaxSize = (byte) server._config.PlayerLimit.Value
 				};
 
-				peer.Send(new PartyInitMessage(server.PartyID, size, server.Secret));
-				peer.Send(new LevelChangeMessage(LoadLevelPatch.CurrentName));
+				peer.Send(new PartyInitMessage(server._partyID, size, server.Secret));
+				peer.Send(new LevelChangeMessage(HarmonyState.CurrentLevel));
 
 				// Upsize party
 				server.BroadcastExcept(peer, new PartyChangeMessage(count));
 
+				// Find first available player ID.
 				byte id;
 				for (id = 0; id < byte.MaxValue; ++id)
 				{
@@ -170,8 +212,10 @@ namespace H3MP.Peers
 					peer.Send(new PlayerJoinMessage(husk.Key, husk.Value.Latest));
 				}
 
+				bool isSelf = server._selfID == peer.ID;
+
 				server._peerIDs.Add(peer, id);
-				server._husks.Add(id, new Husk());
+				server._husks.Add(id, new Husk(isSelf));
 
 				// Initialize just-joined puppet on other clients
 				server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<PlayerTransformsMessage>.Now(default)));

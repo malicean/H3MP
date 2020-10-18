@@ -29,5 +29,12 @@ namespace H3MP
 				_latest = value;
 			}
 		}
+
+		public bool IsSelf { get; }
+
+		public Husk(bool isSelf)
+		{
+			IsSelf = isSelf;
+		}
 	}
 }

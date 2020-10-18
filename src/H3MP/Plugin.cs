@@ -21,21 +21,24 @@ using H3MP.Models;
 
 namespace H3MP
 {
-	[BepInPlugin("ash.h3mp", "H3MP", "0.0.0")]
+	[BepInPlugin(Plugin.GUID, Plugin.NAME, Plugin.VERSION)]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
 	{
-		[DllImport("kernel32.dll")]
-		private static extern IntPtr LoadLibrary(string path);
+		public const string GUID = "ash.h3mp";
+		public const string NAME = "H3MP";
+		public const string VERSION = "0.0.0";
 
 		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
 		private const uint STEAM_APP_ID = 450540; // H3VR
 
+		[DllImport("kernel32.dll")]
+		private static extern IntPtr LoadLibrary(string path);
+
 		// Unity moment
 		public static Plugin Instance { get; private set; }
 
-		private readonly System.Version _version;
-		private readonly string _name;
+		private readonly Version _version;
 
 		private readonly RootConfig _config;
 
@@ -44,11 +47,8 @@ namespace H3MP
 		private readonly ManualLogSource _clientLog;
 		private readonly ManualLogSource _serverLog;
 		private readonly ManualLogSource _discordLog;
-		private readonly ManualLogSource _harmonyLog;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
-
-		internal ManualLogSource HarmonyLogger => _harmonyLog;
 
 		public Discord.Discord DiscordClient { get; }
 
@@ -62,9 +62,6 @@ namespace H3MP
 
 		public Plugin()
 		{
-			_version = Info.Metadata.Version;
-			_name = Info.Metadata.Name;
-
 			Logger.LogDebug("Binding configs...");
 			{
 				TomlTypeConverter.AddConverter(typeof(IPAddress), new TypeConverter
@@ -78,12 +75,12 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing utilities...");
 			{
+				_version = new Version(VERSION);
 				_rng = RandomNumberGenerator.Create();
 
-				_clientLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-CL");
-				_serverLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-SV");
-				_discordLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-DC");
-				_harmonyLog = BepInEx.Logging.Logger.CreateLogSource(_name + "-HM");
+				_clientLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-CL");
+				_serverLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-SV");
+				_discordLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-DC");
 			}
 
 			Logger.LogDebug("Initializing Discord game SDK...");
@@ -133,6 +130,8 @@ namespace H3MP
 					.AddClient<PingMessage>(0, DeliveryMethod.Sequenced, H3Server.OnClientPing)
 					// Player movement
 					.AddClient<Timestamped<PlayerTransformsMessage>>(1, DeliveryMethod.Sequenced, H3Server.OnPlayerMove)
+					// Asset management
+					.AddClient<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Server.OnLevelChange)
 					// 
 					// =======
 					// Server
@@ -205,7 +204,7 @@ namespace H3MP
 			{
 				IPAddress publicAddress;
 				{
-					var getter = config.Public.GetAddress();
+					var getter = config.PublicBinding.GetAddress();
 					foreach (object o in getter._Run()) yield return o;
 
 					var result = getter.Result;
@@ -220,7 +219,7 @@ namespace H3MP
 					publicAddress = IPAddress.Parse(result.Value);
 				}
 
-				ushort publicPort = config.Public.Port.Value;
+				ushort publicPort = config.PublicBinding.Port.Value;
 				if (publicPort == 0)
 				{
 					publicPort = port;
@@ -232,7 +231,7 @@ namespace H3MP
 			Server = new H3Server(_serverLog, _rng, _messages.Server, _messages.ChannelsCount, _version, _config.Host, publicEndPoint);
 			_serverLog.LogInfo($"Now hosting on {publicEndPoint}!");
 
-			ConnectLocal(localhost, Server.Secret.Key);
+			ConnectLocal(localhost, Server.Secret.Key, Server.HostKey);
 		}
 
 		private IEnumerator _Host()
@@ -248,15 +247,17 @@ namespace H3MP
 			return _HostUnsafe();
 		}
 
-		private void Connect(IPEndPoint endPoint, Key32 key, bool isHost, OnH3ClientDisconnect onDisconnect)
+		private void Connect(IPEndPoint endPoint, Key32 key, Key32? hostKey, OnH3ClientDisconnect onDisconnect)
 		{
 			_clientLog.LogInfo($"Connecting to {endPoint}...");
-			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, _version, isHost, endPoint, new ConnectionRequestMessage(key), onDisconnect);
+
+			var request = new ConnectionRequestMessage(key, hostKey);
+			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, _version, endPoint, request, onDisconnect);
 		}
 
-		private void ConnectLocal(IPEndPoint endPoint, Key32 key)
+		private void ConnectLocal(IPEndPoint endPoint, Key32 key, Key32 hostKey)
 		{
-			Connect(endPoint, key, true, info => 
+			Connect(endPoint, key, hostKey, info => 
 			{
 				_clientLog.LogError("Disconnected from local server. Something probably caused the frame to hang for more than 5s (debugging breakpoint?). Restarting host...");
 				
@@ -267,7 +268,7 @@ namespace H3MP
 		private void ConnectRemote(JoinSecret secret)
 		{
 			Client?.Dispose();
-			Connect(secret.EndPoint, secret.Key, false, info => 
+			Connect(secret.EndPoint, secret.Key, null, info => 
 			{
 				_clientLog.LogError("Disconnected from remote server.");
 				_clientLog.LogDebug("Suiciding...");

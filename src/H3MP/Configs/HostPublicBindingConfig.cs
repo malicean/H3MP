@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 namespace H3MP
 {
-	public class HostPublicConfig
+	public class HostPublicBindingConfig
 	{
 		private const string ADDRESS_AUTO = "auto";
 		private const string ADDRESS_AUTO_V4 = ADDRESS_AUTO + ".v4";
@@ -17,9 +17,10 @@ namespace H3MP
 		private const string ADDRESS_AUTO_V6_URL = "http://ipv6.icanhazip.com";
 
 		public ConfigEntry<string> Address { get; }
+		
 		public ConfigEntry<ushort> Port { get; }
 
-		public HostPublicConfig(ConfigFile config, string section)
+		public HostPublicBindingConfig(ConfigFile config, string section)
 		{
 			Address = config.Bind(section, nameof(Address), ADDRESS_AUTO_V4,
 				"The IP address that clients should use to connect to the server. " +

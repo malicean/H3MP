@@ -1,6 +1,7 @@
 using H3MP.Utils;
 using H3MP.Networking;
 using LiteNetLib.Utils;
+using System;
 using Discord;
 using UnityEngine;
 using H3MP.Models;
@@ -12,6 +13,22 @@ namespace H3MP
 		internal static void Put(this NetDataWriter @this, JoinError value)
 		{
 			@this.Put((byte) value);
+		}
+
+		public static void Put<T>(this NetDataWriter @this, T? value) where T : struct, INetSerializable
+		{
+			@this.Put(value, (writer, cvalue) => writer.Put(cvalue));
+		}
+
+		public static void Put<T>(this NetDataWriter @this, T? value, Action<NetDataWriter, T> writer) where T : struct
+		{
+			var hasValue = value.HasValue;
+
+			@this.Put(hasValue);
+			if (hasValue)
+			{
+				writer(@this, value.Value);
+			}
 		}
 
 		public static void Put(this NetDataWriter @this, Key32 value)

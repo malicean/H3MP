@@ -4,6 +4,7 @@ using System.Net;
 using BepInEx.Logging;
 using Discord;
 using FistVR;
+using H3MP.HarmonyPatches;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Networking;
@@ -53,7 +54,6 @@ namespace H3MP.Peers
 
 		private readonly ManualLogSource _log;
 		private readonly StatefulActivity _discord;
-		private readonly bool _isHost;
 
 		private readonly OnH3ClientDisconnect _onDisconnected;
 
@@ -64,12 +64,11 @@ namespace H3MP.Peers
 
 		public double Time => _time?.Now ?? 0;
 
-		internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, Version version, bool isHost, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
+		internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
 			: base(log, messages, channelsCount, new Events(), version, endpoint, x => x.Put(request))
 		{
 			_log = log;
 			_discord = discord;
-			_isHost = isHost;
 
 			_onDisconnected = onDisconnected;
 
@@ -166,12 +165,15 @@ namespace H3MP.Peers
 				});
 			}
 
-			if (self._isHost)
+			HarmonyState.LockLoadLevel = false;
+			try
 			{
-				return;
+				SteamVR_LoadLevel.Begin(levelName);
 			}
-
-			SteamVR_LoadLevel.Begin(levelName);
+			finally
+			{
+				HarmonyState.LockLoadLevel = true;
+			}
 		}
 
 		internal static void OnServerInit(H3Client self, Peer peer, PartyInitMessage message)

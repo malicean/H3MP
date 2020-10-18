@@ -15,6 +15,17 @@ namespace H3MP
 			return (JoinError) @this.GetByte();
 		}
 
+		public static T? GetNullable<T>(this NetDataReader @this) where T : struct, INetSerializable
+		{
+			return @this.GetNullable(reader => reader.Get<T>());
+		}
+
+		public static T? GetNullable<T>(this NetDataReader @this, Func<NetDataReader, T> reader) where T : struct
+		{
+			var hasValue = @this.GetBool();
+			return hasValue ? reader(@this) : (T?) null;
+		}
+
 		public static Key32 GetKey32(this NetDataReader @this)
 		{
 			var data = new byte[Key32.SIZE];

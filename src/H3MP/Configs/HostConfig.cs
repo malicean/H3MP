@@ -8,14 +8,17 @@ namespace H3MP
 
 		public HostBindingConfig Binding { get; }
 
-		public HostPublicConfig Public { get; }
+		public HostPublicBindingConfig PublicBinding { get; }
+
+		public HostPermissionConfig Permissions { get; }
 
 		public HostConfig(ConfigFile config, string section)
 		{
-			PlayerLimit = config.Bind(section, nameof(PlayerLimit), (byte) 4, "The amount of players (including yourself) allowed in a party.");
+			PlayerLimit = config.Bind(section, nameof(PlayerLimit), (byte) 4, "The amount of players (including yourself) allowed in a party. The **theoretical** limit is 255.");
 
 			Binding = new HostBindingConfig(config, section + "." + nameof(Binding));
-			Public = new HostPublicConfig(config, section + "." + nameof(Public));
+			PublicBinding = new HostPublicBindingConfig(config, section + "." + nameof(PublicBinding));
+			Permissions = new HostPermissionConfig(config, section + "." + nameof(Permissions));
 		}
 	}
 }
