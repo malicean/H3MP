@@ -68,7 +68,7 @@ namespace H3MP.Utils
 				}
 
 				// Interpolate
-				for (var i = _snapshots.Count; i > 0; --i)
+				for (var i = _snapshots.Count - 1; i > 0; --i)
 				{
 					var newer = _snapshots[i];
 					var older = _snapshots[i - 1];
