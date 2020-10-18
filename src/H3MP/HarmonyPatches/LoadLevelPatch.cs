@@ -20,7 +20,7 @@ namespace H3MP.HarmonyPatches
 			["BreachAndClear_TestScene1"] = "Breaching Proto",
 			["Cappocolosseum"] = "Cappocolosseum",
 			["GrenadeSkeeball"] = "Boomskee",
-			["HickokRange"] = "Friendly 45",
+			["HickockRange"] = "Friendly 45",
 			["IndoorRange"] = "Indoor Range",
 			["MeatGrinder"] = "Meat Grinder",
 			["MeatGrinder_StartingScene"] = "Starting Meat Grinder",
