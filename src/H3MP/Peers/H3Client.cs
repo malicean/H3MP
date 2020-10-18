@@ -18,40 +18,6 @@ namespace H3MP.Peers
 
 	public class H3Client : Client<H3Client>, IRenderUpdatable
 	{
-		// All the scenes with rich presence assets and their names.
-		private static readonly Dictionary<string, string> _sceneNames = new Dictionary<string, string>
-		{
-			["MainMenu3"] = "Main Menu",
-			["ArizonaTargets"] = "Arizona Range",
-			["ArizonaTargets_Night"] = "Arizona at Night",
-			["BreachAndClear_TestScene1"] = "Breaching Proto",
-			["Cappocolosseum"] = "Cappocolosseum",
-			["GrenadeSkeeball"] = "Boomskee",
-			["HickokRange"] = "Friendly 45",
-			["IndoorRange"] = "Indoor Range",
-			["MeatGrinder"] = "Meat Grinder",
-			["MeatGrinder_StartingScene"] = "Starting Meat Grinder",
-			["MF2_MainScene"] = "Meat Fortress 2",
-			["ObstacleCourseScene1"] = "The Gunnasium",
-			["ObstacleCourseScene2"] = "Arena Proto",
-			["OmnisequencerTesting3"] = "M.E.A.T.S.",
-			["ProvingGround"] = "Proving Grounds",
-			["SniperRange"] = "Sniper Range",
-			["ReturnOfTheRotwieners"] = "Return of the Rotwieners",
-			["RotWienersStagingScene"] = "Starting Return of the Rotwieners",
-			["SamplerPlatter"] = "Sampler Platter",
-			["TakeAndHold_1"] = "Take & Hold: Containment",
-			["TakeAndHold_Lobby_2"] = "Take & Hold Lobby",
-			["TakeAndHoldClassic"] = "Take & Hold",
-			["TakeAndHold_WarIsForWieners"] = "Take & Hold - War is for Wieners",
-			["Testing3_LaserSword"] = "Arcade Proto",
-			["TileSetTest1"] = "Mini-Arena",
-			["TileSetTest_BigHallPerfTest"] = "Take & Hold (Legacy)",
-			["WarehouseRange_Rebuilt"] = "Warehouse Range",
-			["Wurstwurld1"] = "Wurstwurld",
-			["Xmas"] = "Meatmas Snowglobe"
-		};
-
 		private readonly ManualLogSource _log;
 		private readonly StatefulActivity _discord;
 
@@ -135,40 +101,10 @@ namespace H3MP.Peers
 
 		internal static void OnLevelChange(H3Client self, Peer peer, LevelChangeMessage message)
 		{
-			var levelName = message.Name;
-
-			{
-				string asset;
-				if (_sceneNames.TryGetValue(levelName, out var tooltip))
-				{
-					asset = levelName.ToLower();
-				}
-				else
-				{
-					asset = "unknown";
-					tooltip = levelName;
-				}
-
-				self._discord.Update(x =>
-				{
-					x.Assets = new ActivityAssets
-					{
-						LargeImage = "scene_" + asset,
-						LargeText = tooltip
-					};
-					x.Timestamps = new Discord.ActivityTimestamps
-					{
-						Start = DateTime.UtcNow.ToUnixTimestamp()
-					};
-
-					return x;
-				});
-			}
-
 			HarmonyState.LockLoadLevel = false;
 			try
 			{
-				SteamVR_LoadLevel.Begin(levelName);
+				SteamVR_LoadLevel.Begin(message.Name);
 			}
 			finally
 			{

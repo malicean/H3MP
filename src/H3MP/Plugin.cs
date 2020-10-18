@@ -149,6 +149,9 @@ namespace H3MP
 					.AddServer<PlayerMovesMessage>(3, DeliveryMethod.Sequenced, H3Client.OnPlayersMove)
 				;	
 			}
+
+			Logger.LogDebug("Initializing shared Harmony state...");
+			HarmonyState.Init(Activity);
 		}
 
 		private void DiscordCallbackHandler(Result result)

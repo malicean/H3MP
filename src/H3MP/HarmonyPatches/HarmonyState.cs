@@ -12,8 +12,20 @@ namespace H3MP.HarmonyPatches
 	{
         public static ManualLogSource Log { get; } = BepInEx.Logging.Logger.CreateLogSource(Plugin.NAME + "-HM");
 
-		public static string CurrentLevel { get; set; }
+        public static StatefulActivity DiscordActivity { get; private set; }
+
+        private static string _currentLevel;
+		public static string CurrentLevel
+        {
+            get => _currentLevel ?? (_currentLevel = SceneManager.GetActiveScene().name);
+            set => _currentLevel = value;
+        }
 
         public static bool LockLoadLevel { get; set; } = true;
+
+        public static void Init(StatefulActivity discordActivity)
+        {
+            DiscordActivity = discordActivity;
+        }
 	}
 }
