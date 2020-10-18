@@ -27,6 +27,8 @@ There are no prebuilt binaries because this mod is not ready. **You must build i
 ## Client
 1. Have [Discord](https://discord.com/download) installed & running. Discord RPC is currently used for joining & inviting other players.
 
+2. Download the [most recent Discord SDK](https://discord.com/developers/docs/game-sdk/sdk-starter-guide#step-1-get-the-thing) and extract `lib\x86_64\discord_game_sdk.dll` into your H3VR root folder.
+
 2. Download the [most recent x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract that to your H3VR root folder.
 
 3. Then put the following three files into the BepInEx plugin folder.
