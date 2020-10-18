@@ -1,4 +1,4 @@
-# H3MP
+# H3MP ![functions: barely](https://img.shields.io/badge/functions-barely-c28411?style=for-the-badge) ![made with: pain](https://img.shields.io/badge/made%20with-pain-red?style=for-the-badge)
 A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
 ## Features
@@ -21,7 +21,7 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
     
     - [ ] Advanced model
     
-# Installation
+## Installation
 There are no prebuilt binaries because this mod is not ready. **You must build it yourself.**
 
 1. Have [Discord](https://discord.com/download) installed & running. Discord RPC is currently used for joining & inviting other players.
