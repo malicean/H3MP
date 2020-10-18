@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using BepInEx.Logging;
 using Discord;
+using FistVR;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Networking;
@@ -83,6 +84,15 @@ namespace H3MP.Peers
 			if (_timer.TryReset())
 			{
 				Server.Send(PingMessage.Now);
+			}
+
+			if (!(_time is null))
+			{
+				var player = GM.CurrentPlayerBody;
+				var transforms = new PlayerTransformsMessage(player.Head, player.LeftHand, player.RightHand);
+				var timestamped = new Timestamped<PlayerTransformsMessage>(_time.Now, transforms);
+
+				Server.Send(timestamped);
 			}
 		}
 
@@ -193,7 +203,7 @@ namespace H3MP.Peers
 
 		internal static void OnPlayerJoin(H3Client self, Peer peer, PlayerJoinMessage message)
 		{
-			var puppet = new Puppet(self._time);
+			var puppet = new Puppet(() => self._time);
 			puppet.ProcessTransforms(message.Transforms);
 
 			self._players.Add(message.ID, puppet);
@@ -215,7 +225,11 @@ namespace H3MP.Peers
 		{
 			foreach (KeyValuePair<byte, Timestamped<PlayerTransformsMessage>> delta in message.Players)
 			{
-				self._players[delta.Key].ProcessTransforms(delta.Value);
+				// In case the player hasn't spawned yet.
+				if (self._players.TryGetValue(delta.Key, out var puppet))
+				{
+					puppet.ProcessTransforms(delta.Value);
+				}
 			}
 		}
 

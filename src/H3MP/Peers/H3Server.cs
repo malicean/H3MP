@@ -52,7 +52,32 @@ namespace H3MP.Peers
 				}
 			}
 
-			Broadcast(new PlayerMovesMessage(deltas));
+			if (deltas.Count > 0)
+			{
+				foreach (KeyValuePair<Peer, byte> peerID in _peerIDs)
+				{
+					var peer = peerID.Key;
+					var id = peerID.Value;
+
+					Timestamped<PlayerTransformsMessage>? popped;
+					if (deltas.TryGetValue(id, out var delta))
+					{
+						popped = delta;
+						deltas.Remove(id);
+					}
+					else
+					{
+						popped = null;
+					}
+
+					peer.Send(new PlayerMovesMessage(deltas));
+
+					if (popped.HasValue)
+					{
+						deltas.Add(id, popped.Value);
+					}
+				}
+			}
 		}
 
 		internal static void OnClientPing(H3Server self, Peer peer, PingMessage message)
