@@ -74,7 +74,7 @@ namespace H3MP.Models
 				_log.LogDebug("=== CONNECTION HEALTH REPORT ===");
 				_log.LogDebug($"RTT: {_rttAverage.Value * 1000:N0}ms");
 				_log.LogDebug($"Packet loss: {loss:P1} ({lost} / {_sent})");
-				_log.LogDebug($"Clock offset: {_offsetBounds.Minimum * 1000:N0}ms <= est. {_offsetAverage.Value * 1000:N0}ms <= {_offsetBounds.Maximum * 1000:N0}ms");
+				_log.LogDebug($"Clock offset: {_offsetBounds.Minimum:.000}s <= est. {_offsetAverage.Value:.000}s <= {_offsetBounds.Maximum:.000}s");
 				_log.LogDebug("=== END HEALTH REPORT ===");
 
 				_sent = 0;
