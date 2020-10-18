@@ -20,6 +20,7 @@ namespace H3MP.Peers
 	{
 		private readonly ManualLogSource _log;
 		private readonly StatefulActivity _discord;
+		private readonly LoopCounter _tickCounter;
 
 		private readonly OnH3ClientDisconnect _onDisconnected;
 
@@ -29,11 +30,12 @@ namespace H3MP.Peers
 
 		public double Time => _time?.Now ?? 0;
 
-		internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
+		internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, byte upt, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
 			: base(log, messages, channelsCount, new Events(), version, endpoint, x => x.Put(request))
 		{
 			_log = log;
 			_discord = discord;
+			_tickCounter = new LoopCounter(upt);
 
 			_onDisconnected = onDisconnected;
 
@@ -42,6 +44,11 @@ namespace H3MP.Peers
 
 		public override void Update()
 		{
+			if (!_tickCounter.TryReset())
+			{
+				return;
+			}
+
 			base.Update();
 
 			if (!(_time is null))
@@ -118,7 +125,7 @@ namespace H3MP.Peers
 					Id = message.ID.ToString(),
 					Size = message.Size
 				};
-				x.Secrets.Join = message.Secret.ToString();
+				x.Secrets.Join = message.Secret.ToBase64();
 
 				return x;
 			});

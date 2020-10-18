@@ -21,6 +21,7 @@ namespace H3MP.Peers
 		private readonly HostConfig _config;
 		private readonly Key32 _partyID;
 
+		private readonly LoopCounter _tickCounter;
 		private readonly Dictionary<Peer, byte> _peerIDs;
 		private readonly Dictionary<byte, Husk> _husks;
 
@@ -30,24 +31,30 @@ namespace H3MP.Peers
 
 		public Key32 HostKey { get; }
 
-		internal H3Server(ManualLogSource log, RandomNumberGenerator rng, PeerMessageList<H3Server> messages, byte channelsCount, Version version, HostConfig config, IPEndPoint publicEndPoint) 
+		internal H3Server(ManualLogSource log, RandomNumberGenerator rng, PeerMessageList<H3Server> messages, byte channelsCount, Version version, byte upt, HostConfig config, IPEndPoint publicEndPoint) 
 			: base(log, messages, channelsCount, new Events(messages.Definitions[typeof(Timestamped<PingMessage>)]), version, config.Binding.IPv4.Value, config.Binding.IPv6.Value, config.Binding.Port.Value)
 		{
 			_log = log;
 			_config = config;
 			_partyID = Key32.FromRandom(rng);
 
+			_tickCounter = new LoopCounter(upt);
 			_peerIDs = new Dictionary<Peer, byte>();
-			_husks = new Dictionary<byte, Husk>();;
+			_husks = new Dictionary<byte, Husk>();
 
 			_selfID = -1;
 
-			Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng));
+			Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng), upt);
 			HostKey = Key32.FromRandom(rng);
 		}
 
 		public override void Update()
 		{
+			if (!_tickCounter.TryReset())
+			{
+				return;
+			}
+
 			base.Update();
 
 			var deltas = new Dictionary<byte, Timestamped<PlayerTransformsMessage>>();

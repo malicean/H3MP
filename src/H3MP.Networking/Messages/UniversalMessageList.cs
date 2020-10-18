@@ -34,13 +34,24 @@ namespace H3MP.Networking
 			_server = new ManagerMessageListData<TServer>();
 		}
 
+		private static void DeserializationError<TMessage>(ManualLogSource log, Peer peer, string reason)
+		{
+			log.LogError($"Failed to deserialize {typeof(TMessage)} from {peer} ({reason}). Does the message have symmetrical serialization?");
+		}
+
 		private ReaderHandler<TPeer> CreateReaderFrom<TPeer, TMessage>(MessageHandler<TPeer, TMessage> handler, ManualLogSource log) where TMessage : INetSerializable, new()
 		{
 			return (self, peer, reader) => 
 			{
 				if (!reader.TryGet<TMessage>(out var message))
 				{
-					log.LogError($"Failed to parse {typeof(TMessage)} from {peer}. Does the message have symmetrical serialization?");
+					DeserializationError<TMessage>(log, peer, "invalid data");
+					return;
+				}
+
+				if (reader.AvailableBytes > 0)
+				{
+					DeserializationError<TMessage>(log, peer, "trailing bytes");
 					return;
 				}
 

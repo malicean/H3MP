@@ -170,7 +170,18 @@ namespace H3MP
 
 			_discordLog.LogDebug($"Received Discord join secret \"{rawSecret}\"");
 
-			bool success = JoinSecret.TryParse(rawSecret, out var secret, out var version);
+			byte[] data;
+			try
+			{
+				data = Convert.FromBase64String(rawSecret);
+			}
+			catch
+			{
+				_discordLog.LogError(errorPrefix + "could not parse base 64 secret.");
+				return;
+			}
+
+			bool success = JoinSecret.TryParse(data, out var secret, out var version);
 			if (!_version.CompatibleWith(version))
 			{
 				_discordLog.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
@@ -179,7 +190,7 @@ namespace H3MP
 
 			if (!success)
 			{
-				_discordLog.LogError(errorPrefix + $"failed to parse join secret \"{rawSecret}\"");
+				_discordLog.LogError(errorPrefix + $"join secret was malformed.");
 				return;
 			}
 
@@ -195,6 +206,8 @@ namespace H3MP
 
 		private IEnumerator _HostUnsafe()
 		{
+			_serverLog.LogDebug("Starting server...");
+
 			var config = _config.Host;
 
 			var binding = config.Binding;
@@ -231,10 +244,32 @@ namespace H3MP
 				publicEndPoint = new IPEndPoint(publicAddress, publicPort);
 			}
 
-			Server = new H3Server(_serverLog, _rng, _messages.Server, _messages.ChannelsCount, _version, _config.Host, publicEndPoint);
+
+			float ups = 1f / Time.fixedDeltaTime; // 90
+			_serverLog.LogDebug($"Fixed update: {ups:.00} u/s");
+
+			float minTps = ups / byte.MaxValue; // ups u/s divided by max u/t
+			float userTps = config.TickRate.Value;
+			if (userTps <= minTps || ups < userTps)
+			{
+				_serverLog.LogFatal($"The configurable tick rate must fall within the range [{minTps:.00}, {ups:.00}]. Current value: {userTps:.00}");
+				yield break;
+			}
+
+			float userUpt = ups / userTps;
+			var upt = (byte) Mathf.FloorToInt(userUpt);
+			float tps = ups / upt;
+			if (Mathf.Abs(upt - userUpt) < float.Epsilon)
+			{
+				_serverLog.LogWarning($"The configurable tick rate ({userTps:.00} t/s; {userUpt:.00} u/t) is unaligned! It has been rounded up ({tps:.00} t/s; {upt:N0} u/t).");
+			}
+
+			_serverLog.LogDebug($"Tick rate: {upt:N0} u/t; {ups / upt:N0} t/s");
+
+			Server = new H3Server(_serverLog, _rng, _messages.Server, _messages.ChannelsCount, _version, upt, _config.Host, publicEndPoint);
 			_serverLog.LogInfo($"Now hosting on {publicEndPoint}!");
 
-			ConnectLocal(localhost, Server.Secret.Key, Server.HostKey);
+			ConnectLocal(localhost, Server.Secret, Server.HostKey);
 		}
 
 		private IEnumerator _Host()
@@ -250,17 +285,17 @@ namespace H3MP
 			return _HostUnsafe();
 		}
 
-		private void Connect(IPEndPoint endPoint, Key32 key, Key32? hostKey, OnH3ClientDisconnect onDisconnect)
+		private void Connect(IPEndPoint endPoint, Key32 key, Key32? hostKey, byte upt, OnH3ClientDisconnect onDisconnect)
 		{
 			_clientLog.LogInfo($"Connecting to {endPoint}...");
 
 			var request = new ConnectionRequestMessage(key, hostKey);
-			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, _version, endPoint, request, onDisconnect);
+			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, upt, _version, endPoint, request, onDisconnect);
 		}
 
-		private void ConnectLocal(IPEndPoint endPoint, Key32 key, Key32 hostKey)
+		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 hostKey)
 		{
-			Connect(endPoint, key, hostKey, info => 
+			Connect(endPoint, secret.Key, hostKey, secret.UpdatesPerTick, info => 
 			{
 				_clientLog.LogError("Disconnected from local server. Something probably caused the frame to hang for more than 5s (debugging breakpoint?). Restarting host...");
 				
@@ -271,7 +306,7 @@ namespace H3MP
 		private void ConnectRemote(JoinSecret secret)
 		{
 			Client?.Dispose();
-			Connect(secret.EndPoint, secret.Key, null, info => 
+			Connect(secret.EndPoint, secret.Key, null, secret.UpdatesPerTick, info => 
 			{
 				_clientLog.LogError("Disconnected from remote server.");
 				_clientLog.LogDebug("Suiciding...");

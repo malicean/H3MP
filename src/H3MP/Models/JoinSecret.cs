@@ -1,6 +1,8 @@
 using System;
 using System.Net;
 using System.Security.Cryptography;
+using H3MP.Networking;
+using LiteNetLib.Utils;
 
 namespace H3MP.Models
 {
@@ -12,22 +14,15 @@ namespace H3MP.Models
 
 		public Key32 Key { get; }
 
-		public static bool TryParse(string s, out JoinSecret result, out Version version)
+		public byte UpdatesPerTick { get; }
+
+		public static bool TryParse(byte[] data, out JoinSecret result, out Version version)
 		{
-			const int expectedFields = 4;
-			var args = s.Split(' ');
+			var reader = new NetDataReader(data);
 
-			if (args.Length < 1)
+			try 
 			{
-				result = default;
-				version = default;
-				return false;
-			}
-
-			var rawVersion = args[0];
-			try
-			{
-				version = new Version(rawVersion);
+				version = reader.GetVersion();
 			}
 			catch
 			{
@@ -36,32 +31,44 @@ namespace H3MP.Models
 				return false;
 			}
 
-			if (args.Length != expectedFields)
+			IPEndPoint endPoint;
+			Key32 key;
+			byte updatesPerTick;
+			try
+			{
+				endPoint = reader.GetIPEndPoint();
+				key = reader.GetKey32();
+				updatesPerTick = reader.GetByte();
+			}
+			catch
 			{
 				result = default;
 				return false;
 			}
 
-			if (!IPAddress.TryParse(args[1], out var address) || !ushort.TryParse(args[2], out var port) || !Key32.TryFromString(args[3], out var key))
-			{
-				result = default;
-				return false;
-			}
-
-			result = new JoinSecret(version, new IPEndPoint(address, port), key);
+			result = new JoinSecret(version, endPoint, key, updatesPerTick);
 			return true;
 		}
 
-		public JoinSecret(Version version, IPEndPoint endPoint, Key32 key)
+		public JoinSecret(Version version, IPEndPoint endPoint, Key32 key, byte updatesPerTick)
 		{
 			Version = version;
 			EndPoint = endPoint;
 			Key = key;
+			UpdatesPerTick = updatesPerTick;
 		}
 
-		public override string ToString()
+		public string ToBase64()
 		{
-			return Version + " " + EndPoint.Address + " " + EndPoint.Port + " " + Key;
+			using (WriterPool.Instance.Borrow(out var writer))
+			{
+				writer.Put(Version);
+				writer.Put(EndPoint);
+				writer.Put(Key);
+				writer.Put(UpdatesPerTick);
+
+				return Convert.ToBase64String(writer.Data, 0, writer.Length);
+			}
 		}
 	
 	}
