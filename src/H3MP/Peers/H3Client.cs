@@ -136,7 +136,7 @@ namespace H3MP.Peers
 
 		internal static void OnPlayerJoin(H3Client self, Peer peer, PlayerJoinMessage message)
 		{
-			var puppet = new Puppet(() => self._time);
+			var puppet = new Puppet(self._log, () => self._time);
 			puppet.ProcessTransforms(message.Transforms);
 
 			self._players.Add(message.ID, puppet);
