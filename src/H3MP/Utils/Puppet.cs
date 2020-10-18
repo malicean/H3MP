@@ -21,15 +21,31 @@ namespace H3MP
 
 		internal Puppet(Func<ServerTime> timeGetter)
 		{
+			// Object init
 			_head = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			_handLeft = GameObject.CreatePrimitive(PrimitiveType.Cube);
 			_handRight = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
+			// Parents
 			_handLeft.transform.parent = _head.transform;
 			_handRight.transform.parent = _head.transform;
 
+			// Trans-scene
 			GameObject.DontDestroyOnLoad(_head);
 
+			// Visuals
+			_head.transform.localScale = Vector3.one * 0.1f;
+			var baseMat = _head.GetComponent<MeshRenderer>().material;
+			var matLeft = new Material(baseMat);
+			var matRight = new Material(baseMat);
+
+			matLeft.color = Color.red;
+			matRight.color = Color.blue;
+			
+			_handLeft.GetComponent<MeshRenderer>().material = matLeft;
+			_handRight.GetComponent<MeshRenderer>().material = matRight;
+
+			// .NET
 			_timeGetter = timeGetter;
 			var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => Time.Now, 1);
 			_snapshots = new Snapshots<PlayerTransformsMessage>(killer);
