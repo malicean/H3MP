@@ -64,7 +64,7 @@ namespace H3MP
 
 			// .NET objects
 			_timeGetter = timeGetter;
-			_interpDelay = new ExponentialMovingAverage(0.1, INTERP_DELAY_EMA_ALPHA);
+			_interpDelay = new ExponentialMovingAverage(_minInterpDelay, INTERP_DELAY_EMA_ALPHA);
 			var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => Time.Now, 5);
 			_snapshots = new Snapshots<PlayerTransformsMessage>(killer);
 		}
