@@ -97,6 +97,7 @@
     <Compile Include="Peers\Puppet.cs" />
     <Compile Include="Peers\Husk.cs" />
     <Compile Include="Utils\IRenderUpdatable.cs" />
+    <Compile Include="Utils\MoreMath.cs" />
     <Compile Include="Utils\ILinearFittable.cs" />
     <Compile Include="Utils\Fitting.cs" />
     <Compile Include="Utils\Snapshots\Snapshots.cs" />
