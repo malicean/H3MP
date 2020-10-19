@@ -222,7 +222,7 @@ namespace H3MP.Peers
 				server._husks.Add(id, peerHusk);
 
 				// Initialize just-joined puppet on other clients
-				server.BroadcastExcept(peer, new PlayerJoinMessage(id, default));
+				server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<PlayerTransformsMessage>.Now(default)));
 			}
 
 			public void OnClientDisconnected(H3Server server, Peer peer, DisconnectInfo info)
