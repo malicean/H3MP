@@ -4,9 +4,9 @@ namespace H3MP
 {
 	public class HostConfig
 	{
-		public ConfigEntry<double> TickRate { get; }
-
 		public ConfigEntry<byte> PlayerLimit { get; }
+
+		public ConfigEntry<double> TickRate { get; }
 
 		public HostBindingConfig Binding { get; }
 
@@ -16,8 +16,8 @@ namespace H3MP
 
 		public HostConfig(ConfigFile config, string section)
 		{
+			PlayerLimit = config.Bind(section, nameof(PlayerLimit), (byte) 16, "The amount of players (including yourself) allowed in a party. The **theoretical** limit is 255.");
 			TickRate = config.Bind(section, nameof(TickRate), 20.0, "The rate (per second) that the network updates. This should be less than or equal to your HMD's refresh rate.");
-			PlayerLimit = config.Bind(section, nameof(PlayerLimit), (byte) 4, "The amount of players (including yourself) allowed in a party. The **theoretical** limit is 255.");
 
 			Binding = new HostBindingConfig(config, section + "." + nameof(Binding));
 			PublicBinding = new HostPublicBindingConfig(config, section + "." + nameof(PublicBinding));
