@@ -72,14 +72,14 @@ namespace H3MP.Peers
 			// Yeah we could just format/concat and make it infinitely easier to read/write but the perf gaiiiinnnnsss
 			var builder = new StringBuilder().AppendLine() // newline
 				.Append("┌─CONNECTION HEALTH REPORT───").AppendLine()
-				.Append("│	   Packet─────loss : ").Append(loss.ToString("P1")).Append(" (").Append(lost).Append(" / ").Append(sent).AppendLine(")")
-				.Append("│		  RTT─┬──value : ").Append((rttAvg * 1000).ToString("N0")).AppendLine(" ms")
-				.Append("│			  ├────MAD : ").Append((rttMad * 1000).ToString(".0")).AppendLine(" ms")
-				.Append("│			  └───MAPD : ").AppendLine(rttMapd.ToString("P"))
+				.Append("│       Packet─────loss : ").Append(loss.ToString("P1")).Append(" (").Append(lost).Append(" / ").Append(sent).AppendLine(")")
+				.Append("│          RTT─┬──value : ").Append((rttAvg * 1000).ToString("N0")).AppendLine(" ms")
+				.Append("│              ├────MAD : ").Append((rttMad * 1000).ToString(".0")).AppendLine(" ms")
+				.Append("│              └───MAPD : ").AppendLine(rttMapd.ToString("P"))
 				.Append("│ Clock offset─┬──value : ").Append(offsetAvg.ToString(".000")).AppendLine(" s")
-				.Append("│			  ├─bounds : ").Append(offsetBounds.Minimum.ToString(".000")).Append(" s <= x <= ").Append(offsetBounds.Maximum.ToString(".000")).AppendLine(" s")
-				.Append("│			  ├────MAD : ").Append(offsetMad.ToString(".000")).AppendLine(" s")
-				.Append("│			  └───MAPD : ").AppendLine(offsetMapd.ToString("P"))
+				.Append("│              ├─bounds : ").Append(offsetBounds.Minimum.ToString(".000")).Append(" s <= x <= ").Append(offsetBounds.Maximum.ToString(".000")).AppendLine(" s")
+				.Append("│              ├────MAD : ").Append(offsetMad.ToString(".000")).AppendLine(" s")
+				.Append("│              └───MAPD : ").AppendLine(offsetMapd.ToString("P"))
 				.Append("└────────────────────────────");
 			_log.LogDebug(builder.ToString());
 
