@@ -46,7 +46,7 @@ namespace H3MP.Utils
 				if (newest.Key < timestamp)
 				{
 					var secondNewest = _snapshots[_snapshots.Count - 2];
-					var t = MoreMath.InverseLinearFit(timestamp, secondNewest.Key, newest.Key);
+					var t = MoreMath.InverseLinearFit(secondNewest.Key, newest.Key, timestamp);
 
 					return secondNewest.Value.Fit(newest.Value, t);
 				}
@@ -57,7 +57,7 @@ namespace H3MP.Utils
 				if (timestamp < oldest.Key)
 				{
 					var secondOldest = _snapshots[1];
-					var t = MoreMath.InverseLinearFit(timestamp, oldest.Key, secondOldest.Key);
+					var t = MoreMath.InverseLinearFit(oldest.Key, secondOldest.Key, timestamp);
 
 					return secondOldest.Value.Fit(oldest.Value, t);
 				}
@@ -74,7 +74,7 @@ namespace H3MP.Utils
 					}
 					else if (older.Key < timestamp && timestamp < newer.Key)
 					{
-						var t = MoreMath.InverseLinearFit(timestamp, older.Key, newer.Key);
+						var t = MoreMath.InverseLinearFit(older.Key, newer.Key, timestamp);
 
 						return older.Value.Fit(newer.Value, t);
 					}
