@@ -2,9 +2,6 @@
 A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
 ## Features
-- [x] Discord Rich Presence  
-- [x] Scene loading  
-- [ ] Items  
 - Configs  
   - [x] Player limit  
   - [x] Scene loading/reloading permissions
@@ -16,6 +13,10 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
   - [ ] Avatar  
     - [x] Basic primitive  
     - [ ] Advanced model
+- Miscellaneous
+  - [x] Discord Rich Presence  
+  - [x] Scene loading  
+  - [ ] Items  
 
 ## Installation
 1. Have [Discord](https://discord.com/download) installed and running. Discord Rich Presence is the only way to join or invite other players.  
