@@ -28,7 +28,10 @@ namespace H3MP
 		internal Puppet(ManualLogSource log, Func<ServerTime> timeGetter, double tickDeltaTime)
 		{
 			_log = log;
-			// A tick for the remote client transmitting, server tranceiving, and local client receiving, each.
+			// A tick step for the remote client transmitting, server tranceiving, and local client receiving, each. 
+			// Sometimes the stars align and no tick delay is achieved, but not on average, so the minimum should be when all the stars are perfectly not aligned.
+			// Any further tweaking should be just because of network delay.
+			//
 			// If input-based movement is achieved, this can be reduced to 2.
 			_minInterpDelay = 3 * tickDeltaTime;
 
@@ -71,17 +74,21 @@ namespace H3MP
 
 		public void ProcessTransforms(Timestamped<PlayerTransformsMessage> message)
 		{
-			var messageDelay = Time.Now - message.Timestamp;
-			var interpDelay = _interpDelay.Value;
+			var time = Time;
+			if (!(time is null))
+			{
+				var messageDelay = time.Now - message.Timestamp;
+				var interpDelay = _interpDelay.Value;
 
-			if (messageDelay > interpDelay)
-			{
-				_interpDelay.Reset(messageDelay);
-				_log.LogDebug($"A puppet's interpolation delay jumped ({interpDelay * 1000:N0} ms -> {messageDelay * 1000:N0} ms)");
-			}
-			else
-			{
-				_interpDelay.Push(Math.Max(messageDelay, _minInterpDelay));
+				if (messageDelay > interpDelay)
+				{
+					_interpDelay.Reset(messageDelay);
+					_log.LogDebug($"A puppet's interpolation delay jumped ({interpDelay * 1000:N0} ms -> {messageDelay * 1000:N0} ms)");
+				}
+				else
+				{
+					_interpDelay.Push(Math.Max(messageDelay, _minInterpDelay));
+				}
 			}
 
 			_snapshots.Push(message.Timestamp, message.Content);
