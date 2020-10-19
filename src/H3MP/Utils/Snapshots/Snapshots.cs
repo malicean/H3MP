@@ -26,9 +26,9 @@ namespace H3MP.Utils
 			_snapshots.Add(new KeyValuePair<double, T>(timestamp, value));
 		}
 
-		private static float LerpT(double timestamp, double start, double end)
+		private static float InverseFit(double timestamp, double start, double end)
 		{
-			return (float) ((timestamp - end) / (start - end));
+			return (float) ((timestamp - start) / (end - start));
 		}
 
 		public T this[double timestamp]
@@ -51,7 +51,7 @@ namespace H3MP.Utils
 				if (newest.Key < timestamp)
 				{
 					var secondNewest = _snapshots[_snapshots.Count - 2];
-					var t = LerpT(timestamp, secondNewest.Key, newest.Key);
+					var t = InverseFit(timestamp, secondNewest.Key, newest.Key);
 
 					return secondNewest.Value.Fit(newest.Value, t);
 				}
@@ -62,7 +62,7 @@ namespace H3MP.Utils
 				if (timestamp < oldest.Key)
 				{
 					var secondOldest = _snapshots[1];
-					var t = LerpT(timestamp, oldest.Key, secondOldest.Key);
+					var t = InverseFit(timestamp, oldest.Key, secondOldest.Key);
 
 					return secondOldest.Value.Fit(oldest.Value, t);
 				}
@@ -79,7 +79,7 @@ namespace H3MP.Utils
 					}
 					else if (older.Key < timestamp && timestamp < newer.Key)
 					{
-						var t = LerpT(timestamp, older.Key, newer.Key);
+						var t = InverseFit(timestamp, older.Key, newer.Key);
 
 						return older.Value.Fit(newer.Value, t);
 					}
