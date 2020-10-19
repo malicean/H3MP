@@ -310,10 +310,6 @@ namespace H3MP
 			Connect(secret.EndPoint, null, secret, info =>
 			{
 				_clientLog.LogError("Disconnected from remote server.");
-				_clientLog.LogDebug("Suiciding...");
-
-				Client?.Dispose();
-				Client = null;
 
 				if (_config.AutoHost.Value)
 				{

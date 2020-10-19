@@ -31,6 +31,7 @@ namespace H3MP.Peers
 		private readonly double _tickDeltaTime;
 		private readonly LoopTimer _tickTimer;
 
+		private bool _disposed;
 		private readonly Dictionary<byte, Puppet> _players;
 		private ServerTime _time;
 		private HealthInfo _health;
@@ -146,6 +147,12 @@ namespace H3MP.Peers
 
 			base.Update();
 
+			// In case we disconnected.
+			if (_disposed)
+			{
+				return;
+			}
+
 			if (!(_time is null))
 			{
 				_time.Update();
@@ -168,6 +175,11 @@ namespace H3MP.Peers
 
 		public override void Dispose()
 		{
+			if (_disposed)
+			{
+				return;
+			}
+
 			base.Dispose();
 
 			foreach (var player in _players.Values)
@@ -175,13 +187,9 @@ namespace H3MP.Peers
 				player.Dispose();
 			}
 
-			_discord.Update(x =>
-			{
-				x.Party = default;
-				x.Secrets = default;
+			_discord.Update(x => default);
 
-				return x;
-			});
+			_disposed = true;
 		}
 
 		internal static void OnServerPong(H3Client self, Peer peer, Timestamped<PingMessage> message)
@@ -273,6 +281,7 @@ namespace H3MP.Peers
 			public void OnDisconnected(H3Client client, DisconnectInfo info)
 			{
 				client._onDisconnected(info);
+				client.Dispose();
 			}
 		}
 	}
