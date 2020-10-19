@@ -23,7 +23,8 @@ namespace H3MP.Peers
 		private const double HEALTH_INTERVAL = 60;
 
 		private readonly ManualLogSource _log;
-		private readonly StatefulActivity _discord;
+        private readonly ClientConfig _config;
+        private readonly StatefulActivity _discord;
 		private readonly OnH3ClientDisconnect _onDisconnected;
 
 		private readonly double _tickDeltaTime;
@@ -35,10 +36,11 @@ namespace H3MP.Peers
 
 		public double Time => _time?.Now ?? 0;
 
-		internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, double tickDeltaTime, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
+		internal H3Client(ManualLogSource log, ClientConfig config, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, double tickDeltaTime, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
 			: base(log, messages, channelsCount, new Events(), version, endpoint, x => x.Put(request))
 		{
 			_log = log;
+			_config = config;
 			_discord = discord;
 			_onDisconnected = onDisconnected;
 
@@ -206,7 +208,7 @@ namespace H3MP.Peers
 
 		internal static void OnPlayerJoin(H3Client self, Peer peer, PlayerJoinMessage message)
 		{
-			var puppet = new Puppet(self._log, () => self._time, self._tickDeltaTime);
+			var puppet = new Puppet(self._log, self._config.Puppet, () => self._time, self._tickDeltaTime);
 			puppet.ProcessTransforms(message.Transforms);
 
 			self._players.Add(message.ID, puppet);

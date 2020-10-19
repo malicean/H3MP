@@ -15,6 +15,7 @@ namespace H3MP
 		private readonly ManualLogSource _log;
 		private readonly double _minInterpDelay;
 
+		private readonly GameObject _root;
 		private readonly GameObject _head;
 		private readonly GameObject _handLeft;
 		private readonly GameObject _handRight;
@@ -25,24 +26,17 @@ namespace H3MP
 
 		private ServerTime Time => _timeGetter();
 
-		private static GameObject CreateHead()
+		private static GameObject CreateRoot(ClientPuppetConfig config)
 		{
-			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			var root = new GameObject("Puppet Root");
+			GameObject.DontDestroyOnLoad(root);
 
-			// Components
-			var transform = head.transform;
-			var collider = head.GetComponent<Collider>();
+			root.transform.localScale = config.RootScale.Value;
 
-			// Shrink to not be humongous
-			transform.localScale = 0.3f * Vector3.one;
-
-			// Trans-scene
-			GameObject.DontDestroyOnLoad(head);
-
-			return head;
+			return root;
 		}
 
-		private static GameObject CreateHand(GameObject head, Color color)
+		private static GameObject CreateLimb(GameObject root, ClientPuppetLimbConfig config)
 		{
 			var hand = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
@@ -51,22 +45,22 @@ namespace H3MP
 			var renderer = hand.GetComponent<Renderer>();
 			var collider = hand.GetComponent<Collider>();
 
-			// Parent and shrink
-			transform.parent = head.transform;
-			transform.localScale = 0.5f * Vector3.one;
+			// Parent before scale (don't parent after)
+			transform.parent = root.transform;
+			transform.localScale = config.Scale.Value;
 
 			// No collision
 			GameObject.Destroy(collider);
 			
 			// Set color
 			var mat = new Material(renderer.material);
-			mat.color = color;
+			mat.color = config.Color.Value;
 			renderer.material = mat;
 
 			return hand;
 		}
 
-		internal Puppet(ManualLogSource log, Func<ServerTime> timeGetter, double tickDeltaTime)
+		internal Puppet(ManualLogSource log, ClientPuppetConfig config, Func<ServerTime> timeGetter, double tickDeltaTime)
 		{
 			_log = log;
 			// A tick step for the remote client transmitting, server tranceiving, and local client receiving, each. 
@@ -77,9 +71,10 @@ namespace H3MP
 			_minInterpDelay = 3 * tickDeltaTime;
 
 			// Unity objects
-			_head = CreateHead();
-			_handLeft = CreateHand(_head, Color.red);
-			_handRight = CreateHand(_head, Color.blue);
+			_root = CreateRoot(config);
+			_head = CreateLimb(_root, config.Head);
+			_handLeft = CreateLimb(_root, config.HandLeft);
+			_handRight = CreateLimb(_root, config.HandRight);
 
 			// .NET objects
 			_timeGetter = timeGetter;

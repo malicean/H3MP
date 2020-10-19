@@ -69,6 +69,9 @@
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
     <Compile Include="Peers\H3Client.cs" />
     <Compile Include="Peers\H3Server.cs" />
+    <Compile Include="Configs\ClientConfig.cs" />
+    <Compile Include="Configs\ClientPuppetConfig.cs" />
+    <Compile Include="Configs\ClientPuppetLimbConfig.cs" />
     <Compile Include="Configs\HostBindingConfig.cs" />
     <Compile Include="Configs\HostConfig.cs" />
     <Compile Include="Configs\HostPublicBindingConfig.cs" />

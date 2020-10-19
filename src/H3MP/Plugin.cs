@@ -70,7 +70,7 @@ namespace H3MP
 					ConvertToString = (value, type) => ((IPAddress) value).ToString()
 				});
 
-				_config = new RootConfig(Config, "H3MP");
+				_config = new RootConfig(Config);
 			}
 
 			Logger.LogDebug("Initializing utilities...");
@@ -261,7 +261,7 @@ namespace H3MP
 
 			double tickDeltaTime = 1 / tps;
 
-			Server = new H3Server(_serverLog, _rng, _messages.Server, _messages.ChannelsCount, _version, tickDeltaTime, _config.Host, publicEndPoint);
+			Server = new H3Server(_serverLog, _config.Host, _rng, _messages.Server, _messages.ChannelsCount, _version, tickDeltaTime, publicEndPoint);
 			_serverLog.LogInfo($"Now hosting on {publicEndPoint}!");
 
 			ConnectLocal(localhost, Server.Secret, Server.HostKey);
@@ -291,7 +291,7 @@ namespace H3MP
 			_clientLog.LogDebug($"Tick rate: {tps:.00} t/s");
 
 			var request = new ConnectionRequestMessage(secret.Key, hostKey);
-			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, secret.TickDeltaTime, _version, endPoint, request, onDisconnect);
+			Client = new H3Client(_clientLog, _config.Client, Activity, _messages.Client, _messages.ChannelsCount, secret.TickDeltaTime, _version, endPoint, request, onDisconnect);
 		}
 
 		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 hostKey)

@@ -31,7 +31,7 @@ namespace H3MP.Peers
 
 		public Key32 HostKey { get; }
 
-		internal H3Server(ManualLogSource log, RandomNumberGenerator rng, PeerMessageList<H3Server> messages, byte channelsCount, Version version, double tickDeltaTime, HostConfig config, IPEndPoint publicEndPoint) 
+		internal H3Server(ManualLogSource log, HostConfig config, RandomNumberGenerator rng, PeerMessageList<H3Server> messages, byte channelsCount, Version version, double tickDeltaTime, IPEndPoint publicEndPoint) 
 			: base(log, messages, channelsCount, new Events(messages.Definitions[typeof(Timestamped<PingMessage>)]), version, config.Binding.IPv4.Value, config.Binding.IPv6.Value, config.Binding.Port.Value)
 		{
 			_log = log;
