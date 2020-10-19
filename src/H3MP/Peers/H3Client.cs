@@ -89,7 +89,7 @@ namespace H3MP.Peers
             ++_health.Sent;
         }
 
-		private void OnPingReceived(double rtt, double offset)
+		private void OnPingReceived(double offset, double rtt)
         {
 			++_health.Received;
 			_health.RttAbsoluteDeviation.Push(Math.Abs(_time.Rtt - rtt));
