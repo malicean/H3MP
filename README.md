@@ -2,50 +2,51 @@
 A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
 ## Features
-
-- [x] Discord Rich Presence
-
-- [x] Scene loading
-
-- [ ] Items
-
-- [ ] Player
-
-  - [X] Movement
-  
-  - [ ] Held items
-
-  - [ ] Avatar
-
-    - [X] Basic primitive
-    
+- [x] Discord Rich Presence  
+- [x] Scene loading  
+- [ ] Items  
+- Configs  
+  - [x] Player limit  
+  - [x] Scene loading/reloading permissions
+  - [x] Tick rate  
+  - *refer to `BepInEx\config\Ash.H3MP.cfg` for additional config options*
+- Player  
+  - [x] Movement  
+  - [ ] Held items  
+  - [ ] Avatar  
+    - [x] Basic primitive  
     - [ ] Advanced model
-    
+
 ## Installation
-There are no prebuilt binaries because this mod is not ready. **You must build it yourself.**
+1. Have [Discord](https://discord.com/download) installed and running. Discord Rich Presence is the only way to join or invite other players.  
+2. Download the [most recent x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract it to your H3VR root directory.
+3. Download the [most recent release of H3MP](https://github.com/ash-hat/H3MP/releases/latest) and extract it to your H3VR root directory.  
+4. Start the game  
+    - Join a party by clicking the "Join" button on a Discord invite. In the future, you can join off of invites and the game will start automatically.
+    - Invite players to your party by clicking the plus button in a Discord text channel, and select "Invite ... to Play H3MP".
 
-1. Have [Discord](https://discord.com/download) installed & running. Discord RPC is currently used for joining & inviting other players.
+If you are on BepInEx 5.3 or prior, not all of the DLL files can be put in the plugins directory. This is because of a plugin loading bug that [has been fixed](https://github.com/BepInEx/BepInEx/commit/4d7e5cac2bff602c5af6a5af5adfc0e8fbe41fd9) for BepInEx 5.4 (not released yet) and further.
 
-2. Download the [most recent Discord SDK](https://discord.com/developers/docs/game-sdk/sdk-starter-guide#step-1-get-the-thing) and extract `lib\x86_64\discord_game_sdk.dll` into your H3VR root folder.
+## Uninstallation
+To uninstall, you only need to delete the `BepInEx\plugins\H3MP` directory. `discord_game_sdk.dll` will not be loaded if H3MP is not present, just like how BepInEx is not loaded if `winhttp.dll` is not present.
 
-3. Download the [most recent x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract that to your H3VR root folder.
-
-4. Then put the following three files into the BepInEx plugin folder.
-   - H3MP.dll
-   - H3MP.Networking.dll
-   - LiteNetLib.dll
-   
-5. Ensure you have 7777 UDP open if you are hosting.
-
-6. To host, send an invite via Discord after loading the main menu. 
-   - Players can join on a running instance of H3VR.
-   - Players can also join without H3VR running, the game will launch and connect.
-
-7. Enjoy **barely functional** multiplayer.
+## Building
+1. Copy or symlink the required dependencies from `h3vr_Data\Managed\` to `src\libs\`  
+    - `AssemblyCSharp.dll`  
+    - `UnityEngine.dll`  
+2. Copy or symlink the required dependencies from `BepInEx\core\` to `src\libs\`  
+    - `0Harmony.dll`  
+    - `BepInEx.dll`  
+3. Build the solution  
+    a. This project makes use of NuGet packages. If your IDE does not automatically restore NuGet packages, make sure to restore them manually.
 
 # Other Information
 - Target Game: *Hot Dogs, Horseshoes, and Hand Grenades* ([Website](http://h3vr.com/); [Steam](https://store.steampowered.com/app/450540/Hot_Dogs_Horseshoes__Hand_Grenades/))  
-- Networking transport: [LiteNetLib](https://github.com/RevenantX/LiteNetLib)  
-- Networking protocol: Custom. Inspired by:  
-  - [Mirror](https://github.com/vis2k/Mirror)
-  - [MLAPI](https://github.com/MidLevel/MLAPI)
+- Networking  
+  - Transport: [LiteNetLib](https://github.com/RevenantX/LiteNetLib)  
+  - Protocol: custom, inspired by  
+    - [Mirror](https://github.com/vis2k/Mirror)  
+    - [MLAPI](https://github.com/MidLevel/MLAPI)  
+  - Resources  
+    - [Valve Developer Community Wiki: Source Multiplayer Networking](https://developer.valvesoftware.com/wiki/Source_Multiplayer_Networking)  
+    - Overwatch ([developer update](https://www.youtube.com/watch?v=vTH2ZPgYujQ) [abstract]; [GDC 2017 talk](https://youtu.be/W3aieHjyNvw?t=1341) [detailed])
