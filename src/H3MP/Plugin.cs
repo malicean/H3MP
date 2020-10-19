@@ -190,7 +190,7 @@ namespace H3MP
 
 			if (!success)
 			{
-				_discordLog.LogError(errorPrefix + $"join secret was malformed.");
+				_discordLog.LogError(errorPrefix + "join secret was malformed.");
 				return;
 			}
 

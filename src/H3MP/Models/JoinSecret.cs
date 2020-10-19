@@ -73,10 +73,7 @@ namespace H3MP.Models
 		{
 			using (WriterPool.Instance.Borrow(out var writer))
 			{
-				writer.Put(Version);
-				writer.Put(EndPoint);
-				writer.Put(Key);
-				writer.Put(TickDeltaTime);
+				writer.Put(this);
 
 				return Convert.ToBase64String(writer.Data, 0, writer.Length);
 			}
