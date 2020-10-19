@@ -62,9 +62,9 @@ namespace H3MP.Peers
 			DoubleRange offsetBounds = _time.OffsetBounds;
 
 			double rttMad = _health.RttAbsoluteDeviation.Value;
-			double rttMape = Math.Abs((rttAvg - rttMad) / rttAvg);
+			double rttMapd = rttMad / rttAvg;
 			double offsetMad = _health.OffsetAbsoluteDeviation.Value;
-			double offsetMape = Math.Abs((offsetAvg - offsetMad) / offsetAvg);
+			double offsetMapd = offsetMad / offsetAvg;
 
 			// Yeah we could just format/concat and make it infinitely easier to read/write but the perf gaiiiinnnnsss
 			var builder = new StringBuilder().AppendLine() // newline 
@@ -72,11 +72,11 @@ namespace H3MP.Peers
 				.Append("│       Packet─────loss : ").Append(loss.ToString("P1")).Append(" (").Append(lost).Append(" / ").Append(sent).AppendLine(")")
 				.Append("│          RTT─┬──value : ").Append((rttAvg * 1000).ToString("N0")).AppendLine(" ms")
 				.Append("│              ├────MAD : ").Append((rttMad * 1000).ToString(".0")).AppendLine(" ms")
-				.Append("│              └───MAPE : ").AppendLine(rttMape.ToString("P"))
+				.Append("│              └───MAPD : ").AppendLine(rttMapd.ToString("P"))
 				.Append("│ Clock offset─┬──value : ").Append(offsetAvg.ToString(".000")).AppendLine(" s")
 				.Append("│              ├─bounds : ").Append(offsetBounds.Minimum.ToString(".000")).Append(" s <= x <= ").Append(offsetBounds.Maximum.ToString(".000")).AppendLine(" s")
 				.Append("│              ├────MAD : ").Append(offsetMad.ToString(".000")).AppendLine(" s")
-				.Append("│              └───MAPE : ").AppendLine(offsetMape.ToString("P"))
+				.Append("│              └───MAPD : ").AppendLine(offsetMapd.ToString("P"))
 				.Append("└────────────────────────────");
 			_log.LogDebug(builder.ToString());
 
