@@ -13,7 +13,7 @@ namespace H3MP.Messages
 
 		public void Deserialize(NetDataReader reader)
 		{
-			Name = reader.GetString();
+			Name = reader.GetString(32);
 		}
 
 		public void Serialize(NetDataWriter writer)

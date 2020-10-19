@@ -190,18 +190,19 @@ namespace H3MP.Peers
 
 			public void OnClientConnected(H3Server server, Peer peer)
 			{
-				var count = server.ClientsCount;
-				var size = new PartySize
+				byte count = (byte) server._husks.Count;
+				byte max = server._config.PlayerLimit.Value;
+				var level = new LevelChangeMessage(HarmonyState.CurrentLevel);
+				var players = new PlayerJoinMessage[count];
 				{
-					CurrentSize = (byte) count,
-					MaxSize = (byte) server._config.PlayerLimit.Value
-				};
+					var i = 0;
+					foreach (var husk in server._husks)
+					{
+						players[i++] = new PlayerJoinMessage(husk.Key, husk.Value.Latest);
+					}
+				}
 
-				peer.Send(new PartyInitMessage(server._partyID, size, server.Secret));
-				peer.Send(new LevelChangeMessage(HarmonyState.CurrentLevel));
-
-				// Upsize party
-				server.BroadcastExcept(peer, new PartyChangeMessage(count));
+				peer.Send(new InitMessage(server._partyID, server.Secret, max, level, players));
 
 				// Find first available player ID.
 				byte id;
@@ -213,26 +214,16 @@ namespace H3MP.Peers
 					}
 				}
 
-				// Initialize existing puppets on just-joined client
-				foreach (KeyValuePair<byte, Husk> husk in server._husks) 
-				{
-					peer.Send(new PlayerJoinMessage(husk.Key, husk.Value.Latest));
-				}
-
-				bool isSelf = server._selfID == peer.ID;
-
+				var peerHusk = new Husk(server._selfID == peer.ID);
 				server._peerIDs.Add(peer, id);
-				server._husks.Add(id, new Husk(isSelf));
+				server._husks.Add(id, peerHusk);
 
 				// Initialize just-joined puppet on other clients
-				server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<PlayerTransformsMessage>.Now(default)));
+				server.BroadcastExcept(peer, new PlayerJoinMessage(id, default));
 			}
 
 			public void OnClientDisconnected(H3Server server, Peer peer, DisconnectInfo info)
 			{
-				// Downsize party
-				server.Broadcast(new PartyChangeMessage(server.ClientsCount));
-
 				var id = server._peerIDs[peer];
 				server._peerIDs.Remove(peer);
 				server._husks.Remove(id);

@@ -63,8 +63,7 @@
     <Compile Include="Discord\StoreManager.cs" />
     <Compile Include="Models\JoinSecret.cs" />
     <Compile Include="Models\HealthInfo.cs" />
-    <Compile Include="Messages\PartyChangeMessage.cs" />
-    <Compile Include="Messages\PartyInitMessage.cs" />
+    <Compile Include="Messages\InitMessage.cs" />
     <Compile Include="HarmonyPatches\HarmonyState.cs" />
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
     <Compile Include="Peers\H3Client.cs" />

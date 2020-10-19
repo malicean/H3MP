@@ -105,6 +105,37 @@ namespace H3MP.Peers
 			PrintHealth();
         }
 
+		private void UpdateDiscordPartySize(int size)
+		{
+			_discord.Update(x =>
+			{
+				x.Party.Size.CurrentSize = size;
+
+				return x;
+			});
+		}
+
+		private void AddPlayer(PlayerJoinMessage message)
+		{
+			var puppet = new Puppet(_log, _config.Puppet, () => _time, _tickDeltaTime);
+			puppet.ProcessTransforms(message.Transforms);
+
+			_players.Add(message.ID, puppet);
+		}
+
+		private void LoadLevel(string name)
+		{
+			HarmonyState.LockLoadLevel = false;
+			try
+			{
+				SteamVR_LoadLevel.Begin(name);
+			}
+			finally
+			{
+				HarmonyState.LockLoadLevel = true;
+			}
+		}
+
 		public override void Update()
 		{
 			if (!_tickTimer.TryCycle())
@@ -168,18 +199,10 @@ namespace H3MP.Peers
 
         internal static void OnLevelChange(H3Client self, Peer peer, LevelChangeMessage message)
 		{
-			HarmonyState.LockLoadLevel = false;
-			try
-			{
-				SteamVR_LoadLevel.Begin(message.Name);
-			}
-			finally
-			{
-				HarmonyState.LockLoadLevel = true;
-			}
+			self.LoadLevel(message.Name);
 		}
 
-		internal static void OnServerInit(H3Client self, Peer peer, PartyInitMessage message)
+		internal static void OnInit(H3Client self, Peer peer, InitMessage message)
 		{
 			self._log.LogDebug("Initializing Discord party...");
 			self._discord.Update(x =>
@@ -188,30 +211,30 @@ namespace H3MP.Peers
 				x.Party = new Discord.ActivityParty
 				{
 					Id = message.ID.ToString(),
-					Size = message.Size
+					Size = new PartySize
+					{
+						CurrentSize = 1 + message.Players.Length,
+						MaxSize = message.MaxSize
+					}
 				};
 				x.Secrets.Join = message.Secret.ToBase64();
 
 				return x;
 			});
-		}
 
-		internal static void OnServerPartyChange(H3Client self, Peer peer, PartyChangeMessage message)
-		{
-			self._discord.Update(x =>
+			self.LoadLevel(message.Level.Name);
+
+			foreach (var player in message.Players)
 			{
-				x.Party.Size.CurrentSize = message.CurrentSize;
-
-				return x;
-			});
+				self.AddPlayer(player);
+			}
 		}
 
 		internal static void OnPlayerJoin(H3Client self, Peer peer, PlayerJoinMessage message)
 		{
-			var puppet = new Puppet(self._log, self._config.Puppet, () => self._time, self._tickDeltaTime);
-			puppet.ProcessTransforms(message.Transforms);
+			self.AddPlayer(message);
 
-			self._players.Add(message.ID, puppet);
+			self.UpdateDiscordPartySize(1 + self._players.Count);
 		}
 
 		internal static void OnPlayerLeave(H3Client self, Peer peer, PlayerLeaveMessage message)
@@ -224,6 +247,8 @@ namespace H3MP.Peers
 
 			player.Dispose();
 			self._players.Remove(id);
+
+			self.UpdateDiscordPartySize(1 + self._players.Count);
 		}
 
 		internal static void OnPlayersMove(H3Client self, Peer peer, PlayerMovesMessage message)
