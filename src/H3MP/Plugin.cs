@@ -25,7 +25,7 @@ namespace H3MP
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
 	{
-		public const string GUID = "ash.h3mp";
+		public const string GUID = "Ash.H3MP";
 		public const string NAME = "H3MP";
 		public const string VERSION = "0.0.0";
 
@@ -38,10 +38,9 @@ namespace H3MP
 		// Unity moment
 		public static Plugin Instance { get; private set; }
 
-		private readonly Version _version;
-
 		private readonly RootConfig _config;
 
+		private readonly Version _version;
 		private readonly RandomNumberGenerator _rng;
 
 		private readonly ManualLogSource _clientLog;
@@ -89,7 +88,7 @@ namespace H3MP
 				// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
-				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) => 
+				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
 				{
 					switch (level)
 					{
@@ -132,7 +131,7 @@ namespace H3MP
 					.AddClient<Timestamped<PlayerTransformsMessage>>(1, DeliveryMethod.Sequenced, H3Server.OnPlayerMove)
 					// Asset management
 					.AddClient<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Server.OnLevelChange)
-					// 
+					//
 					// =======
 					// Server
 					// =======
@@ -145,7 +144,7 @@ namespace H3MP
 					.AddServer<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnLevelChange)
 					.AddServer<PlayerJoinMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnPlayerJoin)
 					.AddServer<PlayerLeaveMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnPlayerLeave)
-				;	
+				;
 			}
 
 			Logger.LogDebug("Initializing shared Harmony state...");
@@ -222,8 +221,8 @@ namespace H3MP
 					foreach (object o in getter._Run()) yield return o;
 
 					var result = getter.Result;
-					
-					if (!result.Key) 
+
+					if (!result.Key)
 					{
 						_serverLog.LogFatal($"Failed to get public IP address to host server with: {result.Value}");
 						yield break;
@@ -294,10 +293,10 @@ namespace H3MP
 
 		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 hostKey)
 		{
-			Connect(endPoint, hostKey, secret, info => 
+			Connect(endPoint, hostKey, secret, info =>
 			{
 				_clientLog.LogError("Disconnected from local server. Something probably caused the frame to hang for more than 5s (debugging breakpoint?). Restarting host...");
-				
+
 				StartCoroutine(_Host());
 			});
 		}
@@ -306,7 +305,7 @@ namespace H3MP
 		{
 			Client?.Dispose();
 
-			Connect(secret.EndPoint, null, secret, info => 
+			Connect(secret.EndPoint, null, secret, info =>
 			{
 				_clientLog.LogError("Disconnected from remote server.");
 				_clientLog.LogDebug("Suiciding...");
@@ -314,7 +313,7 @@ namespace H3MP
 				Client?.Dispose();
 				Client = null;
 
-				if (_config.AutoHost.Value) 
+				if (_config.AutoHost.Value)
 				{
 					Logger.LogDebug("Autostarting host from client disconnection...");
 
@@ -332,7 +331,7 @@ namespace H3MP
 
 		private void Start()
 		{
-			if (_config.AutoHost.Value) 
+			if (_config.AutoHost.Value)
 			{
 				Logger.LogDebug("Autostarting host from game launch...");
 
