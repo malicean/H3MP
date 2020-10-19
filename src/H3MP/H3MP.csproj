@@ -62,6 +62,7 @@
     <Compile Include="Discord\StorageManager.cs" />
     <Compile Include="Discord\StoreManager.cs" />
     <Compile Include="Models\JoinSecret.cs" />
+    <Compile Include="Models\HealthInfo.cs" />
     <Compile Include="Messages\PartyChangeMessage.cs" />
     <Compile Include="Messages\PartyInitMessage.cs" />
     <Compile Include="HarmonyPatches\HarmonyState.cs" />
@@ -76,7 +77,9 @@
     <Compile Include="Enums\JoinError.cs" />
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />
     <Compile Include="Extensions\NetDataWriterExtensions.cs" />
-    <Compile Include="Utils\ExponentialMovingAverage.cs" />
+    <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
+    <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
+    <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />
     <Compile Include="Utils\LocalTime.cs" />
     <Compile Include="Utils\Timers\LoopTimer.cs" />
     <Compile Include="Utils\Timers\LoopCounter.cs" />

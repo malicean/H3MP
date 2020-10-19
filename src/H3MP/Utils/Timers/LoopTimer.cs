@@ -6,6 +6,8 @@ namespace H3MP.Utils
 
 		public double Duration { get; }
 
+		public bool Done => LocalTime.Now >= End;
+
 		public LoopTimer(double duration)
 		{
 			Duration = duration;
@@ -13,19 +15,35 @@ namespace H3MP.Utils
 			Reset();
 		}
 
+		public void Cycle()
+		{
+			End += Duration;
+		}
+
 		public void Reset()
 		{
 			End = LocalTime.Now + Duration;
 		}
 
-		public bool TryReset()
+		public bool TryCycle()
 		{
-			if (LocalTime.Now < End)
+			if (!Done)
 			{
 				return false;
 			}
 
-			End += Duration;
+			Cycle();
+			return true;
+		}
+
+		public bool TryReset()
+		{
+			if (!Done)
+			{
+				return false;
+			}
+
+			Reset();
 			return true;
 		}
 	}

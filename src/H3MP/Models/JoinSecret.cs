@@ -14,7 +14,7 @@ namespace H3MP.Models
 
 		public Key32 Key { get; }
 
-		public byte UpdatesPerTick { get; }
+		public double TickDeltaTime { get; }
 
 		public static bool TryParse(byte[] data, out JoinSecret result, out Version version)
 		{
@@ -33,12 +33,12 @@ namespace H3MP.Models
 
 			IPEndPoint endPoint;
 			Key32 key;
-			byte updatesPerTick;
+			double tickDeltaTime;
 			try
 			{
 				endPoint = reader.GetIPEndPoint();
 				key = reader.GetKey32();
-				updatesPerTick = reader.GetByte();
+				tickDeltaTime = reader.GetDouble();
 			}
 			catch
 			{
@@ -46,16 +46,27 @@ namespace H3MP.Models
 				return false;
 			}
 
-			result = new JoinSecret(version, endPoint, key, updatesPerTick);
+			if (tickDeltaTime <= 0)
+			{
+				result = default;
+				return false;
+			}
+
+			result = new JoinSecret(version, endPoint, key, tickDeltaTime);
+			if (reader.AvailableBytes > 0)
+			{
+				return false;
+			}
+
 			return true;
 		}
 
-		public JoinSecret(Version version, IPEndPoint endPoint, Key32 key, byte updatesPerTick)
+		public JoinSecret(Version version, IPEndPoint endPoint, Key32 key, double tickDeltaTime)
 		{
 			Version = version;
 			EndPoint = endPoint;
 			Key = key;
-			UpdatesPerTick = updatesPerTick;
+			TickDeltaTime = tickDeltaTime;
 		}
 
 		public string ToBase64()
@@ -65,7 +76,7 @@ namespace H3MP.Models
 				writer.Put(Version);
 				writer.Put(EndPoint);
 				writer.Put(Key);
-				writer.Put(UpdatesPerTick);
+				writer.Put(TickDeltaTime);
 
 				return Convert.ToBase64String(writer.Data, 0, writer.Length);
 			}

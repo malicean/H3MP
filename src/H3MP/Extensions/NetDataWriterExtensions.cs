@@ -41,7 +41,7 @@ namespace H3MP
 			@this.Put(value.Version);
 			H3MP.Networking.NetDataWriterExtensions.Put(@this, value.EndPoint);
 			@this.Put(value.Key);
-			@this.Put(value.UpdatesPerTick);
+			@this.Put(value.TickDeltaTime);
 		}
 
 		public static void Put(this NetDataWriter @this, PartySize value)

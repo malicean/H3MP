@@ -245,28 +245,23 @@ namespace H3MP
 			}
 
 
-			float ups = 1f / Time.fixedDeltaTime; // 90
-			_serverLog.LogDebug($"Fixed update: {ups:.00} u/s");
-
-			float minTps = ups / byte.MaxValue; // ups u/s divided by max u/t
-			float userTps = config.TickRate.Value;
-			if (userTps <= minTps || ups < userTps)
+			float ups = 1 / Time.fixedDeltaTime; // 90
+			double tps = config.TickRate.Value;
+			if (tps <= 0)
 			{
-				_serverLog.LogFatal($"The configurable tick rate must fall within the range [{minTps:.00}, {ups:.00}]. Current value: {userTps:.00}");
+				_serverLog.LogFatal("The configurable tick rate must be a positive value.");
 				yield break;
 			}
 
-			float userUpt = ups / userTps;
-			var upt = (byte) Mathf.FloorToInt(userUpt);
-			float tps = ups / upt;
-			if (Mathf.Abs(upt - userUpt) < float.Epsilon)
+			if (tps > ups)
 			{
-				_serverLog.LogWarning($"The configurable tick rate ({userTps:.00} t/s; {userUpt:.00} u/t) is unaligned! It has been rounded up ({tps:.00} t/s; {upt:N0} u/t).");
+				tps = ups;
+				_serverLog.LogWarning($"The configurable tick rate ({tps:.00}) is greater than the local fixed update rate ({ups:.00}). The config will be ignored and the fixed update rate will be used instead; running a tick rate higher than your own fixed update rate has no benefits.");
 			}
 
-			_serverLog.LogDebug($"Tick rate: {upt:N0} u/t; {ups / upt:N0} t/s");
+			double tickDeltaTime = 1 / tps;
 
-			Server = new H3Server(_serverLog, _rng, _messages.Server, _messages.ChannelsCount, _version, upt, _config.Host, publicEndPoint);
+			Server = new H3Server(_serverLog, _rng, _messages.Server, _messages.ChannelsCount, _version, tickDeltaTime, _config.Host, publicEndPoint);
 			_serverLog.LogInfo($"Now hosting on {publicEndPoint}!");
 
 			ConnectLocal(localhost, Server.Secret, Server.HostKey);
@@ -285,17 +280,23 @@ namespace H3MP
 			return _HostUnsafe();
 		}
 
-		private void Connect(IPEndPoint endPoint, Key32 key, Key32? hostKey, byte upt, OnH3ClientDisconnect onDisconnect)
+		private void Connect(IPEndPoint endPoint, Key32? hostKey, JoinSecret secret, OnH3ClientDisconnect onDisconnect)
 		{
 			_clientLog.LogInfo($"Connecting to {endPoint}...");
 
-			var request = new ConnectionRequestMessage(key, hostKey);
-			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, upt, _version, endPoint, request, onDisconnect);
+			float ups = 1 / Time.fixedDeltaTime;
+			double tps = 1 / secret.TickDeltaTime;
+
+			_clientLog.LogDebug($"Fixed update rate: {ups:.00} u/s");
+			_clientLog.LogDebug($"Tick rate: {tps:.00} t/s");
+
+			var request = new ConnectionRequestMessage(secret.Key, hostKey);
+			Client = new H3Client(_clientLog, Activity, _messages.Client, _messages.ChannelsCount, secret.TickDeltaTime, _version, endPoint, request, onDisconnect);
 		}
 
 		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 hostKey)
 		{
-			Connect(endPoint, secret.Key, hostKey, secret.UpdatesPerTick, info => 
+			Connect(endPoint, hostKey, secret, info => 
 			{
 				_clientLog.LogError("Disconnected from local server. Something probably caused the frame to hang for more than 5s (debugging breakpoint?). Restarting host...");
 				
@@ -306,7 +307,8 @@ namespace H3MP
 		private void ConnectRemote(JoinSecret secret)
 		{
 			Client?.Dispose();
-			Connect(secret.EndPoint, secret.Key, null, secret.UpdatesPerTick, info => 
+
+			Connect(secret.EndPoint, null, secret, info => 
 			{
 				_clientLog.LogError("Disconnected from remote server.");
 				_clientLog.LogDebug("Suiciding...");

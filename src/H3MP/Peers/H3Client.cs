@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text;
 using BepInEx.Logging;
 using Discord;
 using FistVR;
@@ -18,33 +19,93 @@ namespace H3MP.Peers
 
 	public class H3Client : Client<H3Client>, IRenderUpdatable
 	{
+		private const double PING_INTERVAL = 3;
+		private const double HEALTH_INTERVAL = 60;
+
 		private readonly ManualLogSource _log;
 		private readonly StatefulActivity _discord;
-		private readonly LoopCounter _tickCounter;
-
 		private readonly OnH3ClientDisconnect _onDisconnected;
 
-		private readonly Dictionary<byte, Puppet> _players;
+		private readonly double _tickDeltaTime;
+		private readonly LoopTimer _tickTimer;
 
+		private readonly Dictionary<byte, Puppet> _players;
 		private ServerTime _time;
+		private HealthInfo _health;
 
 		public double Time => _time?.Now ?? 0;
 
-		internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, byte upt, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
+		internal H3Client(ManualLogSource log, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, double tickDeltaTime, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
 			: base(log, messages, channelsCount, new Events(), version, endpoint, x => x.Put(request))
 		{
 			_log = log;
 			_discord = discord;
-			_tickCounter = new LoopCounter(upt);
-
 			_onDisconnected = onDisconnected;
 
+			_tickDeltaTime = tickDeltaTime;
+			_tickTimer = new LoopTimer(tickDeltaTime);
+
 			_players = new Dictionary<byte, Puppet>();
+			_health = new HealthInfo(HEALTH_INTERVAL, (int) (HEALTH_INTERVAL / PING_INTERVAL));
 		}
+
+		private void PrintHealth()
+		{
+			uint sent = _health.Sent;
+			uint received = _health.Received;
+
+			uint lost = sent - received;
+			var loss = (float) lost / sent;
+
+			double rttAvg = _time.Rtt;
+			double offsetAvg = _time.Offset;
+			DoubleRange offsetBounds = _time.OffsetBounds;
+
+			double rttMad = _health.RttAbsoluteDeviation.Value;
+			double rttMape = Math.Abs((rttAvg - rttMad) / rttAvg);
+			double offsetMad = _health.OffsetAbsoluteDeviation.Value;
+			double offsetMape = Math.Abs((offsetAvg - offsetMad) / offsetAvg);
+
+			// Yeah we could just format/concat and make it infinitely easier to read/write but the perf gaiiiinnnnsss
+			var builder = new StringBuilder().AppendLine() // newline 
+				.Append("┌─CONNECTION HEALTH REPORT───").AppendLine()
+				.Append("│       Packet─────loss : ").Append(loss.ToString("P1")).Append(" (").Append(lost).Append(" / ").Append(sent).AppendLine(")")
+				.Append("│          RTT─┬──value : ").Append((rttAvg * 1000).ToString("N0")).AppendLine(" ms")
+				.Append("│              ├────MAD : ").Append((rttMad * 1000).ToString(".0")).AppendLine(" ms")
+				.Append("│              └───MAPE : ").AppendLine(rttMape.ToString("P"))
+				.Append("│ Clock offset─┬──value : ").Append(offsetAvg.ToString(".000")).AppendLine(" s")
+				.Append("│              ├─bounds : ").Append(offsetBounds.Minimum.ToString(".000")).Append(" s <= x <= ").Append(offsetBounds.Maximum.ToString(".000")).AppendLine(" s")
+				.Append("│              ├────MAD : ").Append(offsetMad.ToString(".000")).AppendLine(" s")
+				.Append("│              └───MAPE : ").AppendLine(offsetMape.ToString("P"))
+				.Append("└────────────────────────────");
+			_log.LogDebug(builder.ToString());
+
+			_health.Sent = 0;
+			_health.Received = 0;
+		}
+
+		private void OnPingSent()
+        {
+            ++_health.Sent;
+        }
+
+		private void OnPingReceived(double rtt, double offset)
+        {
+			++_health.Received;
+			_health.RttAbsoluteDeviation.Push(Math.Abs(_time.Rtt - rtt));
+			_health.OffsetAbsoluteDeviation.Push(Math.Abs(_time.Offset - offset));
+
+            if (!_health.DisplayTimer.TryCycle())
+			{
+				return;
+			}
+
+			PrintHealth();
+        }
 
 		public override void Update()
 		{
-			if (!_tickCounter.TryReset())
+			if (!_tickTimer.TryCycle())
 			{
 				return;
 			}
@@ -93,7 +154,9 @@ namespace H3MP.Peers
 		{
 			if (self._time is null)
 			{
-				self._time = new ServerTime(self._log, peer, message);
+				self._time = new ServerTime(self._log, peer, PING_INTERVAL, message);
+				self._time.Sent += self.OnPingSent;
+				self._time.Received += self.OnPingReceived;
 			}
 			else 
 			{
@@ -101,7 +164,7 @@ namespace H3MP.Peers
 			}
 		}
 
-		internal static void OnLevelChange(H3Client self, Peer peer, LevelChangeMessage message)
+        internal static void OnLevelChange(H3Client self, Peer peer, LevelChangeMessage message)
 		{
 			HarmonyState.LockLoadLevel = false;
 			try
@@ -143,7 +206,7 @@ namespace H3MP.Peers
 
 		internal static void OnPlayerJoin(H3Client self, Peer peer, PlayerJoinMessage message)
 		{
-			var puppet = new Puppet(self._log, () => self._time);
+			var puppet = new Puppet(self._log, () => self._time, self._tickDeltaTime);
 			puppet.ProcessTransforms(message.Transforms);
 
 			self._players.Add(message.ID, puppet);

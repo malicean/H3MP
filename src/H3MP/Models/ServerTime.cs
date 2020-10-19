@@ -1,3 +1,4 @@
+using System;
 using BepInEx.Logging;
 using H3MP.Messages;
 using H3MP.Networking;
@@ -14,50 +15,50 @@ namespace H3MP.Models
 	/// </summary>
 	internal class ServerTime
 	{
+		public delegate void OnPongReceived(double offset, double rtt);
+
 		/// <summary>
 		///		Determines the stability of the offset before it is "squeezed" (technically never, but practically when the range is 2ms).
 		///		Range is (0, 1).
 		///		When it is >0.5, latest offset matters more.
 		///		When it is <0.5, history offset matters more.
 		/// </summary>
-		private const double OFFSET_EMA_ALPHA = 1d / 5;
-
-		private const double PING_INTERVAL = 3;
-		private const double HEALTH_INTERVAL = 60;
+		private const double EMA_ALPHA = 2d / 10;
 
 		private readonly ManualLogSource _log;
 		private readonly Peer _server;
 
 		private readonly LoopTimer _pingTimer;
-		private readonly LoopTimer _healthTimer;
 
 		private readonly ExponentialMovingAverage _offsetAverage;
 		private readonly ExponentialMovingAverage _rttAverage;
 
-		private DoubleRange _offsetBounds;
-		private DoubleRange _rttBounds;
-
-		private byte _sent;
-		private byte _received;
-
 		/// <summary>
 		///		The <see cref="LocalTime.Now" /> value now, in real time, on the server.
 		/// </summary>
-		public double Now => LocalTime.Now - _offsetAverage.Value;
+		public double Now => LocalTime.Now - Offset;
 
-		public ServerTime(ManualLogSource log, Peer server, Timestamped<PingMessage> seed) 
+		public double Offset => _offsetAverage.Value;
+
+		private DoubleRange _offsetBounds;
+		public DoubleRange OffsetBounds => _offsetBounds;
+
+		public double Rtt => _rttAverage.Value;
+
+		public event Action Sent;
+		public event OnPongReceived Received;
+
+		public ServerTime(ManualLogSource log, Peer server, double interval, Timestamped<PingMessage> seed) 
 		{
 			_log = log;
 			_server = server;
 
-			_pingTimer = new LoopTimer(PING_INTERVAL);
-			_healthTimer = new LoopTimer(HEALTH_INTERVAL);
+			_pingTimer = new LoopTimer(interval);
 
 			var offset = ProcessPong(seed, out var rtt, out _offsetBounds);
-			_rttBounds = new DoubleRange(rtt, rtt);
 
-			_offsetAverage = new ExponentialMovingAverage(offset, OFFSET_EMA_ALPHA);
-			_rttAverage = new ExponentialMovingAverage(rtt, OFFSET_EMA_ALPHA);
+			_offsetAverage = new ExponentialMovingAverage(offset, EMA_ALPHA);
+			_rttAverage = new ExponentialMovingAverage(rtt, EMA_ALPHA);
 		}
 
 		/// <summary>
@@ -66,26 +67,14 @@ namespace H3MP.Models
 		/// <param name="server">The server peer.</param>
 		public void Update()
 		{
-			if (_healthTimer.TryReset())
+			if (!_pingTimer.TryCycle())
 			{
-				var lost = _sent - _received;
-				var loss = (double) lost / _sent;
-
-				_log.LogDebug("=== CONNECTION HEALTH REPORT ===");
-				_log.LogDebug($"RTT: {_rttAverage.Value * 1000:N0}ms");
-				_log.LogDebug($"Packet loss: {loss:P1} ({lost} / {_sent})");
-				_log.LogDebug($"Clock offset: {_offsetBounds.Minimum:.000}s <= est. {_offsetAverage.Value:.000}s <= {_offsetBounds.Maximum:.000}s");
-				_log.LogDebug("=== END HEALTH REPORT ===");
-
-				_sent = 0;
-				_received = 0;
+				return;
 			}
 
-			if (_pingTimer.TryReset())
-			{
-				_server.Send(PingMessage.Now);
-				++_sent;
-			}
+			_server.Send(PingMessage.Now);
+			
+			Sent?.Invoke();
 		}
 
 		private double ProcessPong(Timestamped<PingMessage> message, out double rtt, out DoubleRange bounds)
@@ -115,8 +104,6 @@ namespace H3MP.Models
 		/// <param name="message">The times sent by the server, including the original send time.</param>
 		public void ProcessPong(Timestamped<PingMessage> message)
 		{
-			++_received;
-
 			var offset = ProcessPong(message, out var rtt, out var offsetBounds);
 
 			_offsetBounds = _offsetBounds.Clamp(offsetBounds);
@@ -131,6 +118,8 @@ namespace H3MP.Models
 			}
 
 			_rttAverage.Push(rtt);
+
+			Received?.Invoke(offset, rtt);
 		}
 	}
 }

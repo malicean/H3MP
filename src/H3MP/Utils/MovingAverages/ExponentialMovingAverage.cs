@@ -3,7 +3,7 @@ using System;
 namespace H3MP.Utils
 {
 	// https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average
-	public class ExponentialMovingAverage
+	public class ExponentialMovingAverage : IMovingAverage
 	{
 		private readonly double _alpha;
 

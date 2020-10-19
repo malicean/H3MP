@@ -13,6 +13,7 @@ namespace H3MP
 		private const double INTERP_DELAY_EMA_ALPHA = 1d / 10;
 
 		private readonly ManualLogSource _log;
+		private readonly double _minInterpDelay;
 
 		private readonly GameObject _head;
 		private readonly GameObject _handLeft;
@@ -24,9 +25,12 @@ namespace H3MP
 
 		private ServerTime Time => _timeGetter();
 
-		internal Puppet(ManualLogSource log, Func<ServerTime> timeGetter)
+		internal Puppet(ManualLogSource log, Func<ServerTime> timeGetter, double tickDeltaTime)
 		{
 			_log = log;
+			// A tick for the remote client transmitting, server tranceiving, and local client receiving, each.
+			// If input-based movement is achieved, this can be reduced to 2.
+			_minInterpDelay = 3 * tickDeltaTime;
 
 			// Unity objects
 			_head = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -73,11 +77,11 @@ namespace H3MP
 			if (messageDelay > interpDelay)
 			{
 				_interpDelay.Reset(messageDelay);
-				_log.LogDebug($"A puppet's interpolation delay jumped ({interpDelay * 1000:N0}ms -> {messageDelay * 1000:N0}ms)");
+				_log.LogDebug($"A puppet's interpolation delay jumped ({interpDelay * 1000:N0} ms -> {messageDelay * 1000:N0} ms)");
 			}
 			else
 			{
-				_interpDelay.Push(messageDelay);
+				_interpDelay.Push(Math.Max(messageDelay, _minInterpDelay));
 			}
 
 			_snapshots.Push(message.Timestamp, message.Content);

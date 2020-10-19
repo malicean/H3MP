@@ -41,7 +41,7 @@ namespace H3MP
 
 		public static JoinSecret GetJoinSecret(this NetDataReader @this)
 		{
-			return new JoinSecret(@this.GetVersion(), @this.GetIPEndPoint(), @this.GetKey32(), @this.GetByte());
+			return new JoinSecret(@this.GetVersion(), @this.GetIPEndPoint(), @this.GetKey32(), @this.GetDouble());
 		}
 
 		public static PartySize GetPartySize(this NetDataReader @this)
