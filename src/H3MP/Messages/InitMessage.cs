@@ -1,4 +1,5 @@
 using Discord;
+using H3MP.Extensions;
 using H3MP.Models;
 using H3MP.Utils;
 using LiteNetLib.Utils;
@@ -17,7 +18,7 @@ namespace H3MP.Messages
 		public LevelChangeMessage Level { get; private set; }
 
 		public PlayerJoinMessage[] Players { get; private set; }
-		
+
 		public InitMessage(Key32 id, JoinSecret secret, byte maxSize, LevelChangeMessage level, PlayerJoinMessage[] players)
 		{
 			ID = id;

@@ -1,7 +1,7 @@
 using BepInEx.Configuration;
 using UnityEngine;
 
-namespace H3MP
+namespace H3MP.Configs
 {
 	public class ClientPuppetLimbConfig
 	{

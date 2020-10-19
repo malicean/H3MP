@@ -1,11 +1,11 @@
+using H3MP.Networking.Listeners;
 using H3MP.Utils;
 using LiteNetLib;
 using System;
-using System.Linq;
 
 namespace H3MP.Networking
 {
-	internal class SelfPeer<TPeer> : IUpdatable, IDisposable
+    internal class SelfPeer<TPeer> : IUpdatable, IDisposable
 	{
 		public NetManager Manager { get; }
 
@@ -27,7 +27,7 @@ namespace H3MP.Networking
 		{
 			if (Manager.IsRunning)
 			{
-				if (Manager.ConnectedPeersCount > 0) 
+				if (Manager.ConnectedPeersCount > 0)
 				{
 					Manager.DisconnectAll();
 				}

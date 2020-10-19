@@ -1,3 +1,4 @@
+using H3MP.Extensions;
 using H3MP.Utils;
 using LiteNetLib.Utils;
 using UnityEngine;
@@ -23,7 +24,7 @@ namespace H3MP.Messages
 		public TransformMessage Fit(TransformMessage newer, double t)
 		{
 			return new TransformMessage(
-				Position.Fit(newer.Position, t), 
+				Position.Fit(newer.Position, t),
 				Rotation.Fit(newer.Rotation, t)
 			);
 		}

@@ -1,11 +1,12 @@
-using System;
 using BepInEx.Logging;
+using H3MP.Configs;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Utils;
+using System;
 using UnityEngine;
 
-namespace H3MP
+namespace H3MP.Peers
 {
 	public class Puppet : IRenderUpdatable, IDisposable
 	{
@@ -51,7 +52,7 @@ namespace H3MP
 
 			// No collision
 			GameObject.Destroy(collider);
-			
+
 			// Set color
 			var mat = new Material(renderer.material);
 			mat.color = config.Color.Value;
@@ -63,7 +64,7 @@ namespace H3MP
 		internal Puppet(ManualLogSource log, ClientPuppetConfig config, Func<ServerTime> timeGetter, double tickDeltaTime)
 		{
 			_log = log;
-			// A tick step for the remote client transmitting, server tranceiving, and local client receiving, each. 
+			// A tick step for the remote client transmitting, server tranceiving, and local client receiving, each.
 			// Sometimes the stars align and no tick delay is achieved, but not on average, so the minimum should be when all the stars are perfectly not aligned.
 			// Any further tweaking should be just because of network delay.
 			//

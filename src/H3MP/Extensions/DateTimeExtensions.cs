@@ -1,6 +1,6 @@
 using System;
 
-namespace H3MP
+namespace H3MP.Extensions
 {
 	public static class DateTimeExtensions
 	{

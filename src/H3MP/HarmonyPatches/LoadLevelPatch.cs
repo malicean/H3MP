@@ -1,8 +1,9 @@
-using System;
-using System.Collections.Generic;
 using Discord;
+using H3MP.Extensions;
 using H3MP.Messages;
 using HarmonyLib;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -28,7 +29,8 @@ namespace H3MP.HarmonyPatches
 			["ObstacleCourseScene1"] = "The Gunnasium",
 			["ObstacleCourseScene2"] = "Arena Proto",
 			["OmnisequencerTesting3"] = "M.E.A.T.S.",
-			["ProvingGround"] = "Proving Grounds",
+
+		["ProvingGround"] = "Proving Grounds",
 			["SniperRange"] = "Sniper Range",
 			["ReturnOfTheRotwieners"] = "Return of the Rotwieners",
 			["RotWienersStagingScene"] = "Starting Return of the Rotwieners",
@@ -74,7 +76,7 @@ namespace H3MP.HarmonyPatches
 			});
 		}
 
-		private static bool Prefix(string levelName) 
+		private static bool Prefix(string levelName)
 		{
 			var plugin = Plugin.Instance;
 			var log = HarmonyState.Log;

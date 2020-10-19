@@ -1,9 +1,10 @@
 using BepInEx.Logging;
+using H3MP.Networking.Extensions;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using System;
 
-namespace H3MP.Networking
+namespace H3MP.Networking.Listeners
 {
 	internal class ServerListenerEvents<TServer> : IListenerEvents
 	{

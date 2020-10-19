@@ -1,15 +1,15 @@
 using H3MP.Messages;
 
-namespace H3MP
+namespace H3MP.Peers
 {
 	public class Husk
 	{
 		private bool _moved;
-		public Timestamped<PlayerTransformsMessage>? Delta 
+		public Timestamped<PlayerTransformsMessage>? Delta
 		{
 			get
 			{
-				if (!_moved) 
+				if (!_moved)
 				{
 					return null;
 				}
@@ -20,7 +20,7 @@ namespace H3MP
 		}
 
 		private Timestamped<PlayerTransformsMessage> _latest;
-		public Timestamped<PlayerTransformsMessage> Latest 
+		public Timestamped<PlayerTransformsMessage> Latest
 		{
 			get => _latest;
 			set

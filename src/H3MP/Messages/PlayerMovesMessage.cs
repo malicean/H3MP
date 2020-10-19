@@ -1,7 +1,7 @@
-using System;
-using System.Collections.Generic;
 using H3MP.Utils;
 using LiteNetLib.Utils;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace H3MP.Messages

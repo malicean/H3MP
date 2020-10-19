@@ -1,14 +1,12 @@
 using BepInEx.Logging;
 using LiteNetLib;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 
-namespace H3MP.Networking
+namespace H3MP.Networking.Listeners
 {
-	internal class MessageListener<TPeer> : INetEventListener
+    internal class MessageListener<TPeer> : INetEventListener
 	{
 		private readonly TPeer _manager;
 		private readonly PeerMessageList<TPeer> _messages;

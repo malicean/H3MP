@@ -1,4 +1,6 @@
 using BepInEx.Logging;
+using H3MP.Networking.Extensions;
+using H3MP.Networking.Listeners;
 using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;

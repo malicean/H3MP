@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
 using BepInEx.Logging;
 using Discord;
 using FistVR;
+using H3MP.Configs;
 using H3MP.HarmonyPatches;
 using H3MP.Messages;
 using H3MP.Models;
@@ -12,6 +9,10 @@ using H3MP.Networking;
 using H3MP.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Text;
 
 namespace H3MP.Peers
 {
@@ -36,7 +37,7 @@ namespace H3MP.Peers
 
 		public double Time => _time?.Now ?? 0;
 
-		internal H3Client(ManualLogSource log, ClientConfig config, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, double tickDeltaTime, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected) 
+		internal H3Client(ManualLogSource log, ClientConfig config, StatefulActivity discord, PeerMessageList<H3Client> messages, byte channelsCount, double tickDeltaTime, Version version, IPEndPoint endpoint, ConnectionRequestMessage request, OnH3ClientDisconnect onDisconnected)
 			: base(log, messages, channelsCount, new Events(), version, endpoint, x => x.Put(request))
 		{
 			_log = log;
@@ -69,7 +70,7 @@ namespace H3MP.Peers
 			double offsetMapd = offsetMad / offsetAvg;
 
 			// Yeah we could just format/concat and make it infinitely easier to read/write but the perf gaiiiinnnnsss
-			var builder = new StringBuilder().AppendLine() // newline 
+			var builder = new StringBuilder().AppendLine() // newline
 				.Append("┌─CONNECTION HEALTH REPORT───").AppendLine()
 				.Append("│	   Packet─────loss : ").Append(loss.ToString("P1")).Append(" (").Append(lost).Append(" / ").Append(sent).AppendLine(")")
 				.Append("│		  RTT─┬──value : ").Append((rttAvg * 1000).ToString("N0")).AppendLine(" ms")
@@ -174,7 +175,7 @@ namespace H3MP.Peers
 				player.Dispose();
 			}
 
-			_discord.Update(x => 
+			_discord.Update(x =>
 			{
 				x.Party = default;
 				x.Secrets = default;
@@ -191,7 +192,7 @@ namespace H3MP.Peers
 				self._time.Sent += self.OnPingSent;
 				self._time.Received += self.OnPingReceived;
 			}
-			else 
+			else
 			{
 				self._time.ProcessPong(message);
 			}

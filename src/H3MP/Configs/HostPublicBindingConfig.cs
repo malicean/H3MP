@@ -1,10 +1,10 @@
+using BepInEx.Configuration;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using BepInEx.Configuration;
 using UnityEngine.Networking;
 
-namespace H3MP
+namespace H3MP.Configs
 {
 	public class HostPublicBindingConfig
 	{
@@ -17,7 +17,7 @@ namespace H3MP
 		private const string ADDRESS_AUTO_V6_URL = "http://ipv6.icanhazip.com";
 
 		public ConfigEntry<string> Address { get; }
-		
+
 		public ConfigEntry<ushort> Port { get; }
 
 		public HostPublicBindingConfig(ConfigFile config, string section)
@@ -29,11 +29,11 @@ namespace H3MP
 				"For more info about the website used to obtain your IP address automatically, visit https://major.io/icanhazip-com-faq/.");
 			Port = config.Bind(section, nameof(Port), (ushort) 0,
 				"The port that clients should use to connect to the server. " +
-				"If set to 0, this will be the same as the binding port. " + 
+				"If set to 0, this will be the same as the binding port. " +
 				"If you are in a subnet and the forward-from port does not match the forward-to port, this MUST be changed to the forward-from port or clients will not be able to connect.");
 		}
 
-		public AddressGetter GetAddress() 
+		public AddressGetter GetAddress()
 		{
 			return new AddressGetter(Address.Value);
 		}

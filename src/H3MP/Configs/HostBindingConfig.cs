@@ -1,7 +1,7 @@
-using System.Net;
 using BepInEx.Configuration;
+using System.Net;
 
-namespace H3MP
+namespace H3MP.Configs
 {
 	public class HostBindingConfig
 	{

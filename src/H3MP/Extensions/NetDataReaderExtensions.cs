@@ -1,12 +1,13 @@
-using System;
 using Discord;
 using H3MP.Models;
 using H3MP.Networking;
+using H3MP.Networking.Extensions;
 using H3MP.Utils;
 using LiteNetLib.Utils;
+using System;
 using UnityEngine;
 
-namespace H3MP
+namespace H3MP.Extensions
 {
 	public static class NetDataReaderExtensions
 	{

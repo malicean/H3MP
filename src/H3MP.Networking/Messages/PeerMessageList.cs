@@ -9,7 +9,7 @@ namespace H3MP.Networking
 
 		public Dictionary<byte, ReaderHandler<TPeer>> Handlers { get; }
 
-		public PeerMessageList() 
+		public PeerMessageList()
 		{
 			Definitions = new Dictionary<Type, MessageDefinition>();
 			Handlers = new Dictionary<byte, ReaderHandler<TPeer>>();

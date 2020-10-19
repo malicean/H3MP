@@ -2,7 +2,7 @@ using LiteNetLib.Utils;
 using System;
 using System.Net;
 
-namespace H3MP.Networking
+namespace H3MP.Networking.Extensions
 {
 	public static class NetDataWriterExtensions
 	{

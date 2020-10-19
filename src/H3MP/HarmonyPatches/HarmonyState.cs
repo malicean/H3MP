@@ -1,8 +1,8 @@
 using BepInEx.Logging;
-using System;
-using System.Collections.Generic;
 using H3MP.Messages;
 using HarmonyLib;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 

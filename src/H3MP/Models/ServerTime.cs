@@ -1,8 +1,8 @@
-using System;
 using BepInEx.Logging;
 using H3MP.Messages;
 using H3MP.Networking;
 using H3MP.Utils;
+using System;
 
 namespace H3MP.Models
 {
@@ -48,7 +48,7 @@ namespace H3MP.Models
 		public event Action Sent;
 		public event OnPongReceived Received;
 
-		public ServerTime(ManualLogSource log, Peer server, double interval, Timestamped<PingMessage> seed) 
+		public ServerTime(ManualLogSource log, Peer server, double interval, Timestamped<PingMessage> seed)
 		{
 			_log = log;
 			_server = server;
@@ -73,7 +73,7 @@ namespace H3MP.Models
 			}
 
 			_server.Send(PingMessage.Now);
-			
+
 			Sent?.Invoke();
 		}
 

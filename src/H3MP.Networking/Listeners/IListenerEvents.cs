@@ -1,6 +1,6 @@
 using LiteNetLib;
 
-namespace H3MP.Networking
+namespace H3MP.Networking.Listeners
 {
 	internal interface IListenerEvents
 	{

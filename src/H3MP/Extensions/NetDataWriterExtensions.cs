@@ -1,12 +1,13 @@
-using H3MP.Utils;
+using Discord;
+using H3MP.Models;
 using H3MP.Networking;
+using H3MP.Networking.Extensions;
+using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;
-using Discord;
 using UnityEngine;
-using H3MP.Models;
 
-namespace H3MP
+namespace H3MP.Extensions
 {
 	public static class NetDataWriterExtensions
 	{
@@ -39,7 +40,7 @@ namespace H3MP
 		public static void Put(this NetDataWriter @this, JoinSecret value)
 		{
 			@this.Put(value.Version);
-			H3MP.Networking.NetDataWriterExtensions.Put(@this, value.EndPoint);
+			H3MP.Networking.Extensions.NetDataWriterExtensions.Put(@this, value.EndPoint);
 			@this.Put(value.Key);
 			@this.Put(value.TickDeltaTime);
 		}

@@ -1,5 +1,5 @@
-using System;
 using H3MP.Utils;
+using System;
 
 namespace H3MP.Models
 {
@@ -16,7 +16,7 @@ namespace H3MP.Models
 		public HealthInfo(double displayInterval, int sampleCount)
 		{
 			DisplayTimer = new LoopTimer(displayInterval);
-			
+
 			OffsetAbsoluteDeviation = new SimpleMovingAverage(0, sampleCount);
 			RttAbsoluteDeviation = new SimpleMovingAverage(0, sampleCount);
 

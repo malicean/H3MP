@@ -1,8 +1,10 @@
+using H3MP.Extensions;
+using H3MP.Networking;
+using H3MP.Networking.Extensions;
+using LiteNetLib.Utils;
 using System;
 using System.Net;
 using System.Security.Cryptography;
-using H3MP.Networking;
-using LiteNetLib.Utils;
 
 namespace H3MP.Models
 {
@@ -20,7 +22,7 @@ namespace H3MP.Models
 		{
 			var reader = new NetDataReader(data);
 
-			try 
+			try
 			{
 				version = reader.GetVersion();
 			}
@@ -78,6 +80,6 @@ namespace H3MP.Models
 				return Convert.ToBase64String(writer.Data, 0, writer.Length);
 			}
 		}
-	
+
 	}
 }

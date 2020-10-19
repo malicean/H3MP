@@ -1,11 +1,10 @@
-using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;
 using System.Net;
 
-namespace H3MP.Networking
+namespace H3MP.Networking.Extensions
 {
-	public static class NetDataReaderExtensions
+    public static class NetDataReaderExtensions
 	{
 		internal static ConnectionError GetConnectionError(this NetDataReader @this)
 		{

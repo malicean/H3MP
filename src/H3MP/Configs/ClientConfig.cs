@@ -1,6 +1,6 @@
 using BepInEx.Configuration;
 
-namespace H3MP
+namespace H3MP.Configs
 {
 	public class ClientConfig
 	{

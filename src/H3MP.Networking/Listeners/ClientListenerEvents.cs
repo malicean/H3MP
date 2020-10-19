@@ -1,7 +1,7 @@
 using BepInEx.Logging;
 using LiteNetLib;
 
-namespace H3MP.Networking
+namespace H3MP.Networking.Listeners
 {
 	internal class ClientListenerEvents<TClient> : IListenerEvents
 	{

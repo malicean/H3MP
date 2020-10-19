@@ -1,7 +1,8 @@
-using System;
 using BepInEx.Logging;
+using H3MP.Networking.Extensions;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using System;
 
 namespace H3MP.Networking
 {
@@ -25,7 +26,7 @@ namespace H3MP.Networking
 
 		public byte ChannelsCount => (byte) (_maxChannel + 1);
 
-		public UniversalMessageList(ManualLogSource clientLog, ManualLogSource serverLog) 
+		public UniversalMessageList(ManualLogSource clientLog, ManualLogSource serverLog)
 		{
 			_clientLog = clientLog;
 			_serverLog = serverLog;
@@ -41,7 +42,7 @@ namespace H3MP.Networking
 
 		private ReaderHandler<TPeer> CreateReaderFrom<TPeer, TMessage>(MessageHandler<TPeer, TMessage> handler, ManualLogSource log) where TMessage : INetSerializable, new()
 		{
-			return (self, peer, reader) => 
+			return (self, peer, reader) =>
 			{
 				if (!reader.TryGet<TMessage>(out var message))
 				{
@@ -64,7 +65,7 @@ namespace H3MP.Networking
 			var id = sender.ID++;
 			var definition = new MessageDefinition(id, channel, delivery);
 			var reader = CreateReaderFrom(handler, receiverLog);
-			
+
 			sender.Messages.Definitions.Add(typeof(TMessage), definition);
 			receiver.Messages.Handlers.Add(id, reader);
 
