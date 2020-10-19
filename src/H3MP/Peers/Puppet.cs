@@ -25,6 +25,47 @@ namespace H3MP
 
 		private ServerTime Time => _timeGetter();
 
+		private static GameObject CreateHead()
+		{
+			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+			// Components
+			var transform = head.transform;
+			var collider = head.GetComponent<Collider>();
+
+			// Shrink to not be humongous
+			transform.localScale = 0.3f * Vector3.one;
+
+			// Trans-scene
+			GameObject.DontDestroyOnLoad(head);
+
+			return head;
+		}
+
+		private static GameObject CreateHand(GameObject head, Color color)
+		{
+			var hand = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+			// Components
+			var transform = hand.transform;
+			var renderer = hand.GetComponent<Renderer>();
+			var collider = hand.GetComponent<Collider>();
+
+			// Parent and shrink
+			transform.parent = head.transform;
+			transform.localScale = 0.5f * Vector3.one;
+
+			// No collision
+			GameObject.Destroy(collider);
+			
+			// Set color
+			var mat = new Material(renderer.material);
+			mat.color = color;
+			renderer.material = mat;
+
+			return hand;
+		}
+
 		internal Puppet(ManualLogSource log, Func<ServerTime> timeGetter, double tickDeltaTime)
 		{
 			_log = log;
@@ -36,34 +77,9 @@ namespace H3MP
 			_minInterpDelay = 3 * tickDeltaTime;
 
 			// Unity objects
-			_head = GameObject.CreatePrimitive(PrimitiveType.Cube);
-			_handLeft = GameObject.CreatePrimitive(PrimitiveType.Cube);
-			_handRight = GameObject.CreatePrimitive(PrimitiveType.Cube);
-
-			// Parents
-			_handLeft.transform.parent = _head.transform;
-			_handRight.transform.parent = _head.transform;
-
-			// Trans-scene
-			GameObject.DontDestroyOnLoad(_head);
-
-			// Remove colliders
-			GameObject.Destroy(_head.GetComponent<Collider>());
-			GameObject.Destroy(_handLeft.GetComponent<Collider>());
-			GameObject.Destroy(_handRight.GetComponent<Collider>());
-
-			// Visuals
-			_head.transform.localScale = Vector3.one * 0.1f;
-
-			var baseMat = _head.GetComponent<MeshRenderer>().material;
-			var matLeft = new Material(baseMat);
-			var matRight = new Material(baseMat);
-
-			matLeft.color = Color.red;
-			matRight.color = Color.blue;
-			
-			_handLeft.GetComponent<MeshRenderer>().material = matLeft;
-			_handRight.GetComponent<MeshRenderer>().material = matRight;
+			_head = CreateHead();
+			_handLeft = CreateHand(_head, Color.red);
+			_handRight = CreateHand(_head, Color.blue);
 
 			// .NET objects
 			_timeGetter = timeGetter;
