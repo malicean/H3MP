@@ -1,9 +1,11 @@
 using BepInEx.Logging;
+using FistVR;
 using H3MP.Configs;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Utils;
 using System;
+using System.ComponentModel;
 using UnityEngine;
 
 namespace H3MP.Peers
@@ -37,14 +39,14 @@ namespace H3MP.Peers
 			return root;
 		}
 
-		private static GameObject CreateLimb(GameObject root, ClientPuppetLimbConfig config)
+		private static GameObject CreateHead(GameObject root, ClientPuppetLimbConfig config)
 		{
-			var hand = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
 			// Components
-			var transform = hand.transform;
-			var renderer = hand.GetComponent<Renderer>();
-			var collider = hand.GetComponent<Collider>();
+			var transform = head.transform;
+			var renderer = head.GetComponent<Renderer>();
+			var collider = head.GetComponent<Collider>();
 
 			// Parent before scale (don't parent after)
 			transform.parent = root.transform;
@@ -57,6 +59,21 @@ namespace H3MP.Peers
 			var mat = new Material(renderer.material);
 			mat.color = config.Color.Value;
 			renderer.material = mat;
+
+			return head;
+		}
+
+		private static GameObject CreateHand(GameObject root, ClientPuppetLimbConfig config, Transform whichhand)
+		{
+			FVRViveHand fvrhand = whichhand.GetComponent<FVRViveHand>();				
+			GameObject hand = GameObject.Instantiate(fvrhand.Display_Controller_Index);
+			
+			// Components
+			var transform = hand.transform;
+
+			// Parent before scale (don't parent after)
+			transform.parent = root.transform;
+			transform.localScale = config.Scale.Value;
 
 			return hand;
 		}
@@ -73,9 +90,9 @@ namespace H3MP.Peers
 
 			// Unity objects
 			_root = CreateRoot(config);
-			_head = CreateLimb(_root, config.Head);
-			_handLeft = CreateLimb(_root, config.HandLeft);
-			_handRight = CreateLimb(_root, config.HandRight);
+			_head = CreateHead(_root, config.Head);
+			_handLeft = CreateHand(_root, config.HandLeft, GM.CurrentPlayerBody.LeftHand);
+			_handRight = CreateHand(_root, config.HandRight, GM.CurrentPlayerBody.RightHand);
 
 			// .NET objects
 			_timeGetter = timeGetter;
