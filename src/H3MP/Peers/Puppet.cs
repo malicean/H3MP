@@ -65,9 +65,10 @@ namespace H3MP.Peers
 
 		private static GameObject CreateHand(GameObject root, ClientPuppetLimbConfig config, Transform whichhand)
 		{
-			FVRViveHand fvrhand = whichhand.GetComponent<FVRViveHand>();				
+			FVRViveHand fvrhand = whichhand.GetComponent<FVRViveHand>();
+			fvrhand.Display_Controller_Index.SetActive(true);
 			GameObject hand = GameObject.Instantiate(fvrhand.Display_Controller_Index);
-			
+
 			// Components
 			var transform = hand.transform;
 
