@@ -32,7 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="BepInEx">
-      <HintPath>..\libs\BepInEx.dll</HintPath>
+      <HintPath>..\..\game\BepInEx\core\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="LiteNetLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\LiteNetLib.0.9.3.2\lib\net35\LiteNetLib.dll</HintPath>
