@@ -1,9 +1,12 @@
 using BepInEx.Logging;
+using FistVR;
 using H3MP.Configs;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Utils;
 using System;
+using System.Collections;
+using System.ComponentModel;
 using UnityEngine;
 
 namespace H3MP.Peers
@@ -12,6 +15,36 @@ namespace H3MP.Peers
 	{
 		// Should slowly shrink to provide better reliability.
 		private const double INTERP_DELAY_EMA_ALPHA = 1d / 10;
+
+		private static readonly int[][] _rendererColorIDs;
+
+		static Puppet()
+		{
+			var rendererColorNames = new string[][]
+			{
+				new string[]
+				{
+					"_RimColor",
+					"_EmissionColor"
+				},
+				new string[]
+				{
+					"_RimColor"
+				}
+			};
+
+			_rendererColorIDs = new int[rendererColorNames.Length][];
+			for (var i = 0; i < _rendererColorIDs.Length; ++i)
+			{
+				ref int[] colors = ref _rendererColorIDs[i];
+
+				colors = new int[rendererColorNames[i].Length];
+				for (var j = 0; j < colors.Length; ++j)
+				{
+					colors[j] = Shader.PropertyToID(rendererColorNames[i][j]);
+				}
+			}
+		}
 
 		private readonly ManualLogSource _log;
 		private readonly double _minInterpDelay;
@@ -37,17 +70,17 @@ namespace H3MP.Peers
 			return root;
 		}
 
-		private static GameObject CreateLimb(GameObject root, ClientPuppetLimbConfig config)
+		private GameObject CreateHead(ClientPuppetLimbConfig config)
 		{
-			var hand = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
 			// Components
-			var transform = hand.transform;
-			var renderer = hand.GetComponent<Renderer>();
-			var collider = hand.GetComponent<Collider>();
+			var transform = head.transform;
+			var renderer = head.GetComponent<Renderer>();
+			var collider = head.GetComponent<Collider>();
 
 			// Parent before scale (don't parent after)
-			transform.parent = root.transform;
+			transform.parent = _root.transform;
 			transform.localScale = config.Scale.Value;
 
 			// No collision
@@ -55,10 +88,58 @@ namespace H3MP.Peers
 
 			// Set color
 			var mat = new Material(renderer.material);
-			mat.color = config.Color.Value;
+			var hue = config.Color.Value;
+			mat.color = Color.HSVToRGB(hue, 0.5f, 1f);
 			renderer.material = mat;
 
-			return hand;
+			return head;
+		}
+
+		private GameObject CreateController(GameObject prefab, ClientPuppetLimbConfig config)
+		{
+			// Spawn controller
+			var controller = GameObject.Instantiate(prefab);
+			controller.SetActive(true);
+			var controllerTransform = controller.transform;
+
+			// Parent before scale (don't parent after)
+			controllerTransform.parent = _root.transform;
+			controllerTransform.localScale = config.Scale.Value;
+
+			// Colors?
+			float? hueDelta = null;
+			for (var i = 0; i < _rendererColorIDs.Length; ++i)
+			{
+				var renderer = controllerTransform.GetChild(i).GetComponent<Renderer>();
+				var material = renderer.material;
+				var colorIDs = _rendererColorIDs[i];
+
+				foreach (var colorID in colorIDs)
+				{
+					// Get current controller color values
+					Color.RGBToHSV(material.GetColor(colorID), out float h, out float s, out float v);
+
+					// If this is the first color, use it as the baseline hue shift.
+					if (!hueDelta.HasValue)
+					{
+						hueDelta = config.Color.Value - h;
+					}
+
+					// Apply hue delta to controller hue.
+					float shiftedH = (h + hueDelta.Value) % 1f;
+					var value = Color.HSVToRGB(shiftedH, s, v);
+
+					// Set controller color values.
+					material.SetColor(colorID, value);
+				}
+			}
+
+			return controller;
+		}
+
+		private static GameObject GetControllerFrom(Transform hand)
+		{
+			return hand.GetComponent<FVRViveHand>().Display_Controller_Index;
 		}
 
 		internal Puppet(ManualLogSource log, ClientPuppetConfig config, Func<ServerTime> timeGetter, double tickDeltaTime)
@@ -73,9 +154,10 @@ namespace H3MP.Peers
 
 			// Unity objects
 			_root = CreateRoot(config);
-			_head = CreateLimb(_root, config.Head);
-			_handLeft = CreateLimb(_root, config.HandLeft);
-			_handRight = CreateLimb(_root, config.HandRight);
+			_head = CreateHead(config.Head);
+
+			_handLeft = CreateController(GetControllerFrom(GM.CurrentPlayerBody.LeftHand), config.HandLeft);
+			_handRight = CreateController(GetControllerFrom(GM.CurrentPlayerBody.RightHand), config.HandRight);
 
 			// .NET objects
 			_timeGetter = timeGetter;
@@ -123,7 +205,7 @@ namespace H3MP.Peers
 
 		public void Dispose()
 		{
-			GameObject.Destroy(_head);
+			GameObject.Destroy(_root);
 		}
 	}
 }
