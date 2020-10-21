@@ -151,7 +151,7 @@ namespace H3MP.Peers
 			//
 			// If input-based movement is achieved, this can be reduced to 2.
 			_minInterpDelay = 3 * tickDeltaTime;
-	
+
 			// Unity objects
 			_root = CreateRoot(config);
 			_head = CreateHead(config.Head);
@@ -205,7 +205,7 @@ namespace H3MP.Peers
 
 		public void Dispose()
 		{
-			GameObject.Destroy(_head);
+			GameObject.Destroy(_root);
 		}
 	}
 }
