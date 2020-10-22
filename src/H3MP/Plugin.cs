@@ -129,23 +129,16 @@ namespace H3MP
 					// =======
 					// Time synchronization (reliable adds latency)
 					.AddClient<PingMessage>(0, DeliveryMethod.Sequenced, H3Server.OnClientPing)
-					// Player movement
-					.AddClient<Timestamped<PlayerTransformsMessage>>(1, DeliveryMethod.Sequenced, H3Server.OnPlayerMove)
-					// Asset management
-					.AddClient<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Server.OnLevelChange)
+					// Snapshots
+					.AddClient<Timestamped<InputSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Server.OnClientInput)
 					//
 					// =======
 					// Server
 					// =======
 					// Time synchronization (reliable adds latency)
 					.AddServer<Timestamped<PingMessage>>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
-					// Player movement
-					.AddServer<PlayerMovesMessage>(1, DeliveryMethod.Sequenced, H3Client.OnPlayersMove)
-					// Asset management
-					.AddServer<InitMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnInit)
-					.AddServer<LevelChangeMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnLevelChange)
-					.AddServer<PlayerJoinMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnPlayerJoin)
-					.AddServer<PlayerLeaveMessage>(2, DeliveryMethod.ReliableOrdered, H3Client.OnPlayerLeave)
+					// Snapshots
+					.AddServer<Timestamped<WorldSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerWorld)
 				;
 			}
 

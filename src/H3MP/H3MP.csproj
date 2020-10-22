@@ -35,20 +35,20 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
-      <HintPath>..\..\game\BepInEx\core\0Harmony.dll</HintPath>
+      <HintPath>..\libs\0Harmony.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\game\h3vr_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\libs\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="BepInEx">
-      <HintPath>..\..\game\BepInEx\core\BepInEx.dll</HintPath>
+      <HintPath>..\libs\BepInEx.dll</HintPath>
     </Reference>
     <Reference Include="LiteNetLib, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\LiteNetLib.0.9.3.2\lib\net35\LiteNetLib.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="UnityEngine">
-      <HintPath>..\..\game\h3vr_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>..\libs\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -62,8 +62,10 @@
     <Compile Include="Configs\RootConfig.cs" />
     <Compile Include="Enums\JoinError.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
+    <Compile Include="Extensions\DirtyExtensions.cs" />
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />
     <Compile Include="Extensions\NetDataWriterExtensions.cs" />
+    <Compile Include="Extensions\ValueExtensions.cs" />
     <Compile Include="Discord\ActivityManager.cs" />
     <Compile Include="Discord\Constants.cs" />
     <Compile Include="Discord\Core.cs" />
@@ -73,40 +75,48 @@
     <Compile Include="Discord\StoreManager.cs" />
     <Compile Include="HarmonyPatches\HarmonyState.cs" />
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
-    <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
-    <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
-    <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />
-    <Compile Include="Utils\Timers\LoopCounter.cs" />
-    <Compile Include="Utils\Timers\LoopTimer.cs" />
-    <Compile Include="Utils\LocalTime.cs" />
     <Compile Include="Messages\ConnectionRequestMessage.cs" />
-    <Compile Include="Messages\InitMessage.cs" />
-    <Compile Include="Messages\LevelChangeMessage.cs" />
+    <Compile Include="Messages\InputSnapshotMessage.cs" />
+    <Compile Include="Messages\MoveMessage.cs" />
     <Compile Include="Messages\PingMessage.cs" />
-    <Compile Include="Messages\PlayerJoinMessage.cs" />
-    <Compile Include="Messages\PlayerLeaveMessage.cs" />
-    <Compile Include="Messages\PlayerMovesMessage.cs" />
-    <Compile Include="Messages\PlayerTransformsMessage.cs" />
     <Compile Include="Messages\TimestampedMessage.cs" />
     <Compile Include="Messages\TransformMessage.cs" />
+    <Compile Include="Messages\WorldSnapshotMessage.cs" />
     <Compile Include="Models\DoubleRange.cs" />
     <Compile Include="Models\HealthInfo.cs" />
+    <Compile Include="Models\InputState.cs" />
     <Compile Include="Models\JoinSecret.cs" />
     <Compile Include="Models\Key32.cs" />
     <Compile Include="Models\ServerTime.cs" />
+    <Compile Include="Models\WorldState.cs" />
     <Compile Include="Peers\H3Client.cs" />
     <Compile Include="Peers\H3Server.cs" />
     <Compile Include="Peers\Puppet.cs" />
     <Compile Include="Peers\Husk.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Utils\IRenderUpdatable.cs" />
-    <Compile Include="Utils\MoreMath.cs" />
-    <Compile Include="Utils\ILinearFittable.cs" />
-    <Compile Include="Utils\Fitting.cs" />
-    <Compile Include="Utils\Snapshots\Snapshots.cs" />
-    <Compile Include="Utils\Snapshots\ISnapshotKiller.cs" />
-    <Compile Include="Utils\Snapshots\TimeSnapshotKiller.cs" />
+    <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
+    <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
+    <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />
     <Compile Include="Utils\Snapshots\CountSnapshotKiller.cs" />
+    <Compile Include="Utils\Snapshots\ISnapshotKiller.cs" />
+    <Compile Include="Utils\Snapshots\Snapshots.cs" />
+    <Compile Include="Utils\Snapshots\TimeSnapshotKiller.cs" />
+    <Compile Include="Utils\Timers\LoopCounter.cs" />
+    <Compile Include="Utils\Timers\LoopTimer.cs" />
+    <Compile Include="Utils\Values\ConstantMutRef.cs" />
+    <Compile Include="Utils\Values\ConstantRef.cs" />
+    <Compile Include="Utils\Values\DirtyRef.cs" />
+    <Compile Include="Utils\Values\FunctionRef.cs" />
+    <Compile Include="Utils\Values\IDirty.cs" />
+    <Compile Include="Utils\Values\IMutRef.cs" />
+    <Compile Include="Utils\Values\IRef.cs" />
+    <Compile Include="Utils\Values\Option.cs" />
+    <Compile Include="Utils\IDeltable.cs" />
+    <Compile Include="Utils\ILinearFittable.cs" />
+    <Compile Include="Utils\IRenderUpdatable.cs" />
+    <Compile Include="Utils\Fitting.cs" />
+    <Compile Include="Utils\LocalTime.cs" />
+    <Compile Include="Utils\MoreMath.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="StatefulActivity.cs" />
   </ItemGroup>

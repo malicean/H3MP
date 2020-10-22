@@ -33,11 +33,6 @@ namespace H3MP.Models
 		private readonly ExponentialMovingAverage _offsetAverage;
 		private readonly ExponentialMovingAverage _rttAverage;
 
-		/// <summary>
-		///		The <see cref="LocalTime.Now" /> value now, in real time, on the server.
-		/// </summary>
-		public double Now => LocalTime.Now - Offset;
-
 		public double Offset => _offsetAverage.Value;
 
 		private DoubleRange _offsetBounds;

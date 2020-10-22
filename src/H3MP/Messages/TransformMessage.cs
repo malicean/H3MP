@@ -1,3 +1,4 @@
+using System;
 using H3MP.Extensions;
 using H3MP.Utils;
 using LiteNetLib.Utils;
@@ -5,7 +6,7 @@ using UnityEngine;
 
 namespace H3MP.Messages
 {
-	public struct TransformMessage : INetSerializable, ILinearFittable<TransformMessage>
+	public struct TransformMessage : INetSerializable, IDeltable<TransformMessage>, ILinearFittable<TransformMessage>, IEquatable<TransformMessage>
 	{
 		public Vector3 Position { get; private set; }
 
@@ -21,20 +22,6 @@ namespace H3MP.Messages
 		{
 		}
 
-		public TransformMessage Fit(TransformMessage newer, double t)
-		{
-			return new TransformMessage(
-				Position.Fit(newer.Position, t),
-				Rotation.Fit(newer.Rotation, t)
-			);
-		}
-
-		public void Apply(Transform transform)
-		{
-			transform.position = Position;
-			transform.rotation = Rotation;
-		}
-
 		public void Deserialize(NetDataReader reader)
 		{
 			Position = reader.GetVector3();
@@ -46,5 +33,34 @@ namespace H3MP.Messages
 			writer.Put(Position);
 			writer.Put(Rotation);
 		}
-	}
+
+		public TransformMessage CreateDelta(TransformMessage head)
+        {
+            return new TransformMessage(
+				Position - head.Position,
+				Rotation * Quaternion.Inverse(head.Rotation)
+			);
+        }
+
+		public TransformMessage ConsumeDelta(TransformMessage head)
+        {
+            return new TransformMessage(
+				Position + head.Position,
+				Rotation * head.Rotation
+			);
+        }
+
+		public TransformMessage Fit(TransformMessage b, double t)
+		{
+			return new TransformMessage(
+				Position.Fit(b.Position, t),
+				Rotation.Fit(b.Rotation, t)
+			);
+		}
+
+		public bool Equals(TransformMessage other)
+        {
+            return Position == other.Position && Rotation == other.Rotation;
+        }
+    }
 }

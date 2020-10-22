@@ -60,7 +60,7 @@ namespace H3MP.Peers
 
 			base.Update();
 
-			var deltas = new Dictionary<byte, Timestamped<PlayerTransformsMessage>>();
+			var deltas = new Dictionary<byte, Timestamped<MoveMessage>>();
 			foreach (KeyValuePair<byte, Husk> husk in _husks)
 			{
 				var delta = husk.Value.Delta;
@@ -77,7 +77,7 @@ namespace H3MP.Peers
 					var peer = peerID.Key;
 					var id = peerID.Value;
 
-					Timestamped<PlayerTransformsMessage>? popped;
+					Timestamped<MoveMessage>? popped;
 					if (deltas.TryGetValue(id, out var delta))
 					{
 						popped = delta;
@@ -105,9 +105,9 @@ namespace H3MP.Peers
 			peer.Send(Timestamped<PingMessage>.Now(message));
 		}
 
-		internal static void OnPlayerMove(H3Server self, Peer peer, Timestamped<PlayerTransformsMessage> message)
+		internal static void OnPlayerMoveDelta(H3Server self, Peer peer, Timestamped<MoveMessage> message)
 		{
-			self[peer].Latest = message;
+			self[peer].LastDelta = message;
 		}
 
 		internal static void OnLevelChange(H3Server self, Peer peer, LevelChangeMessage message)
@@ -201,7 +201,7 @@ namespace H3MP.Peers
 					var i = 0;
 					foreach (var husk in server._husks)
 					{
-						players[i++] = new PlayerJoinMessage(husk.Key, husk.Value.Latest);
+						players[i++] = new PlayerJoinMessage(husk.Key, husk.Value.LastDelta);
 					}
 				}
 
@@ -222,7 +222,7 @@ namespace H3MP.Peers
 				server._husks.Add(id, peerHusk);
 
 				// Initialize just-joined puppet on other clients
-				server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<PlayerTransformsMessage>.Now(default)));
+				server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<MoveMessage>.Now(default)));
 			}
 
 			public void OnClientDisconnected(H3Server server, Peer peer, DisconnectInfo info)

@@ -29,11 +29,13 @@ namespace H3MP.Peers
 		private readonly OnH3ClientDisconnect _onDisconnected;
 
 		private readonly double _tickDeltaTime;
-		private readonly LoopTimer _tickTimer;
+		private readonly LoopTimer _localTickTimer;
+		private double _tickTime;
 
 		private bool _disposed;
 		private readonly Dictionary<byte, Puppet> _players;
 		private ServerTime _time;
+		private MoveMessage _lastTransforms;
 		private HealthInfo _health;
 
 		public double Time => _time?.Now ?? 0;
@@ -47,7 +49,7 @@ namespace H3MP.Peers
 			_onDisconnected = onDisconnected;
 
 			_tickDeltaTime = tickDeltaTime;
-			_tickTimer = new LoopTimer(tickDeltaTime);
+			_localTickTimer = new LoopTimer(tickDeltaTime, LocalTime.Now); // We reset this after we connect.
 
 			_players = new Dictionary<byte, Puppet>();
 			_health = new HealthInfo(HEALTH_INTERVAL, (int) (HEALTH_INTERVAL / PING_INTERVAL));
@@ -140,29 +142,29 @@ namespace H3MP.Peers
 
 		public override void Update()
 		{
-			if (!_tickTimer.TryCycle())
+			var localTickTime = LocalTime.Now;
+			if (!_localTickTimer.TryCycle(localTickTime))
 			{
 				return;
 			}
 
 			base.Update();
 
-			// In case we disconnected.
-			if (_disposed)
+			// In case we disconnected or tick time is still unknown.
+			if (_disposed || _time is null)
 			{
 				return;
 			}
 
-			if (!(_time is null))
-			{
-				_time.Update();
+			var tickTime = localTickTime - _time.Offset;
 
-				var player = GM.CurrentPlayerBody;
-				var transforms = new PlayerTransformsMessage(player.Head, player.LeftHand, player.RightHand);
-				var timestamped = new Timestamped<PlayerTransformsMessage>(_time.Now, transforms);
+			_time.Update();
 
-				Server.Send(timestamped);
-			}
+			var player = GM.CurrentPlayerBody;
+			var transforms = new MoveMessage(player.Head, player.LeftHand, player.RightHand);
+			var timestamped = new Timestamped<MoveMessage>(tickTime, transforms);
+
+			Server.Send(timestamped);
 		}
 
 		public void RenderUpdate()
@@ -199,6 +201,8 @@ namespace H3MP.Peers
 				self._time = new ServerTime(self._log, peer, PING_INTERVAL, message);
 				self._time.Sent += self.OnPingSent;
 				self._time.Received += self.OnPingReceived;
+
+				self._localTickTimer.Reset(self._time.Now);
 			}
 			else
 			{
@@ -260,9 +264,9 @@ namespace H3MP.Peers
 			self.UpdateDiscordPartySize(1 + self._players.Count);
 		}
 
-		internal static void OnPlayersMove(H3Client self, Peer peer, PlayerMovesMessage message)
+		internal static void OnPlayersMove(H3Client self, Peer peer, WorldSnapshotMessage message)
 		{
-			foreach (KeyValuePair<byte, Timestamped<PlayerTransformsMessage>> delta in message.Players)
+			foreach (KeyValuePair<byte, Timestamped<MoveMessage>> delta in message.Puppets)
 			{
 				// In case the player hasn't spawned yet.
 				if (self._players.TryGetValue(delta.Key, out var puppet))

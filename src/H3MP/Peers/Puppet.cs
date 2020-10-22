@@ -56,7 +56,7 @@ namespace H3MP.Peers
 
 		private readonly Func<ServerTime> _timeGetter;
 		private readonly ExponentialMovingAverage _interpDelay;
-		private readonly Snapshots<PlayerTransformsMessage> _snapshots;
+		private readonly Snapshots<MoveMessage> _snapshots;
 
 		private ServerTime Time => _timeGetter();
 
@@ -162,11 +162,11 @@ namespace H3MP.Peers
 			// .NET objects
 			_timeGetter = timeGetter;
 			_interpDelay = new ExponentialMovingAverage(_minInterpDelay, INTERP_DELAY_EMA_ALPHA);
-			var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => Time.Now, 5);
-			_snapshots = new Snapshots<PlayerTransformsMessage>(killer);
+			var killer = new TimeSnapshotKiller<MoveMessage>(() => Time.Now, 5);
+			_snapshots = new Snapshots<MoveMessage>(killer);
 		}
 
-		public void ProcessTransforms(Timestamped<PlayerTransformsMessage> message)
+		public void ProcessTransforms(Timestamped<MoveMessage> message)
 		{
 			var time = Time;
 			if (!(time is null))
