@@ -1,7 +1,6 @@
 # H3MP ![functions: barely](https://img.shields.io/badge/functions-barely-c28411?style=for-the-badge) ![made with: pain](https://img.shields.io/badge/made%20with-pain-red?style=for-the-badge)
 A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
-
 ## Features
 - Configs  
   - [x] Player limit  
