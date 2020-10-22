@@ -347,4 +347,5 @@ MigrationBackup/
 .idea/
 
 # Dependencies
-/src/libs
+/game
+discord_game_sdk.dll
