@@ -32,6 +32,8 @@ If you are on BepInEx 5.3 or prior, not all of the DLL files can be put in the p
 To uninstall, you only need to delete the `BepInEx\plugins\H3MP` directory. `discord_game_sdk.dll` will not be loaded if H3MP is not present, just like how BepInEx is not loaded if `winhttp.dll` is not present.
 
 ## Building
+:warning: All scripts listed here must be ran the root git directory (has the scripts directory in it). **Do not run a script by double clicking on it, or with the current directory set to `scripts`**. :warning:
+
 ### Get the Dependencies
 #### 1. Download the [Discord GameSDK](https://discord.com/developers/docs/game-sdk/sdk-starter-guide#step-1-get-the-thing) and extract `lib/x86_64/discord_game_sdk.dll` to `src/H3MP/Discord/`
 This can be done using `scripts/get_discord_gamesdk.sh`.  
