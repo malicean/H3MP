@@ -70,29 +70,47 @@ namespace H3MP.Peers
 			return root;
 		}
 
-		private GameObject CreateHead(ClientPuppetLimbConfig config)
+		private GameObject CreateBody(GameObject prefab, ClientPuppetLimbConfig config)
 		{
-			var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
+			var body = GameObject.Instantiate(prefab);
+			UnityEngine.Debug.Log(body == null);
 
 			// Components
-			var transform = head.transform;
-			var renderer = head.GetComponent<Renderer>();
-			var collider = head.GetComponent<Collider>();
+			var transform = body.transform;
+			UnityEngine.Debug.Log(transform == null);
+			//var renderer = body.GetComponent<Renderer>();
+			//UnityEngine.Debug.Log(renderer == null);
+			var collider = body.GetComponent<Collider>();
+			UnityEngine.Debug.Log(collider == null);
 
+			UnityEngine.Debug.Log("1");
 			// Parent before scale (don't parent after)
 			transform.parent = _root.transform;
+			UnityEngine.Debug.Log("2");
 			transform.localScale = config.Scale.Value;
+			UnityEngine.Debug.Log("3");
 
 			// No collision
 			GameObject.Destroy(collider);
+			UnityEngine.Debug.Log("4");
 
 			// Set color
-			var mat = new Material(renderer.material);
+			/*var mat = new Material(renderer.material);
+			UnityEngine.Debug.Log("5");
 			var hue = config.Color.Value;
+			UnityEngine.Debug.Log("6");
 			mat.color = Color.HSVToRGB(hue, 0.5f, 1f);
+			UnityEngine.Debug.Log("7");
 			renderer.material = mat;
+			UnityEngine.Debug.Log("8");
+			*/
 
-			return head;
+			return body;
+		}
+
+		private static GameObject GetBodyPrefabFrom(FVRPlayerBody body)
+		{
+			return body.PlayerSosigBodyPrefab.GetGameObject();
 		}
 
 		private GameObject CreateController(GameObject prefab, ClientPuppetLimbConfig config)
@@ -154,7 +172,7 @@ namespace H3MP.Peers
 
 			// Unity objects
 			_root = CreateRoot(config);
-			_head = CreateHead(config.Head);
+			_head = CreateBody(GetBodyPrefabFrom(GM.CurrentPlayerBody),config.Head);
 
 			_handLeft = CreateController(GetControllerFrom(GM.CurrentPlayerBody.LeftHand), config.HandLeft);
 			_handRight = CreateController(GetControllerFrom(GM.CurrentPlayerBody.RightHand), config.HandRight);
