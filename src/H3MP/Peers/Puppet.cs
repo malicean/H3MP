@@ -125,12 +125,19 @@ namespace H3MP.Peers
 			private List<GameObject> m_curClothes = new List<GameObject>();
 		}
 
+		void MoveToLayer(Transform root, int layer)
+		{
+			root.gameObject.layer = layer;
+			foreach (Transform child in root)
+				MoveToLayer(child, layer);
+		}
+
 		private GameObject CreateBody(GameObject prefab, ClientPuppetLimbConfig config)
 		{
 			var body = GameObject.Instantiate(prefab);
 			GameObject.Destroy(body.GetComponent<PlayerSosigBody>());
 			body.SetActive(true);
-			body.layer = default;
+			MoveToLayer(body.transform, default);
 			body.AddComponent<ReplacementPlayerSosigBody>().ApplyOutfit(ManagerSingleton<IM>.Instance.odicSosigObjsByID[SosigEnemyID.MF_RedHots_Spy].OutfitConfig.First());
 
 			// Components
