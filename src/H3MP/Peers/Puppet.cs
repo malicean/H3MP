@@ -1,6 +1,7 @@
 using BepInEx.Logging;
 using FistVR;
 using H3MP.Configs;
+using H3MP.HarmonyPatches;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Utils;
@@ -48,19 +49,12 @@ namespace H3MP.Peers
 			}
 		}
 
-		private readonly ManualLogSource _log;
-		private readonly double _minInterpDelay;
-
-		private readonly GameObject _root;
-		private readonly GameObject _head;
-		private readonly GameObject _handLeft;
-		private readonly GameObject _handRight;
-
-		private readonly Func<ServerTime> _timeGetter;
-		private readonly ExponentialMovingAverage _interpDelay;
-		private readonly Snapshots<PlayerTransformsMessage> _snapshots;
-
-		private ServerTime Time => _timeGetter();
+		private static void MoveToLayer(Transform root, int layer)
+		{
+			root.gameObject.layer = layer;
+			foreach (Transform child in root)
+				MoveToLayer(child, layer);
+		}
 
 		private static GameObject CreateRoot(ClientPuppetConfig config)
 		{
@@ -72,73 +66,39 @@ namespace H3MP.Peers
 			return root;
 		}
 
-		private class ReplacementPlayerSosigBody : MonoBehaviour
+		private static GameObject GetBodyPrefabFrom(FVRPlayerBody body)
 		{
-			// Token: 0x06000F63 RID: 3939 RVA: 0x000655A8 File Offset: 0x000639A8
-			public void ApplyOutfit(SosigOutfitConfig o)
-			{
-				if (this.m_curClothes.Count > 0)
-				{
-					for (int i = this.m_curClothes.Count - 1; i >= 0; i--)
-					{
-						if (this.m_curClothes[i] != null)
-						{
-							UnityEngine.Object.Destroy(this.m_curClothes[i]);
-						}
-					}
-				}
-				this.m_curClothes.Clear();
-				this.SpawnAccesoryToLink(o.Headwear, o.Chance_Headwear);
-				this.SpawnAccesoryToLink(o.Facewear, o.Chance_Facewear);
-				this.SpawnAccesoryToLink(o.Eyewear, o.Chance_Eyewear);
-			}
-
-			// Token: 0x06000F64 RID: 3940 RVA: 0x000656C0 File Offset: 0x00063AC0
-			private void SpawnAccesoryToLink(List<FVRObject> gs, float chance)
-			{
-				if (UnityEngine.Random.Range(0f, 1f) > chance)
-				{
-					return;
-				}
-				if (gs.Count < 1)
-				{
-					return;
-				}
-				GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(gs[UnityEngine.Random.Range(0, gs.Count)].GetGameObject());
-				this.m_curClothes.Add(gameObject);
-                UnityEngine.Component[] componentsInChildren = gameObject.GetComponentsInChildren<UnityEngine.Component>(true);
-				for (int i = componentsInChildren.Length - 1; i >= 0; i--)
-				{
-					if (componentsInChildren[i] is Transform || componentsInChildren[i] is MeshFilter || componentsInChildren[i] is MeshRenderer)
-					{
-						continue;
-					}
-
-					UnityEngine.Object.Destroy(componentsInChildren[i]);
-				}
-				gameObject.transform.parent = transform;
-				gameObject.transform.localPosition = Vector3.zero;
-				gameObject.transform.localRotation = Quaternion.identity;
-			}
-
-			// Token: 0x04001BF4 RID: 7156
-			private List<GameObject> m_curClothes = new List<GameObject>();
+			return body.PlayerSosigBodyPrefab.GetGameObject();
 		}
 
-		void MoveToLayer(Transform root, int layer)
+		private static GameObject GetControllerFrom(Transform hand)
 		{
-			root.gameObject.layer = layer;
-			foreach (Transform child in root)
-				MoveToLayer(child, layer);
+			return hand.GetComponent<FVRViveHand>().Display_Controller_Index;
 		}
 
-		private GameObject CreateBody(GameObject prefab, ClientPuppetLimbConfig config)
+		private readonly ManualLogSource _log;
+		private readonly double _minInterpDelay;
+
+		private readonly GameObject _root;
+		private readonly GameObject _body;
+		private readonly GameObject _handLeft;
+		private readonly GameObject _handRight;
+		private readonly ReplacementPlayerSosigBody _sosig;
+
+		private readonly Func<ServerTime> _timeGetter;
+		private readonly ExponentialMovingAverage _interpDelay;
+		private readonly Snapshots<PlayerTransformsMessage> _snapshots;
+
+		private ServerTime Time => _timeGetter();
+
+		private GameObject CreateBody(GameObject prefab, ClientPuppetLimbConfig config, out ReplacementPlayerSosigBody sosig)
 		{
 			var body = GameObject.Instantiate(prefab);
 			GameObject.Destroy(body.GetComponent<PlayerSosigBody>());
 			body.SetActive(true);
 			MoveToLayer(body.transform, default);
-			body.AddComponent<ReplacementPlayerSosigBody>().ApplyOutfit(ManagerSingleton<IM>.Instance.odicSosigObjsByID[SosigEnemyID.MF_RedHots_Spy].OutfitConfig.First());
+
+			sosig = body.AddComponent<ReplacementPlayerSosigBody>();
 
 			// Components
 			var transform = body.transform;
@@ -152,11 +112,6 @@ namespace H3MP.Peers
 			GameObject.Destroy(collider);
 
 			return body;
-		}
-
-		private static GameObject GetBodyPrefabFrom(FVRPlayerBody body)
-		{
-			return body.PlayerSosigBodyPrefab.GetGameObject();
 		}
 
 		private GameObject CreateController(GameObject prefab, ClientPuppetLimbConfig config)
@@ -201,11 +156,6 @@ namespace H3MP.Peers
 			return controller;
 		}
 
-		private static GameObject GetControllerFrom(Transform hand)
-		{
-			return hand.GetComponent<FVRViveHand>().Display_Controller_Index;
-		}
-
 		internal Puppet(ManualLogSource log, ClientPuppetConfig config, Func<ServerTime> timeGetter, double tickDeltaTime)
 		{
 			_log = log;
@@ -218,7 +168,7 @@ namespace H3MP.Peers
 
 			// Unity objects
 			_root = CreateRoot(config);
-			_head = CreateBody(GetBodyPrefabFrom(GM.CurrentPlayerBody),config.Head);
+			_body = CreateBody(GetBodyPrefabFrom(GM.CurrentPlayerBody),config.Head, out _sosig);
 
 			_handLeft = CreateController(GetControllerFrom(GM.CurrentPlayerBody.LeftHand), config.HandLeft);
 			_handRight = CreateController(GetControllerFrom(GM.CurrentPlayerBody.RightHand), config.HandRight);
@@ -228,6 +178,13 @@ namespace H3MP.Peers
 			_interpDelay = new ExponentialMovingAverage(_minInterpDelay, INTERP_DELAY_EMA_ALPHA);
 			var killer = new TimeSnapshotKiller<PlayerTransformsMessage>(() => Time.Now, 5);
 			_snapshots = new Snapshots<PlayerTransformsMessage>(killer);
+
+			HarmonyState.OnSpectatorOutfitRandomized += HarmonyState_OnSpectatorOutfitRandomized;
+		}
+
+		private void HarmonyState_OnSpectatorOutfitRandomized(SosigOutfitConfig outfit)
+		{
+			_sosig.ApplyOutfit(outfit);
 		}
 
 		public void ProcessTransforms(Timestamped<PlayerTransformsMessage> message)
@@ -262,14 +219,84 @@ namespace H3MP.Peers
 
 			var snapshot = _snapshots[time.Now - _interpDelay.Value];
 
-			snapshot.Head.Apply(_head.transform);
+			snapshot.Head.Apply(_body.transform);
 			snapshot.HandLeft.Apply(_handLeft.transform);
 			snapshot.HandRight.Apply(_handRight.transform);
 		}
 
 		public void Dispose()
 		{
+			HarmonyState.OnSpectatorOutfitRandomized -= HarmonyState_OnSpectatorOutfitRandomized;
 			GameObject.Destroy(_root);
+		}
+
+		private class ReplacementPlayerSosigBody : MonoBehaviour
+		{
+			public Transform Sosig_Head;
+			public Transform Sosig_Torso;
+			public Transform Sosig_Abdomen;
+			public Transform Sosig_Legs;
+
+			void Awake()
+			{
+				// Assigns the proper transforms to the prefab
+				// Traverses _PlayerBody_Torso prefab's "Geo_" children
+				Sosig_Torso = transform.GetChild(0);
+				Sosig_Head = transform.GetChild(1).GetChild(0);
+				Sosig_Abdomen = transform.GetChild(2).GetChild(0);
+				Sosig_Legs = transform.GetChild(2).GetChild(1).GetChild(0);
+			}
+
+			public void ApplyOutfit(SosigOutfitConfig o)
+			{
+				if (this.m_curClothes.Count > 0)
+				{
+					for (int i = this.m_curClothes.Count - 1; i >= 0; i--)
+					{
+						if (this.m_curClothes[i] != null)
+						{
+							UnityEngine.Object.Destroy(this.m_curClothes[i]);
+						}
+					}
+				}
+				this.m_curClothes.Clear();
+				this.SpawnAccesoryToLink(o.Headwear, this.Sosig_Head, o.Chance_Headwear);
+				this.SpawnAccesoryToLink(o.Facewear, this.Sosig_Head, o.Chance_Facewear);
+				this.SpawnAccesoryToLink(o.Eyewear, this.Sosig_Head, o.Chance_Eyewear);
+				this.SpawnAccesoryToLink(o.Torsowear, this.Sosig_Torso, o.Chance_Torsowear);
+				this.SpawnAccesoryToLink(o.Pantswear, this.Sosig_Abdomen, o.Chance_Pantswear);
+				this.SpawnAccesoryToLink(o.Pantswear_Lower, this.Sosig_Legs, o.Chance_Pantswear_Lower);
+				this.SpawnAccesoryToLink(o.Backpacks, this.Sosig_Torso, o.Chance_Backpacks);
+			}
+
+			private void SpawnAccesoryToLink(List<FVRObject> gs, Transform l, float chance)
+			{
+				if (UnityEngine.Random.Range(0f, 1f) > chance)
+				{
+					return;
+				}
+				if (gs.Count < 1)
+				{
+					return;
+				}
+				GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(gs[UnityEngine.Random.Range(0, gs.Count)].GetGameObject());
+				this.m_curClothes.Add(gameObject);
+                UnityEngine.Component[] componentsInChildren = gameObject.GetComponentsInChildren<UnityEngine.Component>(true);
+				for (int i = componentsInChildren.Length - 1; i >= 0; i--)
+				{
+					if (componentsInChildren[i] is Transform || componentsInChildren[i] is MeshFilter || componentsInChildren[i] is MeshRenderer)
+					{
+						continue;
+					}
+
+					UnityEngine.Object.Destroy(componentsInChildren[i]);
+				}
+				gameObject.transform.parent = l;
+				gameObject.transform.localPosition = Vector3.zero;
+				gameObject.transform.localRotation = Quaternion.identity;
+			}
+
+			private List<GameObject> m_curClothes = new List<GameObject>();
 		}
 	}
 }
