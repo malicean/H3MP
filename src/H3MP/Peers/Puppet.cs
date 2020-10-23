@@ -6,7 +6,9 @@ using H3MP.Models;
 using H3MP.Utils;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using UnityEngine;
 
 namespace H3MP.Peers
@@ -70,40 +72,77 @@ namespace H3MP.Peers
 			return root;
 		}
 
+		private class ReplacementPlayerSosigBody : MonoBehaviour
+		{
+			// Token: 0x06000F63 RID: 3939 RVA: 0x000655A8 File Offset: 0x000639A8
+			public void ApplyOutfit(SosigOutfitConfig o)
+			{
+				if (this.m_curClothes.Count > 0)
+				{
+					for (int i = this.m_curClothes.Count - 1; i >= 0; i--)
+					{
+						if (this.m_curClothes[i] != null)
+						{
+							UnityEngine.Object.Destroy(this.m_curClothes[i]);
+						}
+					}
+				}
+				this.m_curClothes.Clear();
+				this.SpawnAccesoryToLink(o.Headwear, o.Chance_Headwear);
+				this.SpawnAccesoryToLink(o.Facewear, o.Chance_Facewear);
+				this.SpawnAccesoryToLink(o.Eyewear, o.Chance_Eyewear);
+			}
+
+			// Token: 0x06000F64 RID: 3940 RVA: 0x000656C0 File Offset: 0x00063AC0
+			private void SpawnAccesoryToLink(List<FVRObject> gs, float chance)
+			{
+				if (UnityEngine.Random.Range(0f, 1f) > chance)
+				{
+					return;
+				}
+				if (gs.Count < 1)
+				{
+					return;
+				}
+				GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(gs[UnityEngine.Random.Range(0, gs.Count)].GetGameObject());
+				this.m_curClothes.Add(gameObject);
+                UnityEngine.Component[] componentsInChildren = gameObject.GetComponentsInChildren<UnityEngine.Component>(true);
+				for (int i = componentsInChildren.Length - 1; i >= 0; i--)
+				{
+					if (componentsInChildren[i] is Transform || componentsInChildren[i] is MeshFilter || componentsInChildren[i] is MeshRenderer)
+					{
+						continue;
+					}
+
+					UnityEngine.Object.Destroy(componentsInChildren[i]);
+				}
+				gameObject.transform.parent = transform;
+				gameObject.transform.localPosition = Vector3.zero;
+				gameObject.transform.localRotation = Quaternion.identity;
+			}
+
+			// Token: 0x04001BF4 RID: 7156
+			private List<GameObject> m_curClothes = new List<GameObject>();
+		}
+
 		private GameObject CreateBody(GameObject prefab, ClientPuppetLimbConfig config)
 		{
 			var body = GameObject.Instantiate(prefab);
-			UnityEngine.Debug.Log(body == null);
+			GameObject.Destroy(body.GetComponent<PlayerSosigBody>());
+			body.SetActive(true);
+			body.layer = default;
+			body.AddComponent<ReplacementPlayerSosigBody>().ApplyOutfit(ManagerSingleton<IM>.Instance.odicSosigObjsByID[SosigEnemyID.MF_RedHots_Spy].OutfitConfig.First());
 
 			// Components
 			var transform = body.transform;
-			UnityEngine.Debug.Log(transform == null);
-			//var renderer = body.GetComponent<Renderer>();
-			//UnityEngine.Debug.Log(renderer == null);
 			var collider = body.GetComponent<Collider>();
-			UnityEngine.Debug.Log(collider == null);
 
-			UnityEngine.Debug.Log("1");
 			// Parent before scale (don't parent after)
 			transform.parent = _root.transform;
-			UnityEngine.Debug.Log("2");
 			transform.localScale = config.Scale.Value;
-			UnityEngine.Debug.Log("3");
 
 			// No collision
 			GameObject.Destroy(collider);
-			UnityEngine.Debug.Log("4");
-
-			// Set color
-			/*var mat = new Material(renderer.material);
-			UnityEngine.Debug.Log("5");
-			var hue = config.Color.Value;
-			UnityEngine.Debug.Log("6");
-			mat.color = Color.HSVToRGB(hue, 0.5f, 1f);
-			UnityEngine.Debug.Log("7");
-			renderer.material = mat;
-			UnityEngine.Debug.Log("8");
-			*/
 
 			return body;
 		}
