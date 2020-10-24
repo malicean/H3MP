@@ -142,12 +142,12 @@ namespace H3MP.Peers
 					// If this is the first color, use it as the baseline hue shift.
 					if (!hueDelta.HasValue)
 					{
-						hueDelta = config.Color.Value - h;
+						hueDelta = config.Color.Hue.Value - h;
 					}
 
 					// Apply hue delta to controller hue.
 					float shiftedH = (h + hueDelta.Value) % 1f;
-					var value = Color.HSVToRGB(shiftedH, s, v);
+					var value = Color.HSVToRGB(shiftedH, s, config.Color.Value.Value);
 
 					// Set controller color values.
 					material.SetColor(colorID, value);

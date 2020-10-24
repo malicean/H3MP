@@ -52,6 +52,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configs\ClientPuppetLimbColorConfig.cs" />
     <Compile Include="Configs\ClientConfig.cs" />
     <Compile Include="Configs\ClientPuppetConfig.cs" />
     <Compile Include="Configs\ClientPuppetLimbConfig.cs" />
