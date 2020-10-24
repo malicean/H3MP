@@ -111,7 +111,8 @@ namespace H3MP.Peers
 			// No collision
 			GameObject.Destroy(collider);
 
-			return body;
+			// Return head link rather than body (torso link)
+			return sosig.Sosig_Head.gameObject;
 		}
 
 		private GameObject CreateController(GameObject prefab, ClientPuppetLimbConfig config)
