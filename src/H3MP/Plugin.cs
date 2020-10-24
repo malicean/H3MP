@@ -63,6 +63,7 @@ namespace H3MP
 
 		public Plugin()
 		{
+			
 			Logger.LogDebug("Binding configs...");
 			{
 				TomlTypeConverter.AddConverter(typeof(IPAddress), new TypeConverter

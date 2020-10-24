@@ -1,204 +1,102 @@
 using H3MP.Extensions;
 using H3MP.Models;
+using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;
 using System.Collections.Generic;
 
 namespace H3MP.Messages
 {
-    public struct WorldSnapshotMessage : INetSerializable
+    public struct WorldSnapshotMessage : INetSerializable, IDeltable<WorldSnapshotMessage>
 	{
-		[Flags]
-		public enum FieldBits : byte
-		{
-			PartyID = 1 << 0,
-			Secret = 1 << 1,
-			MaxPlayers = 1 << 2,
-			Level = 1 << 3,
-			PlayersLeft = 1 << 4,
-			PlayersJoined = 1 << 5,
-			Puppets = 1 << 6,
-		}
+		#region Party information
 
-		private FieldBits _fields;
+		public Option<Key32> PartyID;
+		public Option<JoinSecret> Secret;
+		public Option<byte> MaxPlayers;
 
-		private Key32? _partyID;
-		public Key32? PartyID
-		{
-			get => _partyID;
-			set
-			{
-				SetField(FieldBits.PartyID, value.HasValue);
-				_partyID = value;
-			}
-		}
+		#endregion
 
-		private JoinSecret? _secret;
-		public JoinSecret? Secret
-		{
-			get => _secret;
-			set
-			{
-				SetField(FieldBits.Secret, _secret.HasValue);
-				_secret = value;
-			}
-		}
+		public Option<string> Level;
 
-		private byte _maxPlayers;
-		public byte MaxPlayers
-		{
-			get => _maxPlayers;
-			set
-			{
-				SetField(FieldBits.MaxPlayers, _maxPlayers > 0);
-				_maxPlayers = value;
-			}
-		}
-
-		private string _level;
-		public string Level
-		{
-			get => _level;
-			set
-			{
-				SetField(FieldBits.Level, !(value is null));
-				_level = value;
-			}
-		}
-
-		private byte[] _playersLeft;
-		public byte[] PlayersLeft
-		{
-			get => _playersLeft;
-			set
-			{
-				SetField(FieldBits.PlayersLeft, !(value is null));
-				_playersLeft = value;
-			}
-		}
-
-		private byte[] _playersJoined;
-		public byte[] PlayersJoined
-		{
-			get => _playersJoined;
-			set
-			{
-				SetField(FieldBits.PlayersJoined, !(value is null));
-				_playersJoined = value;
-			}
-		}
-
-		private Dictionary<byte, MoveMessage> _puppets;
-		public Dictionary<byte, MoveMessage> Puppets
-		{
-			get => _puppets;
-			set
-			{
-				SetField(FieldBits.Puppets, !(value is null));
-				_puppets = value;
-			}
-		}
-
-		private void SetField(FieldBits field, bool has)
-		{
-			if (has)
-			{
-				_fields |= field;
-			}
-			else
-			{
-				_fields &= ~field;
-			}
-		}
-
-		private bool HasField(FieldBits field)
-		{
-			return (_fields & field) == field;
-		}
+		private Option<byte[]> PlayersLeft;
+		private Option<byte[]> PlayersJoined;
+		private Option<Dictionary<byte, MoveMessage>> Puppets;
 
 		public void Deserialize(NetDataReader reader)
 		{
-			_fields = (FieldBits) reader.GetByte();
+			var options = new NetOptionReader(reader);
 
-			if (HasField(FieldBits.PartyID))
-			{
-				_partyID = reader.GetKey32();
-			}
-			if (HasField(FieldBits.Secret))
-			{
-				_secret = reader.GetJoinSecret();
-			}
-			if (HasField(FieldBits.MaxPlayers))
-			{
-				_maxPlayers = reader.GetByte();
-			}
+			PartyID = options.Get(r => r.GetKey32());
+			Secret = options.Get(r => r.GetJoinSecret());
+			MaxPlayers = options.Get(r => r.GetByte());
 
-			if (HasField(FieldBits.Level))
-			{
-				_level = reader.GetStringWithByteLength();
-			}
+			Level = options.Get(r => r.GetStringWithByteLength());
 
-			if (HasField(FieldBits.PlayersLeft))
+			PlayersLeft = options.Get(r => r.GetBytesWithByteLength());
+			PlayersJoined = options.Get(r => r.GetBytesWithByteLength());
+			Puppets = options.Get(r =>
 			{
-				_playersLeft = reader.GetBytesWithByteLength();
-			}
-			if (HasField(FieldBits.PlayersJoined))
-			{
-				_playersJoined = reader.GetBytesWithByteLength();
-			}
-			if (HasField(FieldBits.Puppets))
-			{
-				var count = reader.GetByte();
-				_puppets = new Dictionary<byte, MoveMessage>(count);
+				var count = r.GetByte();
+				var puppets = new Dictionary<byte, MoveMessage>(count);
 
 				for (var i = 0; i < count; ++i)
 				{
-					_puppets.Add(reader.GetByte(), reader.Get<MoveMessage>());
+					puppets.Add(r.GetByte(), r.Get<MoveMessage>());
 				}
-			}
+
+				return puppets;
+			});
 		}
 
 		public void Serialize(NetDataWriter writer)
 		{
-			writer.Put((byte) _fields);
+			using (var options = new NetOptionWriter(writer))
+			{
+				options.Put(PartyID, (w, v) => w.Put(v));
+				options.Put(Secret, (w, v) => w.Put(v));
+				options.Put(MaxPlayers, (w, v) => w.Put(v));
 
-			if (HasField(FieldBits.PartyID))
-			{
-				writer.Put(_partyID.Value);
-			}
-			if (HasField(FieldBits.Secret))
-			{
-				writer.Put(_secret.Value);
-			}
-			if (HasField(FieldBits.MaxPlayers))
-			{
-				writer.Put(_maxPlayers);
-			}
+				options.Put(Level, (w, v) => w.PutStringWithByteLength(v));
 
-			if (HasField(FieldBits.Level))
-			{
-				writer.PutStringWithByteLength(_level);
-			}
+				options.Put(PlayersLeft, (w, v) => w.PutBytesWithByteLength(v));
+				options.Put(PlayersJoined, (w, v) => w.PutBytesWithByteLength(v));
 
-			if (HasField(FieldBits.PlayersLeft))
-			{
-				writer.PutBytesWithByteLength(_playersLeft);
-			}
-			if (HasField(FieldBits.PlayersJoined))
-			{
-				writer.PutBytesWithByteLength(_playersJoined);
-			}
-			if (HasField(FieldBits.Puppets))
-			{
-				var count = (byte) Puppets.Count;
-				writer.Put(count);
-
-				foreach (KeyValuePair<byte, MoveMessage> puppet in _puppets)
+				options.Put(Puppets, (w, v) =>
 				{
-					writer.Put(puppet.Key);
-					writer.Put(puppet.Value);
-				}
+					var count = v.Count;
+					w.Put(count);
+
+					foreach (var pair in v)
+					{
+						w.Put(pair.Key);
+						w.Put(pair.Value);
+					}
+				});
 			}
+		}
+
+		public WorldSnapshotMessage ConsumeDelta(WorldSnapshotMessage head)
+		{
+			var deltas = new DeltaComparer<WorldSnapshotMessage>(this, head);
+			return new WorldSnapshotMessage
+			{
+				PartyID = deltas.Consume(x => x.PartyID.ToDeltaBinary()),
+				Secret = deltas.Consume(x => x.Secret.ToDeltaBinary()),
+				MaxPlayers = deltas.Consume(x => x.MaxPlayers.ToDeltaBinary()),
+
+				Level = deltas.Consume(x => x.Level.ToDeltaBinary()),
+
+				PlayersLeft = deltas.Consume(x => x.PlayersLeft.ToDeltaBinary()),
+				PlayersJoined = deltas.Consume(x => x.PlayersJoined.ToDeltaBinary()),
+
+				Puppets = deltas.Consume(x => x.Puppets.ToDeltaBinary())
+			};
+		}
+
+		public WorldSnapshotMessage CreateDelta(WorldSnapshotMessage head)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

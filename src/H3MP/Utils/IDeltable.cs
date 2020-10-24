@@ -1,15 +1,17 @@
 namespace H3MP.Utils
 {
-	public interface IDeltable<TSelf> where TSelf : IDeltable<TSelf>
+	public interface IDeltable<TSelf, TDelta> where TSelf : IDeltable<TSelf, TDelta>
 	{
+		TDelta InitialDelta { get; }
+
 		/// <summary>
 		/// 	Creates a delta that represents the difference between this and the head.
 		/// </summary>
-		TSelf CreateDelta(TSelf head);
+		Option<TDelta> CreateDelta(TSelf head);
 
 		/// <summary>
 		/// 	Consumes this delta to create a new head based on the current head.
 		/// </summary>
-		TSelf ConsumeDelta(TSelf head);
+		TSelf ConsumeDelta(TDelta head);
 	}
 }

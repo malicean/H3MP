@@ -6,24 +6,28 @@ using UnityEngine;
 
 namespace H3MP.Messages
 {
-    public struct MoveMessage : INetSerializable, IDeltable<MoveMessage>, ILinearFittable<MoveMessage>, IEquatable<MoveMessage>
+    public struct MoveMessage : INetSerializable, IDeltable<MoveMessage, MoveMessage>, ILinearFittable<MoveMessage>, IEquatable<MoveMessage>
 	{
-		public TransformMessage Head { get; private set; }
+		public Option<TransformMessage> Head { get; private set; }
 
-		public TransformMessage HandLeft { get; private set; }
+		public Option<TransformMessage> HandLeft { get; private set; }
 
-		public TransformMessage HandRight { get; private set; }
+		public Option<TransformMessage> HandRight { get; private set; }
 
-		public MoveMessage(TransformMessage head, TransformMessage handLeft, TransformMessage handRight)
+		public MoveMessage InitialDelta => this;
+
+		public MoveMessage(Option<TransformMessage> head, Option<TransformMessage> handLeft, Option<TransformMessage> handRight)
 		{
 			Head = head;
 			HandLeft = handLeft;
 			HandRight = handRight;
 		}
 
-		public MoveMessage(Transform head, Transform handLeft, Transform handRight) : this(new TransformMessage(head), new TransformMessage(handLeft), new TransformMessage(handRight))
-		{
-		}
+		public MoveMessage(Transform head, Transform handLeft, Transform handRight) : this(
+			Option.Some(new TransformMessage(head)),
+			Option.Some(new TransformMessage(handLeft)),
+			Option.Some(new TransformMessage(handRight))
+		) { }
 
 		public void Deserialize(NetDataReader reader)
 		{
@@ -39,13 +43,13 @@ namespace H3MP.Messages
 			writer.Put(HandRight);
 		}
 
-		public MoveMessage CreateDelta(MoveMessage head)
+		public Option<MoveMessage> CreateDelta(MoveMessage head)
         {
-            return new MoveMessage(
+            return Option.Some(new MoveMessage(
 				Head.CreateDelta(head.Head),
 				HandLeft.CreateDelta(head.HandLeft),
 				HandRight.CreateDelta(head.HandRight)
-			);
+			));
         }
 
 		public MoveMessage ConsumeDelta(MoveMessage head)

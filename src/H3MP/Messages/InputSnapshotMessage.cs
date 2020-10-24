@@ -4,45 +4,49 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Messages
 {
-    public struct InputSnapshotMessage : INetSerializable, IDeltable<InputSnapshotMessage>
+public struct InputSnapshotMessage : INetSerializable, IDeltable<InputSnapshotMessage, InputSnapshotMessage>
+{
+	public Option<string> Level;
+
+	public Option<MoveMessage> DeltaMove;
+
+	public InputSnapshotMessage InitialDelta => this;
+
+	public void Deserialize(NetDataReader reader)
 	{
-		public Option<string> Level;
-		public Option<MoveMessage> DeltaMove;
+		var options = new NetOptionReader(reader);
 
-        public void Deserialize(NetDataReader reader)
-        {
-			// Dirty from default.
-			reader.GetDirties(
-				Level, x => x.GetStringWithByteLength(),
-				DeltaMove, x => x.Get<MoveMessage>()
-			);
-        }
+		Level = options.Get(r => r.GetStringWithByteLength());
+		DeltaMove = options.Get<MoveMessage>();
+	}
 
-        public void Serialize(NetDataWriter writer)
-        {
-			writer.PutDirties(
-				Level, (NetDataWriter w, string v) => w.PutStringWithByteLength(v),
-				DeltaMove, (NetDataWriter w, MoveMessage v) => w.Put(v)
-			);
-        }
+	public void Serialize(NetDataWriter writer)
+	{
+		using (var options = new NetOptionWriter(writer))
+		{
+			options.Put(Level, (w, v) => writer.PutStringWithByteLength(v));
+			options.Put(DeltaMove);
+		}
+	}
 
-		public InputSnapshotMessage ConsumeDelta(InputSnapshotMessage head)
-        {
-			Level.Rebase(head.Level);
-			DeltaMove.Rebase(head.DeltaMove);
+	public Option<InputSnapshotMessage> CreateDelta(InputSnapshotMessage head)
+	{
+		var deltas = new DeltaComparer<InputSnapshotMessage>(this, head);
+		return Option.Some(new InputSnapshotMessage
+		{
+			Level = deltas.Create(x => x.Level, x => x.ToEqualityDelta()),
+			DeltaMove = deltas.Create(x => x.DeltaMove)
+		});
+	}
 
-			return head;
-        }
-
-        public InputSnapshotMessage CreateDelta(InputSnapshotMessage head)
-        {
-            var delta = new InputSnapshotMessage
-			{
-				Level = head.Level.Rebase(Level),
-				DeltaMove = head.DeltaMove.Rebase(DeltaMove)
-			}
-
-			Level.
-        }
-    }
+	public InputSnapshotMessage ConsumeDelta(InputSnapshotMessage head)
+	{
+		var deltas = new DeltaComparer<InputSnapshotMessage>(this, head);
+		return new InputSnapshotMessage
+		{
+			Level = deltas.Consume(x => x.Level, x => x.ToEqualityDelta()),
+			DeltaMove = deltas.Consume(x => x.DeltaMove)
+		};
+	}
+}
 }
