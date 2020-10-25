@@ -10,5 +10,10 @@ namespace H3MP.Extensions
 			// This normally wouldn't work, but because we have the method return type, it implicitly converts.
 			return @this;
 		}
+
+		public static bool HasFlag(this byte @this, byte flag)
+		{
+			return (@this & flag) == flag;
+		}
 	}
 }

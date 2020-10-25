@@ -35,7 +35,12 @@ namespace H3MP.Utils
 
 		public static bool Equals<T>(this Option<T> @this, Option<T> other) where T : IEquatable<T>
 		{
-			return @this.MatchSome(out var thisValue) && other.MatchSome(out var otherValue) && thisValue.Equals(otherValue);
+			return @this.Equals(other, (x, y) => x.Equals(y));
+		}
+
+		public static bool Equals<T>(this Option<T> @this, Option<T> other, Func<T, T, bool> equals)
+		{
+			return @this.MatchSome(out var thisValue) && other.MatchSome(out var otherValue) && equals(thisValue, otherValue);
 		}
 	}
 

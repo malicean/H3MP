@@ -4,6 +4,8 @@ namespace H3MP.Utils
 {
 	internal static class Fitting
 	{
+		public delegate T Fitter<T>(T a, T b, double t);
+
 		public static double Fit(this double a, double b, double t)
 		{
 			return a + (b - a) * t;

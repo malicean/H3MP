@@ -8,61 +8,64 @@ namespace H3MP.Messages
 {
 	public struct TransformMessage : IPackedSerializable, IDeltable<TransformMessage, TransformMessage>, ILinearFittable<TransformMessage>, IEquatable<TransformMessage>
 	{
-		public Option<Vector3> Position { get; private set; }
+		public Option<Vector3> Position;
 
-		public Option<Quaternion> Rotation { get; private set; }
+		public Option<Quaternion> Rotation;
 
 		public TransformMessage InitialDelta => this;
 
-		public TransformMessage(Vector3 position, Quaternion rotation)
+		public void Deserialize(ref BitPackReader reader)
 		{
-			Position = position;
-			Rotation = rotation;
+			Position = reader.GetOption((ref BitPackReader r) => r.Bytes.GetVector3());
+			Rotation = reader.GetOption<SmallestThreeQuaternionMessage>().Map(x => x.Value);
 		}
 
-		public TransformMessage(Transform transform) : this(transform.position, transform.rotation)
+		public void Serialize(ref BitPackWriter writer)
 		{
+			writer.Put(Position, (ref BitPackWriter w, Vector3 v) => w.Bytes.Put(v));
+			writer.Put(Rotation.Map(x => new SmallestThreeQuaternionMessage(x)));
 		}
 
-		public void Deserialize(BitPackReader reader)
-		{
-			Position = reader.GetVector3();
-			Rotation = reader.GetQuaternion();
-		}
-
-		public void Serialize(BitPackWriter writer)
-		{
-			writer.Put(Position);
-			writer.Put(Rotation);
-		}
-1
-		public Option<TransformMessage> CreateDelta(TransformMessage head)
+		public Option<TransformMessage> CreateDelta(TransformMessage baseline)
         {
-            return Option.Some(new TransformMessage(
-				Position - head.Position,
-				Rotation * Quaternion.Inverse(head.Rotation)
-			));
+            var deltas = new DeltaCreator<TransformMessage>(this, baseline);
+			var delta = new TransformMessage
+			{
+				Position = deltas.Create(x => x.Position, x => x.ToDelta()),
+				Rotation = deltas.Create(x => x.Rotation, x => x.ToDelta()),
+			};
+
+			return delta.Equals(default)
+				? Option.None<TransformMessage>()
+				: Option.Some(delta);
         }
 
-		public TransformMessage ConsumeDelta(TransformMessage head)
+		public TransformMessage ConsumeDelta(TransformMessage delta)
         {
-            return new TransformMessage(
-				Position + head.Position,
-				Rotation * head.Rotation
-			);
+			var deltas = new DeltaConsumer<TransformMessage>(this, delta);
+
+            return new TransformMessage
+			{
+				Position = deltas.Consume(x => x.Position, x => x.ToDelta(), x => x),
+				Rotation = deltas.Consume(x => x.Rotation, x => x.ToDelta(), x => x)
+			};
         }
 
 		public TransformMessage Fit(TransformMessage b, double t)
 		{
-			return new TransformMessage(
-				Position.Fit(b.Position, t),
-				Rotation.Fit(b.Rotation, t)
-			);
+			var fits = new FitCreator<TransformMessage>(this, b, t);
+
+			return new TransformMessage
+			{
+				Position = fits.Fit(x => x.Position, x => x.ToFittable(), x => x),
+				Rotation = fits.Fit(x => x.Rotation, x => x.ToFittable(), x => x)
+			};
 		}
 
 		public bool Equals(TransformMessage other)
         {
-            return Position == other.Position && Rotation == other.Rotation;
+			return Position.Equals(other.Position, (x, y) => x == y)
+				&& Rotation.Equals(other.Rotation, (x, y) => x == y);
         }
     }
 }

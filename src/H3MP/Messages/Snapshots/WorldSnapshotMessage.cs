@@ -1,13 +1,13 @@
 using H3MP.Extensions;
 using H3MP.Models;
 using H3MP.Utils;
-using LiteNetLib.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace H3MP.Messages
 {
-    public struct WorldSnapshotMessage : INetSerializable, IDeltable<WorldSnapshotMessage>
+	public struct WorldSnapshotMessage : IPackedSerializable, IDeltable<WorldSnapshotMessage, WorldSnapshotMessage>, IEquatable<WorldSnapshotMessage>
 	{
 		#region Party information
 
@@ -19,73 +19,73 @@ namespace H3MP.Messages
 
 		public Option<string> Level;
 
-		private Option<byte[]> PlayersLeft;
-		private Option<byte[]> PlayersJoined;
-		private Option<Dictionary<byte, MoveMessage>> Puppets;
+		public Option<byte[]> PlayersLeft;
+		public Option<byte[]> PlayersJoined;
+		public Option<Dictionary<byte, MoveMessage>> Puppets;
 
-		public void Deserialize(NetDataReader reader)
+		public WorldSnapshotMessage InitialDelta => this;
+
+		public void Deserialize(ref BitPackReader reader)
 		{
-			var options = new NetOptionReader(reader);
+			PartyID = reader.GetOption((ref BitPackReader r) => r.Bytes.GetKey32());
+			Secret = reader.GetOption((ref BitPackReader r) => r.Bytes.GetJoinSecret());
+			MaxPlayers = reader.GetOption((ref BitPackReader r) => r.Bytes.GetByte());
 
-			PartyID = options.Get(r => r.GetKey32());
-			Secret = options.Get(r => r.GetJoinSecret());
-			MaxPlayers = options.Get(r => r.GetByte());
+			Level = reader.GetOption((ref BitPackReader r) => r.Bytes.GetStringWithByteLength());
 
-			Level = options.Get(r => r.GetStringWithByteLength());
-
-			PlayersLeft = options.Get(r => r.GetBytesWithByteLength());
-			PlayersJoined = options.Get(r => r.GetBytesWithByteLength());
-			Puppets = options.Get(r =>
-			{
-				var count = r.GetByte();
-				var puppets = new Dictionary<byte, MoveMessage>(count);
-
-				for (var i = 0; i < count; ++i)
-				{
-					puppets.Add(r.GetByte(), r.Get<MoveMessage>());
-				}
-
-				return puppets;
-			});
+			PlayersLeft = reader.GetOption((ref BitPackReader r) => r.Bytes.GetBytesWithByteLength());
+			PlayersJoined = reader.GetOption((ref BitPackReader r) => r.Bytes.GetBytesWithByteLength());
+			Puppets = reader.GetOption((ref BitPackReader r) =>
+				r.GetDictionaryWithByteCount((ref BitPackReader r2) => r2.Bytes.GetByte(), (ref BitPackReader r2) => r2.Get<MoveMessage>()));
 		}
 
-		public void Serialize(NetDataWriter writer)
+		public void Serialize(ref BitPackWriter writer)
 		{
-			using (var options = new NetOptionWriter(writer))
-			{
-				options.Put(PartyID, (w, v) => w.Put(v));
-				options.Put(Secret, (w, v) => w.Put(v));
-				options.Put(MaxPlayers, (w, v) => w.Put(v));
+			writer.Put(PartyID, (ref BitPackWriter w, Key32 v) => w.Bytes.Put(v));
+			writer.Put(Secret, (ref BitPackWriter w, JoinSecret v) => w.Bytes.Put(v));
+			writer.Put(MaxPlayers, (ref BitPackWriter w, byte v) => w.Bytes.Put(v));
 
-				options.Put(Level, (w, v) => w.PutStringWithByteLength(v));
+			writer.Put(Level, (ref BitPackWriter w, string v) => w.Bytes.PutStringWithByteLength(v));
 
-				options.Put(PlayersLeft, (w, v) => w.PutBytesWithByteLength(v));
-				options.Put(PlayersJoined, (w, v) => w.PutBytesWithByteLength(v));
-
-				options.Put(Puppets, (w, v) =>
-				{
-					var count = v.Count;
-					w.Put(count);
-
-					foreach (var pair in v)
-					{
-						w.Put(pair.Key);
-						w.Put(pair.Value);
-					}
-				});
-			}
+			writer.Put(PlayersLeft, (ref BitPackWriter w, byte[] v) => w.Bytes.Put(v));
+			writer.Put(PlayersJoined, (ref BitPackWriter w, byte[] v) => w.Bytes.Put(v));
+			writer.Put(Puppets, (ref BitPackWriter w, Dictionary<byte, MoveMessage> v) =>
+				w.PutDictionaryWithByteLength(v, (ref BitPackWriter w2, byte v2) => w2.Bytes.Put(v2), (ref BitPackWriter w2, MoveMessage v2) => w2.Put(v2)));
 		}
 
-		public WorldSnapshotMessage ConsumeDelta(WorldSnapshotMessage head)
+		public Option<WorldSnapshotMessage> CreateDelta(WorldSnapshotMessage baseline)
 		{
-			var deltas = new DeltaComparer<WorldSnapshotMessage>(this, head);
+			var deltas = new DeltaCreator<WorldSnapshotMessage>(this, baseline);
+			var delta = new WorldSnapshotMessage
+			{
+				PartyID = deltas.Create(x => x.PartyID, x => x.ToEqualityDelta()),
+				Secret = deltas.Create(x => x.Secret, x => x.ToEqualityDelta()),
+				MaxPlayers = deltas.Create(x => x.MaxPlayers, x => x.ToEqualityDelta()),
+
+				Level = deltas.Create(x => x.Level, x => x.ToEqualityDelta()),
+
+				PlayersLeft = deltas.Create(x => x.PlayersLeft, x => x),
+				PlayersJoined = deltas.Create(x => x.PlayersJoined, x => x),
+
+				Puppets = deltas.Create(x => x.Puppets, x => x)
+			};
+
+			return delta.Equals(default)
+				? Option.None<WorldSnapshotMessage>()
+				: Option.Some(delta);
+		}
+
+		public WorldSnapshotMessage ConsumeDelta(WorldSnapshotMessage delta)
+		{
+			var deltas = new DeltaConsumer<WorldSnapshotMessage>(this, delta);
+
 			return new WorldSnapshotMessage
 			{
-				PartyID = deltas.Consume(x => x.PartyID.ToDeltaBinary()),
-				Secret = deltas.Consume(x => x.Secret.ToDeltaBinary()),
-				MaxPlayers = deltas.Consume(x => x.MaxPlayers.ToDeltaBinary()),
+				PartyID = deltas.Consume(x => x.PartyID, x => x.ToEqualityDelta(), x => x),
+				Secret = deltas.Consume(x => x.Secret, x => x.ToEqualityDelta(), x => x),
+				MaxPlayers = deltas.Consume(x => x.MaxPlayers, x => x.ToEqualityDelta(), x => x),
 
-				Level = deltas.Consume(x => x.Level.ToDeltaBinary()),
+				Level = deltas.Consume(x => x.Level, x => x.ToEqualityDelta(), x => x),
 
 				PlayersLeft = deltas.Consume(x => x.PlayersLeft.ToDeltaBinary()),
 				PlayersJoined = deltas.Consume(x => x.PlayersJoined.ToDeltaBinary()),
@@ -94,9 +94,13 @@ namespace H3MP.Messages
 			};
 		}
 
-		public WorldSnapshotMessage CreateDelta(WorldSnapshotMessage head)
+		public bool Equals(WorldSnapshotMessage other)
 		{
-			throw new NotImplementedException();
+			return PartyID.Equals(other.PartyID) && Secret.Equals(other.Secret) && MaxPlayers.Equals(other.MaxPlayers) &&
+				Level.Equals(other.Level, (x, y) => x == y) &&
+				PlayersLeft.Equals(other.PlayersLeft, (x, y) => x.SequenceEqual(y)) &&
+				PlayersJoined.Equals(other.PlayersJoined, (x, y) => x.SequenceEqual(y)) &&
+				Puppets.Equals(other.Puppets, (x, y) => x.SequenceEqual(y));
 		}
 	}
 }

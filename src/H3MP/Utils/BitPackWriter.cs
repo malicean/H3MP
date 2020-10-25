@@ -25,9 +25,14 @@ namespace H3MP.Utils
 			_bytesHandle = WriterPool.Instance.Borrow(out Bytes);
 		}
 
+		public void Put<T>(T value) where T : IPackedSerializable
+		{
+			value.Serialize(ref this);
+		}
+
 		public void Put<T>(Option<T> value) where T : IPackedSerializable
 		{
-			Put(value, (ref BitPackWriter w, T v) => v.Serialize(w));
+			Put(value, (ref BitPackWriter w, T v) => v.Serialize(ref w));
 		}
 
 		public void Put<T>(Option<T> value, Converter<T> converter)

@@ -5,6 +5,7 @@ using H3MP.Networking.Extensions;
 using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 

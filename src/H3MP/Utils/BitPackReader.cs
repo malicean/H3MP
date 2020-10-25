@@ -20,15 +20,17 @@ namespace H3MP.Utils
 			Bytes = reader;
 		}
 
+		public T Get<T>() where T : IPackedSerializable, new()
+		{
+			var value = new T();
+			value.Deserialize(ref this);
+
+			return value;
+		}
+
 		public Option<T> GetOption<T>() where T : IPackedSerializable, new()
 		{
-			return GetOption<T>((ref BitPackReader reader) =>
-			{
-				var value = new T();
-				value.Deserialize(reader);
-
-				return value;
-			});
+			return GetOption<T>((ref BitPackReader r) => r.Get<T>());
 		}
 
 		public Option<T> GetOption<T>(Converter<T> converter)

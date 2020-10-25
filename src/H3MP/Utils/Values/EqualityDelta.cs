@@ -16,19 +16,19 @@ namespace H3MP.Utils
 
 		public TValue InitialDelta => _value;
 
-		TValue IRef<TValue>.Value => _value;
+		public TValue Value => _value;
 
 		public EqualityDelta(TValue value)
         {
             _value = value;
         }
 
-		public Option<TValue> CreateDelta(EqualityDelta<TValue> head)
+		public Option<TValue> CreateDelta(EqualityDelta<TValue> baseline)
 		{
-			return _value.Equals(head._value) ? Option.None<TValue>() : Option.Some(_value);
+			return _value.Equals(baseline._value) ? Option.None<TValue>() : Option.Some(_value);
 		}
 
-		public EqualityDelta<TValue> ConsumeDelta(TValue head)
+		public EqualityDelta<TValue> ConsumeDelta(TValue delta)
 		{
 			return _value.ToEqualityDelta();
 		}

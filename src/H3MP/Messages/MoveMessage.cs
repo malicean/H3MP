@@ -1,12 +1,9 @@
 using System;
-using H3MP.Extensions;
 using H3MP.Utils;
-using LiteNetLib.Utils;
-using UnityEngine;
 
 namespace H3MP.Messages
 {
-    public struct MoveMessage : IPackedSerializable, IDeltable<MoveMessage, MoveMessage>, IEquatable<MoveMessage>, ILinearFittable<MoveMessage>
+	public struct MoveMessage : IPackedSerializable, IDeltable<MoveMessage, MoveMessage>, IEquatable<MoveMessage>, ILinearFittable<MoveMessage>
 	{
 		public Option<TransformMessage> Head;
 		public Option<TransformMessage> HandLeft;
@@ -14,36 +11,23 @@ namespace H3MP.Messages
 
 		public MoveMessage InitialDelta => this;
 
-		public MoveMessage(Option<TransformMessage> head, Option<TransformMessage> handLeft, Option<TransformMessage> handRight)
+		public void Deserialize(ref BitPackReader reader)
 		{
-			Head = head;
-			HandLeft = handLeft;
-			HandRight = handRight;
+			Head = reader.GetOption<TransformMessage>();
+			HandLeft = reader.GetOption<TransformMessage>();
+			HandRight = reader.GetOption<TransformMessage>();
 		}
 
-		public MoveMessage(Transform head, Transform handLeft, Transform handRight) : this(
-			Option.Some(new TransformMessage(head)),
-			Option.Some(new TransformMessage(handLeft)),
-			Option.Some(new TransformMessage(handRight))
-		) { }
-
-		public void Deserialize(BitPackReader reader)
-		{
-			Head = reader.Get<TransformMessage>();
-			HandLeft = reader.Get<TransformMessage>();
-			HandRight = reader.Get<TransformMessage>();
-		}
-
-		public void Serialize(BitPackWriter writer)
+		public void Serialize(ref BitPackWriter writer)
 		{
 			writer.Put(Head);
 			writer.Put(HandLeft);
 			writer.Put(HandRight);
 		}
 
-		public Option<MoveMessage> CreateDelta(MoveMessage head)
+		public Option<MoveMessage> CreateDelta(MoveMessage baseline)
         {
-			var deltas = new DeltaComparer<MoveMessage>(this, head);
+			var deltas = new DeltaCreator<MoveMessage>(this, baseline);
 			var delta = new MoveMessage
 			{
 				Head = deltas.Create(x => x.Head),
@@ -51,19 +35,21 @@ namespace H3MP.Messages
 				HandRight = deltas.Create(x => x.HandRight)
 			};
 
-			return delta.Equals(default) // no delta
+			return delta.Equals(default)
 				? Option.None<MoveMessage>()
 				: Option.Some(delta);
         }
 
-		public MoveMessage ConsumeDelta(MoveMessage head)
+		public MoveMessage ConsumeDelta(MoveMessage delta)
         {
-			var deltas = new DeltaComparer<MoveMessage>(this, head);
-            return new MoveMessage(
-				deltas.Consume(x => x.Head),
-				deltas.Consume(x => x.HandLeft),
-				deltas.Consume(x => x.HandRight)
-			);
+			var deltas = new DeltaConsumer<MoveMessage>(this, delta);
+
+            return new MoveMessage
+			{
+				Head = deltas.Consume(x => x.Head),
+				HandLeft = deltas.Consume(x => x.HandLeft),
+				HandRight = deltas.Consume(x => x.HandRight)
+			};
         }
 
 		public bool Equals(MoveMessage other)
@@ -75,17 +61,14 @@ namespace H3MP.Messages
 
 		public MoveMessage Fit(MoveMessage b, double t)
 		{
-			// local func variable captures use no allocations (lambdas do)
-			void Fit(TransformMessage thisTransform, TransformMessage bTransform)
-			{
-				thisTransform.Fit(bTransform, t);
-			}
+			var fits = new FitCreator<MoveMessage>(this, b, t);
 
-			return new MoveMessage(
-				Head.Map(Fit),
-				HandLeft.Map(Fit),
-				HandRight.Map(Fit)
-			);
+			return new MoveMessage
+			{
+				Head = fits.Fit(x => x.Head),
+				HandLeft = fits.Fit(x => x.HandLeft),
+				HandRight = fits.Fit(x => x.HandRight)
+			};
 		}
     }
 }

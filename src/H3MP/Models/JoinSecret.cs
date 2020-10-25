@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 
 namespace H3MP.Models
 {
-	public readonly struct JoinSecret
+	public readonly struct JoinSecret : IEquatable<JoinSecret>
 	{
 		public Version Version { get; }
 
@@ -81,5 +81,9 @@ namespace H3MP.Models
 			}
 		}
 
+		public bool Equals(JoinSecret other)
+		{
+			return Version == other.Version && EndPoint == other.EndPoint && Key == other.Key && TickDeltaTime == other.TickDeltaTime;
+		}
 	}
 }

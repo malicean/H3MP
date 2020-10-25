@@ -4,8 +4,8 @@ namespace H3MP.Utils
 {
 	public interface IPackedSerializable
 	{
-		void Deserialize(BitPackReader reader);
+		void Deserialize(ref BitPackReader reader);
 
-		void Serialize(BitPackWriter writer);
+		void Serialize(ref BitPackWriter writer);
 	}
 }

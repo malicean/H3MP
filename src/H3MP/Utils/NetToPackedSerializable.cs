@@ -23,12 +23,12 @@ namespace H3MP.Utils
 			_value = value;
 		}
 
-		public void Deserialize(BitPackReader reader)
+		public void Deserialize(ref BitPackReader reader)
 		{
 			_value.Deserialize(reader.Bytes);
 		}
 
-		public void Serialize(BitPackWriter writer)
+		public void Serialize(ref BitPackWriter writer)
 		{
 			_value.Serialize(writer.Bytes);
 		}
