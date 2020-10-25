@@ -81,5 +81,17 @@ namespace H3MP.Extensions
 
 			return Encoding.UTF8.GetString(data);
 		}
+
+		public static BitArray GetBitArray(this NetDataReader @this)
+		{
+			var buffer = new int[@this.GetByte() + 1];
+			var trailing = @this.GetByte();
+			for (var i = 0; i < buffer.Length; ++i)
+			{
+				buffer[i] = @this.GetInt();
+			}
+
+			return new BitArray(buffer, buffer.Length * BitArray.BITS_PER_ELEMENT - trailing);
+		}
 	}
 }

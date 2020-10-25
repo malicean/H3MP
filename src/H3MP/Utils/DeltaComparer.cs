@@ -38,10 +38,10 @@ namespace H3MP.Utils
 
 		public Option<TValue> Consume<TValue>(Func<T, Option<TValue>> optionOf) where TValue : IDeltable<TValue, TValue>
 		{
-			return Consume(optionOf, x => x);
+			return Consume<TValue, TValue>(optionOf, x => x, x => x);
 		}
 
-		public Option<TValue> Consume<TValue, TDeltable>(Func<T, Option<TValue>> optionOf, Func<TValue, TDeltable> deltableOf) where TDeltable : IDeltable<TDeltable, TValue>, ITo<TValue>
+		public Option<TValue> Consume<TValue, TDeltable>(Func<T, Option<TValue>> optionOf, Func<TValue, TDeltable> deltableOf, Func<TDeltable, TValue> valueOf) where TDeltable : IDeltable<TDeltable, TValue>
 		{
 			var headOption = optionOf(_head);
 
@@ -50,7 +50,7 @@ namespace H3MP.Utils
 				var thisDelta = deltableOf(thisValue);
 
 				var value = headOption.MatchSome(out var headValue)
-					? thisDelta.ConsumeDelta(headValue).To
+					? valueOf(thisDelta.ConsumeDelta(headValue))
 					: thisValue; // initial
 
 				return Option.Some(value);

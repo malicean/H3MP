@@ -10,13 +10,13 @@ namespace H3MP.Utils
 		}
 	}
 
-    public readonly struct EqualityDelta<TValue> : IDeltable<EqualityDelta<TValue>, TValue>, ITo<TValue> where TValue : IEquatable<TValue>
+    public readonly struct EqualityDelta<TValue> : IDeltable<EqualityDelta<TValue>, TValue>, IRef<TValue> where TValue : IEquatable<TValue>
 	{
 		private readonly TValue _value;
 
 		public TValue InitialDelta => _value;
 
-		TValue ITo<TValue>.To => _value;
+		TValue IRef<TValue>.Value => _value;
 
 		public EqualityDelta(TValue value)
         {

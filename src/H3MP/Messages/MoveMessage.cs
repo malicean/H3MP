@@ -6,13 +6,11 @@ using UnityEngine;
 
 namespace H3MP.Messages
 {
-    public struct MoveMessage : INetSerializable, IDeltable<MoveMessage, MoveMessage>, ILinearFittable<MoveMessage>, IEquatable<MoveMessage>
+    public struct MoveMessage : IPackedSerializable, IDeltable<MoveMessage, MoveMessage>, IEquatable<MoveMessage>, ILinearFittable<MoveMessage>
 	{
-		public Option<TransformMessage> Head { get; private set; }
-
-		public Option<TransformMessage> HandLeft { get; private set; }
-
-		public Option<TransformMessage> HandRight { get; private set; }
+		public Option<TransformMessage> Head;
+		public Option<TransformMessage> HandLeft;
+		public Option<TransformMessage> HandRight;
 
 		public MoveMessage InitialDelta => this;
 
@@ -29,14 +27,14 @@ namespace H3MP.Messages
 			Option.Some(new TransformMessage(handRight))
 		) { }
 
-		public void Deserialize(NetDataReader reader)
+		public void Deserialize(BitPackReader reader)
 		{
 			Head = reader.Get<TransformMessage>();
 			HandLeft = reader.Get<TransformMessage>();
 			HandRight = reader.Get<TransformMessage>();
 		}
 
-		public void Serialize(NetDataWriter writer)
+		public void Serialize(BitPackWriter writer)
 		{
 			writer.Put(Head);
 			writer.Put(HandLeft);
@@ -45,34 +43,49 @@ namespace H3MP.Messages
 
 		public Option<MoveMessage> CreateDelta(MoveMessage head)
         {
-            return Option.Some(new MoveMessage(
-				Head.CreateDelta(head.Head),
-				HandLeft.CreateDelta(head.HandLeft),
-				HandRight.CreateDelta(head.HandRight)
-			));
+			var deltas = new DeltaComparer<MoveMessage>(this, head);
+			var delta = new MoveMessage
+			{
+				Head = deltas.Create(x => x.Head),
+				HandLeft = deltas.Create(x => x.HandLeft),
+				HandRight = deltas.Create(x => x.HandRight)
+			};
+
+			return delta.Equals(default) // no delta
+				? Option.None<MoveMessage>()
+				: Option.Some(delta);
         }
 
 		public MoveMessage ConsumeDelta(MoveMessage head)
         {
+			var deltas = new DeltaComparer<MoveMessage>(this, head);
             return new MoveMessage(
-				Head.ConsumeDelta(head.Head),
-				HandLeft.ConsumeDelta(head.HandLeft),
-				HandRight.ConsumeDelta(head.HandRight)
+				deltas.Consume(x => x.Head),
+				deltas.Consume(x => x.HandLeft),
+				deltas.Consume(x => x.HandRight)
 			);
+        }
+
+		public bool Equals(MoveMessage other)
+        {
+            return Head.Equals(other.Head)
+				&& HandLeft.Equals(other.HandLeft)
+				&& HandRight.Equals(other.HandRight);
         }
 
 		public MoveMessage Fit(MoveMessage b, double t)
 		{
+			// local func variable captures use no allocations (lambdas do)
+			void Fit(TransformMessage thisTransform, TransformMessage bTransform)
+			{
+				thisTransform.Fit(bTransform, t);
+			}
+
 			return new MoveMessage(
-				Head.Fit(b.Head, t),
-				HandLeft.Fit(b.HandLeft, t),
-				HandRight.Fit(b.HandRight, t)
+				Head.Map(Fit),
+				HandLeft.Map(Fit),
+				HandRight.Map(Fit)
 			);
 		}
-
-        public bool Equals(MoveMessage other)
-        {
-            return Head.Equals(other.Head) && HandLeft.Equals(other.HandLeft) && HandRight.Equals(other.HandRight);
-        }
     }
 }

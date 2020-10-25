@@ -95,5 +95,15 @@ namespace H3MP.Extensions
 
 			@this.PutBytesWithByteLength(data);
 		}
+
+		public static void Put(this NetDataWriter @this, BitStack value)
+		{
+			value.CopyTo(@this);
+		}
+
+		public static void Put(this NetDataWriter @this, NetDataWriter value)
+		{
+			@this.Put(value.Data);
+		}
 	}
 }

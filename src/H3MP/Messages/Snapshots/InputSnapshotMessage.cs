@@ -4,29 +4,23 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Messages
 {
-public struct InputSnapshotMessage : INetSerializable, IDeltable<InputSnapshotMessage, InputSnapshotMessage>
+public struct InputSnapshotMessage : IPackedSerializable, IDeltable<InputSnapshotMessage, InputSnapshotMessage>
 {
 	public Option<string> Level;
-
 	public Option<MoveMessage> DeltaMove;
 
 	public InputSnapshotMessage InitialDelta => this;
 
-	public void Deserialize(NetDataReader reader)
+	public void Deserialize(BitPackReader reader)
 	{
-		var options = new NetOptionReader(reader);
-
-		Level = options.Get(r => r.GetStringWithByteLength());
-		DeltaMove = options.Get<MoveMessage>();
+		Level = reader.GetOption((ref BitPackReader r) => r.Bytes.GetStringWithByteLength());
+		DeltaMove = reader.GetOption<MoveMessage>();
 	}
 
-	public void Serialize(NetDataWriter writer)
+	public void Serialize(BitPackWriter writer)
 	{
-		using (var options = new NetOptionWriter(writer))
-		{
-			options.Put(Level, (w, v) => writer.PutStringWithByteLength(v));
-			options.Put(DeltaMove);
-		}
+		writer.Put(Level, (ref BitPackWriter w, string v) => w.Bytes.PutStringWithByteLength(v));
+		writer.Put(DeltaMove);
 	}
 
 	public Option<InputSnapshotMessage> CreateDelta(InputSnapshotMessage head)
@@ -44,7 +38,7 @@ public struct InputSnapshotMessage : INetSerializable, IDeltable<InputSnapshotMe
 		var deltas = new DeltaComparer<InputSnapshotMessage>(this, head);
 		return new InputSnapshotMessage
 		{
-			Level = deltas.Consume(x => x.Level, x => x.ToEqualityDelta()),
+			Level = deltas.Consume(x => x.Level, x => x.ToEqualityDelta(), x => x),
 			DeltaMove = deltas.Consume(x => x.DeltaMove)
 		};
 	}

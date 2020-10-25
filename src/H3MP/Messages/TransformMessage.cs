@@ -6,11 +6,11 @@ using UnityEngine;
 
 namespace H3MP.Messages
 {
-	public struct TransformMessage : INetSerializable, IDeltable<TransformMessage, TransformMessage>, ILinearFittable<TransformMessage>, IEquatable<TransformMessage>
+	public struct TransformMessage : IPackedSerializable, IDeltable<TransformMessage, TransformMessage>, ILinearFittable<TransformMessage>, IEquatable<TransformMessage>
 	{
-		public Vector3 Position { get; private set; }
+		public Option<Vector3> Position { get; private set; }
 
-		public Quaternion Rotation { get; private set; }
+		public Option<Quaternion> Rotation { get; private set; }
 
 		public TransformMessage InitialDelta => this;
 
@@ -24,18 +24,18 @@ namespace H3MP.Messages
 		{
 		}
 
-		public void Deserialize(NetDataReader reader)
+		public void Deserialize(BitPackReader reader)
 		{
 			Position = reader.GetVector3();
 			Rotation = reader.GetQuaternion();
 		}
 
-		public void Serialize(NetDataWriter writer)
+		public void Serialize(BitPackWriter writer)
 		{
 			writer.Put(Position);
 			writer.Put(Rotation);
 		}
-
+1
 		public Option<TransformMessage> CreateDelta(TransformMessage head)
         {
             return Option.Some(new TransformMessage(

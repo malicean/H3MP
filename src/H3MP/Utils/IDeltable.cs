@@ -1,3 +1,5 @@
+using System;
+
 namespace H3MP.Utils
 {
 	public interface IDeltable<TSelf, TDelta> where TSelf : IDeltable<TSelf, TDelta>

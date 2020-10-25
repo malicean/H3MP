@@ -32,6 +32,11 @@ namespace H3MP.Utils
 		{
 			return @this.MatchSome(out var option) ? option : Option.None<T>();
 		}
+
+		public static bool Equals<T>(this Option<T> @this, Option<T> other) where T : IEquatable<T>
+		{
+			return @this.MatchSome(out var thisValue) && other.MatchSome(out var otherValue) && thisValue.Equals(otherValue);
+		}
 	}
 
 	/// <summary>
