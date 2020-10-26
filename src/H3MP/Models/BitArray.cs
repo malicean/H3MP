@@ -1,18 +1,17 @@
 using System;
-using LiteNetLib.Utils;
 
 namespace H3MP.Models
 {
 	public readonly struct BitArray
 	{
-		public const int BITS_PER_ELEMENT = sizeof(int) * 8;
+		public const byte BITS_PER_ELEMENT = sizeof(byte) * 8;
 
-		private readonly int[] _buffer;
-		private readonly int _length; // 536,870,911 B (536 GB). Hope this is enough.
+		private readonly byte[] _buffer;
+		private readonly int _length;
 
 		public int Length => _length;
 
-		public BitArray(int[] buffer, int size)
+		public BitArray(byte[] buffer, int size)
 		{
 			_buffer = buffer;
 			_length = size;

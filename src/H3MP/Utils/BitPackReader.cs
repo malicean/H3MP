@@ -9,12 +9,12 @@ namespace H3MP.Utils
 		public delegate T Converter<out T>(ref BitPackReader reader);
 
 		public BitQueue Bits;
-		public readonly NetDataReader Bytes;
+		public ByteQueue Bytes;
 
 		public BitPackReader(NetDataReader reader)
 		{
 			Bits = new BitQueue(reader.GetBitArray());
-			Bytes = reader;
+			Bytes = new ByteQueue(reader.GetRemainingBytes());
 		}
 	}
 }

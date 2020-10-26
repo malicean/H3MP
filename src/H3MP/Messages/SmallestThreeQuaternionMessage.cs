@@ -86,11 +86,11 @@ namespace H3MP.Messages
 		public void Deserialize(ref BitPackReader reader)
 		{
 			_largest = default;
-			if (reader.Bits.Dequeue())
+			if (reader.Bits.Pop())
 			{
 				_largest |= (QuaternionComponent) 0b10;
 			}
-			if (reader.Bits.Dequeue())
+			if (reader.Bits.Pop())
 			{
 				_largest |= (QuaternionComponent) 0b01;
 			}

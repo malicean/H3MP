@@ -19,7 +19,7 @@ namespace H3MP.Utils
 
 		public Option<TValue> Deserialize(ref BitPackReader reader)
 		{
-			return reader.Bits.Dequeue()
+			return reader.Bits.Pop()
 				? Option.Some(_serializer.Deserialize(ref reader))
 				: Option.None<TValue>();
 		}

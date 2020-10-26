@@ -9,26 +9,36 @@ namespace H3MP.Utils
 	{
 		public delegate void Converter<in T>(ref BitPackWriter writer, T value);
 
-		private readonly NetDataWriter _main;
-		private readonly IDisposable _bytesHandle;
+		private readonly NetDataWriter _writer;
 
-		public BitStack Bits;
-		public readonly NetDataWriter Bytes;
+		private bool _disposed;
+
+		public BitBuffer Bits;
+		public Buffer<byte> Bytes;
 
 		public BitPackWriter(NetDataWriter writer)
 		{
-			_main = writer;
+			_writer = writer;
+			_disposed = false;
 
-			Bits = BitStack.CreateDefault();
-			_bytesHandle = WriterPool.Instance.Borrow(out Bytes);
+			Bits = new BitBuffer(32);
+			Bytes = new Buffer<byte>(1200);
 		}
 
 		public void Dispose()
         {
-			_main.Put(Bits);
-			_main.Put(Bytes);
+			if (_disposed)
+			{
+				return;
+			}
 
-			_bytesHandle.Dispose();
+			var bits = Bits.Populated;
+			_writer.Put(bits.Array, bits.Offset, bits.Count);
+
+			var bytes = Bytes.Populated;
+			_writer.Put(bytes.Array, bits.Offset, bits.Count);
+
+			_disposed = true;
         }
 	}
 }

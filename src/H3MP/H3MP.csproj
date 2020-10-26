@@ -85,8 +85,8 @@
     <Compile Include="Messages\TimestampedMessage.cs" />
     <Compile Include="Messages\TransformMessage.cs" />
     <Compile Include="Models\BitArray.cs" />
-    <Compile Include="Models\BitStack.cs" />
     <Compile Include="Models\BitQueue.cs" />
+    <Compile Include="Models\ByteQueue.cs" />
     <Compile Include="Models\DoubleRange.cs" />
     <Compile Include="Models\HealthInfo.cs" />
     <Compile Include="Models\JoinSecret.cs" />
@@ -98,35 +98,43 @@
     <Compile Include="Peers\Puppet.cs" />
     <Compile Include="Peers\Husk.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\Deltas\ArrayEqualityDelta.cs" />
+    <Compile Include="Utils\Deltas\EqualityDelta.cs" />
+    <Compile Include="Utils\Deltas\OptionDelta.cs" />
+    <Compile Include="Utils\Deltas\QuaternionDelta.cs" />
+    <Compile Include="Utils\Deltas\Vector3Delta.cs" />
     <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />
     <Compile Include="Utils\Serializers\ArraySerializer.cs" />
-    <Compile Include="Utils\Serializers\ByteSerializer.cs" />
+    <Compile Include="Utils\Serializers\BoolSerializer.cs" />
+    <Compile Include="Utils\Serializers\CharSerializer.cs" />
+    <Compile Include="Utils\Serializers\FloatingSerializers.cs" />
+    <Compile Include="Utils\Serializers\IntegralSerializers.cs" />
     <Compile Include="Utils\Serializers\OptionSerializer.cs" />
+    <Compile Include="Utils\Serializers\PrimitiveSerializers.cs" />
     <Compile Include="Utils\Serializers\StringSerializer.cs" />
+    <Compile Include="Utils\Serializers\UnitySerializer.cs" />
     <Compile Include="Utils\Snapshots\CountSnapshotKiller.cs" />
     <Compile Include="Utils\Snapshots\ISnapshotKiller.cs" />
     <Compile Include="Utils\Snapshots\Snapshots.cs" />
     <Compile Include="Utils\Snapshots\TimeSnapshotKiller.cs" />
     <Compile Include="Utils\Timers\LoopCounter.cs" />
     <Compile Include="Utils\Timers\LoopTimer.cs" />
-    <Compile Include="Utils\Values\ArrayEqualityDelta.cs" />
     <Compile Include="Utils\Values\ConstantMutRef.cs" />
     <Compile Include="Utils\Values\ConstantRef.cs" />
-    <Compile Include="Utils\Values\EqualityDelta.cs" />
     <Compile Include="Utils\Values\FunctionRef.cs" />
     <Compile Include="Utils\Values\IMutRef.cs" />
     <Compile Include="Utils\Values\IRef.cs" />
     <Compile Include="Utils\Values\Option.cs" />
-    <Compile Include="Utils\Values\OptionDelta.cs" />
     <Compile Include="Utils\Values\OptionFittable.cs" />
-    <Compile Include="Utils\Values\QuaternionDelta.cs" />
     <Compile Include="Utils\Values\QuaternionFittable.cs" />
-    <Compile Include="Utils\Values\Vector3Delta.cs" />
     <Compile Include="Utils\Values\Vector3Fittable.cs" />
+    <Compile Include="Utils\BitBuffer.cs" />
     <Compile Include="Utils\BitPackReader.cs" />
     <Compile Include="Utils\BitPackWriter.cs" />
+    <Compile Include="Utils\Buffer.cs" />
+    <Compile Include="Utils\ByteIntConverter.cs" />
     <Compile Include="Utils\ComponentDefinition.cs" />
     <Compile Include="Utils\DeltaConsumer.cs" />
     <Compile Include="Utils\DeltaCreator.cs" />
@@ -134,19 +142,22 @@
     <Compile Include="Utils\EntityDefinition.cs" />
     <Compile Include="Utils\FitCreator.cs" />
     <Compile Include="Utils\Fitting.cs" />
+    <Compile Include="Utils\IBuffer.cs" />
     <Compile Include="Utils\IConverter.cs" />
     <Compile Include="Utils\IComponentTuple.cs" />
     <Compile Include="Utils\IDeltable.cs" />
     <Compile Include="Utils\ILinearFittable.cs" />
-    <Compile Include="Utils\IPackedSerializer.cs" />
+    <Compile Include="Utils\IntIntConverter.cs" />
     <Compile Include="Utils\IPoolSource.cs" />
     <Compile Include="Utils\IRenderUpdatable.cs" />
+    <Compile Include="Utils\ISerializer.cs" />
     <Compile Include="Utils\ISystem.cs" />
     <Compile Include="Utils\LocalTime.cs" />
     <Compile Include="Utils\MoreMath.cs" />
     <Compile Include="Utils\NetDataWriterPoolSource.cs" />
     <Compile Include="Utils\NetToPackedSerializable.cs" />
     <Compile Include="Utils\Pool.cs" />
+    <Compile Include="Utils\UShortIntConverter.cs" />
     <Compile Include="Utils\WriterPool.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="StatefulActivity.cs" />
@@ -156,12 +167,6 @@
     <None Include="Discord\discord_game_sdk.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\H3MP.Networking\H3MP.Networking.csproj">
-      <Project>{32ab795b-e38e-4d24-ab45-c5940cae12ba}</Project>
-      <Name>H3MP.Networking</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

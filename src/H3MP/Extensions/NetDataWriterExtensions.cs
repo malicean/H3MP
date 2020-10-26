@@ -123,7 +123,7 @@ namespace H3MP.Extensions
 			@this.PutBytesWithByteLength(data);
 		}
 
-		public static void Put(this NetDataWriter @this, BitStack value)
+		public static void Put(this NetDataWriter @this, BitBuffer value)
 		{
 			value.CopyTo(@this);
 		}

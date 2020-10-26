@@ -12,7 +12,7 @@ namespace H3MP.Models
 			_index = 0;
 		}
 
-		public bool Dequeue()
+		public bool Pop()
 		{
 			return _bits[_index++];
 		}
