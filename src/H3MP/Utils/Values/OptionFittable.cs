@@ -1,6 +1,3 @@
-using System;
-using UnityEngine;
-
 namespace H3MP.Utils
 {
 	public static class OptionFittableExtension

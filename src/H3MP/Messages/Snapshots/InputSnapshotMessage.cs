@@ -4,7 +4,7 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Messages
 {
-	public struct InputSnapshotMessage : IPackedSerializable, IDeltable<InputSnapshotMessage, InputSnapshotMessage>
+	public struct InputSnapshotMessage : ISerializer, IDeltable<InputSnapshotMessage, InputSnapshotMessage>
 	{
 		public Option<string> Level;
 		public Option<MoveMessage> DeltaMove;

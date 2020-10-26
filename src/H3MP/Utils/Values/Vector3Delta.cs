@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace H3MP.Utils
@@ -35,7 +34,7 @@ namespace H3MP.Utils
 
 		public Vector3Delta ConsumeDelta(Vector3 delta)
 		{
-			return delta.ToDelta();
+			return (_value + delta).ToDelta();
 		}
 
 		public static implicit operator Vector3(Vector3Delta @this)

@@ -1,4 +1,4 @@
-namespace H3MP.Networking
+namespace H3MP.Models
 {
 	public enum ConnectionError : byte
 	{

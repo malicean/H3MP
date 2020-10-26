@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace H3MP.Messages
 {
-	public struct WorldSnapshotMessage : IPackedSerializable, IDeltable<WorldSnapshotMessage, WorldSnapshotMessage>, IEquatable<WorldSnapshotMessage>
+	public struct WorldSnapshotMessage : ISerializer, IDeltable<WorldSnapshotMessage, WorldSnapshotMessage>, IEquatable<WorldSnapshotMessage>
 	{
 		#region Party information
 
@@ -21,7 +21,7 @@ namespace H3MP.Messages
 
 		public Option<byte[]> PlayersLeft;
 		public Option<byte[]> PlayersJoined;
-		public Option<Dictionary<byte, MoveMessage>> Puppets;
+		public Option<MoveMessage>[] Puppets;
 
 		public WorldSnapshotMessage InitialDelta => this;
 
@@ -35,8 +35,7 @@ namespace H3MP.Messages
 
 			PlayersLeft = reader.GetOption((ref BitPackReader r) => r.Bytes.GetBytesWithByteLength());
 			PlayersJoined = reader.GetOption((ref BitPackReader r) => r.Bytes.GetBytesWithByteLength());
-			Puppets = reader.GetOption((ref BitPackReader r) =>
-				r.GetDictionaryWithByteCount((ref BitPackReader r2) => r2.Bytes.GetByte(), (ref BitPackReader r2) => r2.Get<MoveMessage>()));
+			reader.GetFixedOptionArray(Puppets);
 		}
 
 		public void Serialize(ref BitPackWriter writer)
@@ -49,13 +48,13 @@ namespace H3MP.Messages
 
 			writer.Put(PlayersLeft, (ref BitPackWriter w, byte[] v) => w.Bytes.Put(v));
 			writer.Put(PlayersJoined, (ref BitPackWriter w, byte[] v) => w.Bytes.Put(v));
-			writer.Put(Puppets, (ref BitPackWriter w, Dictionary<byte, MoveMessage> v) =>
-				w.PutDictionaryWithByteLength(v, (ref BitPackWriter w2, byte v2) => w2.Bytes.Put(v2), (ref BitPackWriter w2, MoveMessage v2) => w2.Put(v2)));
+			writer.PutFixed(Puppets);
 		}
 
 		public Option<WorldSnapshotMessage> CreateDelta(WorldSnapshotMessage baseline)
 		{
 			var deltas = new DeltaCreator<WorldSnapshotMessage>(this, baseline);
+
 			var delta = new WorldSnapshotMessage
 			{
 				PartyID = deltas.Create(x => x.PartyID, x => x.ToEqualityDelta()),
@@ -64,10 +63,9 @@ namespace H3MP.Messages
 
 				Level = deltas.Create(x => x.Level, x => x.ToEqualityDelta()),
 
-				PlayersLeft = deltas.Create(x => x.PlayersLeft, x => x),
-				PlayersJoined = deltas.Create(x => x.PlayersJoined, x => x),
-
-				Puppets = deltas.Create(x => x.Puppets, x => x)
+				PlayersLeft = deltas.Create(x => x.PlayersLeft, x => x.ToEqualityDelta()),
+				PlayersJoined = deltas.Create(x => x.PlayersJoined, x => x.ToEqualityDelta()),
+				Puppets = deltas.Create(x => x.Puppets)
 			};
 
 			return delta.Equals(default)
@@ -87,20 +85,27 @@ namespace H3MP.Messages
 
 				Level = deltas.Consume(x => x.Level, x => x.ToEqualityDelta(), x => x),
 
-				PlayersLeft = deltas.Consume(x => x.PlayersLeft.ToDeltaBinary()),
-				PlayersJoined = deltas.Consume(x => x.PlayersJoined.ToDeltaBinary()),
+				PlayersLeft = deltas.Consume(x => x.PlayersLeft, x => x.ToEqualityDelta(), x => x),
+				PlayersJoined = deltas.Consume(x => x.PlayersJoined, x => x.ToEqualityDelta(), x => x),
 
-				Puppets = deltas.Consume(x => x.Puppets.ToDeltaBinary())
+				Puppets = deltas.Consume(x => x.Puppets)
 			};
 		}
 
 		public bool Equals(WorldSnapshotMessage other)
 		{
+			for (var i = 0; i < Puppets.Length; ++i)
+			{
+				if (!Puppets[i].Equals(other.Puppets[i]))
+				{
+					return false;
+				}
+			}
+
 			return PartyID.Equals(other.PartyID) && Secret.Equals(other.Secret) && MaxPlayers.Equals(other.MaxPlayers) &&
 				Level.Equals(other.Level, (x, y) => x == y) &&
 				PlayersLeft.Equals(other.PlayersLeft, (x, y) => x.SequenceEqual(y)) &&
-				PlayersJoined.Equals(other.PlayersJoined, (x, y) => x.SequenceEqual(y)) &&
-				Puppets.Equals(other.Puppets, (x, y) => x.SequenceEqual(y));
+				PlayersJoined.Equals(other.PlayersJoined, (x, y) => x.SequenceEqual(y));
 		}
 	}
 }

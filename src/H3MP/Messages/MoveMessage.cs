@@ -3,7 +3,7 @@ using H3MP.Utils;
 
 namespace H3MP.Messages
 {
-	public struct MoveMessage : IPackedSerializable, IDeltable<MoveMessage, MoveMessage>, IEquatable<MoveMessage>, ILinearFittable<MoveMessage>
+	public struct MoveMessage : ISerializer, IDeltable<MoveMessage, MoveMessage>, IEquatable<MoveMessage>, ILinearFittable<MoveMessage>
 	{
 		public Option<TransformMessage> Head;
 		public Option<TransformMessage> HandLeft;

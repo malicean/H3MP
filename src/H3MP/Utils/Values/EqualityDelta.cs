@@ -10,30 +10,30 @@ namespace H3MP.Utils
 		}
 	}
 
-    public readonly struct EqualityDelta<TValue> : IDeltable<EqualityDelta<TValue>, TValue>, IRef<TValue> where TValue : IEquatable<TValue>
+    public readonly struct EqualityDelta<T> : IDeltable<EqualityDelta<T>, T>, IRef<T> where T : IEquatable<T>
 	{
-		private readonly TValue _value;
+		private readonly T _value;
 
-		public TValue InitialDelta => _value;
+		public T InitialDelta => _value;
 
-		public TValue Value => _value;
+		public T Value => _value;
 
-		public EqualityDelta(TValue value)
+		public EqualityDelta(T value)
         {
             _value = value;
         }
 
-		public Option<TValue> CreateDelta(EqualityDelta<TValue> baseline)
+		public Option<T> CreateDelta(EqualityDelta<T> baseline)
 		{
-			return _value.Equals(baseline._value) ? Option.None<TValue>() : Option.Some(_value);
+			return _value.Equals(baseline._value) ? Option.None<T>() : Option.Some(_value);
 		}
 
-		public EqualityDelta<TValue> ConsumeDelta(TValue delta)
+		public EqualityDelta<T> ConsumeDelta(T delta)
 		{
 			return _value.ToEqualityDelta();
 		}
 
-		public static implicit operator TValue(EqualityDelta<TValue> @this)
+		public static implicit operator T(EqualityDelta<T> @this)
 		{
 			return @this._value;
 		}

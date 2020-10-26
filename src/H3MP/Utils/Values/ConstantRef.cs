@@ -1,5 +1,3 @@
-using System;
-
 namespace H3MP.Utils
 {
 	/// <summary>

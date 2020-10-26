@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace H3MP.Messages
 {
-	public struct SmallestThreeQuaternionMessage : IPackedSerializable, IRef<Quaternion>
+	public struct SmallestThreeQuaternionMessage : ISerializer, IRef<Quaternion>
 	{
 		private enum QuaternionComponent : byte
 		{

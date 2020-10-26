@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace H3MP.Messages
 {
-	public struct TransformMessage : IPackedSerializable, IDeltable<TransformMessage, TransformMessage>, ILinearFittable<TransformMessage>, IEquatable<TransformMessage>
+	public struct TransformMessage : ISerializer, IDeltable<TransformMessage, TransformMessage>, ILinearFittable<TransformMessage>, IEquatable<TransformMessage>
 	{
 		public Option<Vector3> Position;
 

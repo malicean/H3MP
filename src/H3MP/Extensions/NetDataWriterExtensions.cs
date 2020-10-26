@@ -1,12 +1,11 @@
 using Discord;
 using H3MP.Messages;
 using H3MP.Models;
-using H3MP.Networking;
-using H3MP.Networking.Extensions;
 using H3MP.Utils;
 using LiteNetLib.Utils;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text;
 using UnityEngine;
 
@@ -14,6 +13,33 @@ namespace H3MP.Extensions
 {
 	public static class NetDataWriterExtensions
 	{
+		internal static void Put(this NetDataWriter @this, ConnectionError value)
+		{
+			@this.Put((byte) value);
+		}
+
+		public static void Put(this NetDataWriter @this, Version value)
+		{
+			@this.Put(value.Major);
+			@this.Put(value.Minor);
+			@this.Put(value.Build);
+			@this.Put(value.Revision);
+		}
+
+		public static void Put(this NetDataWriter @this, IPAddress value)
+		{
+			var bytes = value.GetAddressBytes();
+
+			@this.Put((byte) bytes.Length);
+			@this.Put(bytes);
+		}
+
+		public static void Put(this NetDataWriter @this, IPEndPoint value)
+		{
+			@this.Put(value.Address);
+			@this.Put((ushort) value.Port);
+		}
+
 		internal static void Put(this NetDataWriter @this, JoinError value)
 		{
 			@this.Put((byte) value);

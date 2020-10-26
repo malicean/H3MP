@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace H3MP.Utils
@@ -35,7 +34,7 @@ namespace H3MP.Utils
 
 		public QuaternionDelta ConsumeDelta(Quaternion delta)
 		{
-			return delta.ToDelta();
+			return (_value * delta).ToDelta();
 		}
 
 		public static implicit operator Quaternion(QuaternionDelta @this)

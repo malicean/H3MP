@@ -1,9 +1,7 @@
 using System;
 using H3MP.Extensions;
 using H3MP.Models;
-using H3MP.Networking;
 using LiteNetLib.Utils;
-using UnityEngine;
 
 namespace H3MP.Utils
 {
@@ -23,29 +21,6 @@ namespace H3MP.Utils
 
 			Bits = BitStack.CreateDefault();
 			_bytesHandle = WriterPool.Instance.Borrow(out Bytes);
-		}
-
-		public void Put<T>(T value) where T : IPackedSerializable
-		{
-			value.Serialize(ref this);
-		}
-
-		public void Put<T>(Option<T> value) where T : IPackedSerializable
-		{
-			Put(value, (ref BitPackWriter w, T v) => v.Serialize(ref w));
-		}
-
-		public void Put<T>(Option<T> value, Converter<T> converter)
-		{
-			if (value.MatchSome(out var inner))
-			{
-				Bits.Push(true);
-				converter(ref this, inner);
-			}
-			else
-			{
-				Bits.Push(false);
-			}
 		}
 
 		public void Dispose()

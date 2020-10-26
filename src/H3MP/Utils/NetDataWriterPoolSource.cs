@@ -1,7 +1,7 @@
 using H3MP.Utils;
 using LiteNetLib.Utils;
 
-namespace H3MP.Networking
+namespace H3MP.Utils
 {
 	public class NetDataWriterPoolSource : IPoolSource<NetDataWriter>
 	{

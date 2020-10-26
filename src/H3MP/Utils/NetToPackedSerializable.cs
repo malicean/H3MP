@@ -1,41 +1,17 @@
-using System;
 using LiteNetLib.Utils;
-using UnityEngine;
 
 namespace H3MP.Utils
 {
-	public static class NetToPackedSerializableExtensions
+	public class NetToPackedSerializable<T> : ISerializer<T> where T : INetSerializable, new()
 	{
-		public static NetToPackedSerializable<T> ToPacked<T>(this T @this) where T : INetSerializable
+		public T Deserialize(ref BitPackReader reader)
 		{
-			return new NetToPackedSerializable<T>(@this);
-		}
-	}
-
-	public struct NetToPackedSerializable<T> : IPackedSerializable, IRef<T> where T : INetSerializable
-	{
-		private T _value;
-
-		T IRef<T>.Value => _value;
-
-		public NetToPackedSerializable(T value)
-		{
-			_value = value;
+			return reader.Bytes.Get<T>();
 		}
 
-		public void Deserialize(ref BitPackReader reader)
+		public void Serialize(ref BitPackWriter writer, T value)
 		{
-			_value.Deserialize(reader.Bytes);
-		}
-
-		public void Serialize(ref BitPackWriter writer)
-		{
-			_value.Serialize(writer.Bytes);
-		}
-
-		public static implicit operator T(NetToPackedSerializable<T> @this)
-		{
-			return @this._value;
+			writer.Bytes.Put(value);
 		}
 	}
 }
