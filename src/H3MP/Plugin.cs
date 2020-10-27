@@ -18,8 +18,11 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace H3MP
 {
@@ -48,6 +51,10 @@ namespace H3MP
 		private readonly ManualLogSource _clientLog;
 		private readonly ManualLogSource _serverLog;
 		private readonly ManualLogSource _discordLog;
+
+		private Text[] _panelTextArray;
+		private Text _panelTitle;
+		private Text _panelBody;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
 
@@ -151,6 +158,9 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing shared Harmony state...");
 			HarmonyState.Init(Activity);
+
+			Logger.LogDebug("Hooking into sceneLoaded...");
+			SceneManager.sceneLoaded += OnSceneLoaded;
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -334,7 +344,60 @@ namespace H3MP
 				Logger.LogDebug("Autostarting host from game launch...");
 
 				StartCoroutine(_Host());
+			}					
+		}
+
+		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+		{
+			if (scene.name == "MainMenu3")
+			{
+				CreatePanel();
+				_clientLog.LogDebug("Send panel webrequest...");
+
+				// TODO: change this URL to a distinct endpoint that better suites the ingame panel
+				StartCoroutine(SendGetCoroutine("https://raw.githubusercontent.com/ash-hat/H3MP/main/README.md"));
 			}
+
+			IEnumerator SendGetCoroutine(string url)
+			{
+
+				using (UnityWebRequest www = UnityWebRequest.Get(url))
+				{
+					yield return www.Send();
+
+					if (www.isError)
+					{
+						_clientLog.LogError(www.error);
+					}
+					else
+					{
+						_clientLog.LogDebug("Updating panel from GitHub...");
+						UpdatePanel("H3MP", www.downloadHandler.text);
+					}
+				}
+
+			}
+		}
+
+		void CreatePanel()
+		{
+			//TODO: Clean this up
+			GameObject changelogPanel = GameObject.Find("MainScreen1");
+			GameObject panel = GameObject.Instantiate(changelogPanel, changelogPanel.transform.parent);
+			panel.transform.position = new Vector3(-1.376f, 1.046f, -3.621f);
+			panel.transform.localEulerAngles = new Vector3(0, -71.437f, 0);
+			panel.name = "H3MPPanel";
+			_panelTextArray = panel.GetComponentsInChildren<Text>();
+			_panelTitle = _panelTextArray[0];
+			_panelBody = _panelTextArray[1];
+			_panelTitle.text = "H3MP";
+			_panelBody.text = "Awaiting webrequest...";
+		}
+
+		void UpdatePanel(string headerText, string bodyText)
+		{
+			_panelTitle.text = headerText;
+			_panelBody.text = bodyText;
 		}
 
 		private void Update()
