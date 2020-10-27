@@ -354,8 +354,8 @@ namespace H3MP
 				CreatePanel();
 				_clientLog.LogDebug("Send panel webrequest...");
 
-				// TODO: change this URL to a distinct endpoint that better suites the ingame panel
-				StartCoroutine(SendGetCoroutine("https://raw.githubusercontent.com/ash-hat/H3MP/main/README.md"));
+				// TODO: change this URL before merging to main...
+				StartCoroutine(SendGetCoroutine("https://raw.githubusercontent.com/ash-hat/H3MP/feature/mainmenu-infopanel/ui/mainmenu3-panel.txt"));
 			}
 
 			IEnumerator SendGetCoroutine(string url)
