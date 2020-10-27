@@ -3,39 +3,6 @@ using UnityEngine;
 
 namespace H3MP.Utils
 {
-	public static class UnitySerializer
-	{
-		public static Vector3Serializer<FloatSerializer<UIntSerializer<ByteSerializer>>> Vector3 { get; } = default;
-		public static QuaternionSerializer<FloatSerializer<UIntSerializer<ByteSerializer>>> Quaternion { get; } = default;
-		public static SmallestThreeQuaternionSerializer<FloatSerializer<UIntSerializer<ByteSerializer>>> SmallestThreeQuaternion { get; } = default;
-	}
-
-	public readonly struct Vector3Serializer<TFloatSerializer> : ISerializer<Vector3> where TFloatSerializer : ISerializer<float>
-	{
-		private readonly TFloatSerializer _float;
-
-		public Vector3Serializer(TFloatSerializer @float)
-		{
-			_float = @float;
-		}
-
-		public Vector3 Deserialize(ref BitPackReader reader)
-		{
-			return new Vector3(
-				_float.Deserialize(ref reader),
-				_float.Deserialize(ref reader),
-				_float.Deserialize(ref reader)
-			);
-		}
-
-		public void Serialize(ref BitPackWriter writer, Vector3 value)
-		{
-			_float.Serialize(ref writer, value.x);
-			_float.Serialize(ref writer, value.y);
-			_float.Serialize(ref writer, value.z);
-		}
-	}
-
 	public readonly struct QuaternionSerializer<TFloatSerializer> : ISerializer<Quaternion> where TFloatSerializer : ISerializer<float>
 	{
 		private readonly TFloatSerializer _float;

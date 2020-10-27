@@ -3,6 +3,14 @@ using UnityEngine;
 
 namespace H3MP.Utils
 {
+	public static class OptionDeltaExtensions
+	{
+		public static OptionDelta<TValue, TDelta, TDeltable> ToOption<TValue, TDelta, TDeltable>(this TDeltable @this) where TDeltable : IDeltable<TValue, TDelta>
+		{
+			return new OptionDelta<TValue, TDelta, TDeltable>(@this);
+		}
+	}
+
 	public readonly struct OptionDelta<TValue, TDelta, TDeltable> : IDeltable<Option<TValue>, Option<TDelta>> where TDeltable : IDeltable<TValue, TDelta>
 	{
 		private readonly TDeltable _deltable;

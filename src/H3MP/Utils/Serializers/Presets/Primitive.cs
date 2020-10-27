@@ -12,6 +12,8 @@ namespace H3MP.Utils
 		public static UShortSerializer<ByteSerializer> UShort { get; } = default;
 		public static ShortSerializer<UShortSerializer<ByteSerializer>> Short { get; } = default;
 
+		public static CharSerializer<UShortSerializer<ByteSerializer>> Char { get; } = default;
+
 		public static UIntSerializer<ByteSerializer> UInt { get; } = default;
 		public static IntSerializer<UIntSerializer<ByteSerializer>> Int { get; } = default;
 
@@ -22,9 +24,6 @@ namespace H3MP.Utils
 		public static DoubleSerializer<ULongSerializer<ByteSerializer>> Double { get; } = default;
 		public static DecimalSerializer<ULongSerializer<ByteSerializer>> Decimal { get; } = default;
 
-		public static CharSerializer<UShortSerializer<ByteSerializer>> Char { get; } = default;
-
-		// String is not here because it is a dynamically sized type in networking.
+		// String is not here because it is a dynamically sized type.
 	}
-
 }
