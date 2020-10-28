@@ -23,6 +23,8 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Valve.Newtonsoft.Json;
+using Valve.Newtonsoft.Json.Linq;
 
 namespace H3MP
 {
@@ -351,17 +353,21 @@ namespace H3MP
 		{
 			if (scene.name == "MainMenu3")
 			{
+				// Creates a cloned mainscreen panel for H3MP changelog
 				CreatePanel();
-				_clientLog.LogDebug("Send panel webrequest...");
 
-				// TODO: change this URL before merging to main...
-				StartCoroutine(SendGetCoroutine("https://raw.githubusercontent.com/ash-hat/H3MP/feature/mainmenu-infopanel/ui/mainmenu3-panel.txt"));
+				// Gets body text from GitHub to populate H3MP panel
+				StartCoroutine(SendGetCoroutine());
 			}
 
-			IEnumerator SendGetCoroutine(string url)
+			IEnumerator SendGetCoroutine()
 			{
+				var needsUpdate = false;
+				var currentVersion = "v" + _version.ToString();
+				var latestVersion = currentVersion;
 
-				using (UnityWebRequest www = UnityWebRequest.Get(url))
+				// Get the latest release from GitHub
+				using (UnityWebRequest www = UnityWebRequest.Get("https://api.github.com/repos/ash-hat/h3mp/releases/latest"))
 				{
 					yield return www.Send();
 
@@ -371,11 +377,36 @@ namespace H3MP
 					}
 					else
 					{
-						_clientLog.LogDebug("Updating panel from GitHub...");
-						UpdatePanel("H3MP", www.downloadHandler.text);
+						// Check if this matches the installed version
+						var latetestVersion = JObject.Parse(www.downloadHandler.text)["tag_name"].ToString();
+						if (!(currentVersion == latestVersion))
+						{
+							needsUpdate = true;
+						}					
 					}
 				}
 
+				// Get the main body text from GitHub
+				using (UnityWebRequest www = UnityWebRequest.Get($"https://raw.githubusercontent.com/ash-hat/H3MP/{currentVersion}/ui/mainmenu3-panel.txt"))
+				{
+					yield return www.Send();
+
+					if (www.isError)
+					{
+						_clientLog.LogError(www.error);
+					}
+					else
+					{
+						// Build the body text with version info & highlighting
+						StringBuilder body = new StringBuilder($"<b>Installed version: </b>");
+						if (needsUpdate)
+							body.Append($"<b><color=#ff0000>{currentVersion}</color>  <color=#ff0000>(update available: {latestVersion})</color></b>");
+						else
+							body.Append($"<b><color=#00b300>{currentVersion}</color>  <color=#00b300>(latest)</color></b>");
+						body.Append($"\n\n{www.downloadHandler.text}" );
+						_panelBody.text = body.ToString();
+					}
+				}
 			}
 		}
 
@@ -392,12 +423,6 @@ namespace H3MP
 			_panelBody = _panelTextArray[1];
 			_panelTitle.text = "H3MP";
 			_panelBody.text = "Awaiting webrequest...";
-		}
-
-		void UpdatePanel(string headerText, string bodyText)
-		{
-			_panelTitle.text = headerText;
-			_panelBody.text = bodyText;
 		}
 
 		private void Update()
