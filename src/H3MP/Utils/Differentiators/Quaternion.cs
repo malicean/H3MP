@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace H3MP.Utils
 {
-	public readonly struct QuaternionDelta : IDeltable<Quaternion, Quaternion>
+	public class QuaternionDifferentiator : IDifferentiator<Quaternion, Quaternion>
 	{
 		public Option<Quaternion> CreateDelta(Quaternion now, Option<Quaternion> baseline)
 		{

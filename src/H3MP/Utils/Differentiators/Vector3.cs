@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace H3MP.Utils
 {
-	public readonly struct Vector3Delta : IDeltable<Vector3, Vector3>
+	public class Vector3Differentiator : IDifferentiator<Vector3, Vector3>
 	{
 		public Option<Vector3> CreateDelta(Vector3 now, Option<Vector3> baseline)
 		{

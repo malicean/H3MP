@@ -2,33 +2,57 @@ using System.Runtime.InteropServices;
 
 namespace H3MP.Utils
 {
-	public readonly struct DecimalSerializer<TULongSerializer> : ISerializer<decimal> where TULongSerializer : ISerializer<ulong>
+	public readonly struct DecimalSerializer : ISerializer<decimal>
 	{
-		private readonly TULongSerializer _ulong;
-
-		public DecimalSerializer(TULongSerializer @ulong)
-		{
-			_ulong = @ulong;
-		}
-
 		public decimal Deserialize(ref BitPackReader reader)
 		{
-			return new DecimalToULongs
-			{
-				Integral1 = _ulong.Deserialize(ref reader),
-				Integral2 = _ulong.Deserialize(ref reader)
-			}.Floating;
+			DecimalToULongs conv = default;
+
+			conv.Integral1 = reader.Bytes.Pop();
+			conv.Integral1 |= (ulong) reader.Bytes.Pop() << 8;
+			conv.Integral1 |= (ulong) reader.Bytes.Pop() << 16;
+			conv.Integral1 |= (ulong) reader.Bytes.Pop() << 24;
+			conv.Integral1 |= (ulong) reader.Bytes.Pop() << 32;
+			conv.Integral1 |= (ulong) reader.Bytes.Pop() << 40;
+			conv.Integral1 |= (ulong) reader.Bytes.Pop() << 48;
+			conv.Integral1 |= (ulong) reader.Bytes.Pop() << 56;
+
+			conv.Integral2 = reader.Bytes.Pop();
+			conv.Integral2 |= (ulong) reader.Bytes.Pop() << 8;
+			conv.Integral2 |= (ulong) reader.Bytes.Pop() << 16;
+			conv.Integral2 |= (ulong) reader.Bytes.Pop() << 24;
+			conv.Integral2 |= (ulong) reader.Bytes.Pop() << 32;
+			conv.Integral2 |= (ulong) reader.Bytes.Pop() << 40;
+			conv.Integral2 |= (ulong) reader.Bytes.Pop() << 48;
+			conv.Integral2 |= (ulong) reader.Bytes.Pop() << 56;
+
+			return conv.Floating;
 		}
 
 		public void Serialize(ref BitPackWriter writer, decimal value)
 		{
-			var ulongs = new DecimalToULongs
+			var conv = new DecimalToULongs
 			{
 				Floating = value
 			};
 
-			_ulong.Serialize(ref writer, ulongs.Integral1);
-			_ulong.Serialize(ref writer, ulongs.Integral2);
+			writer.Bytes.Push((byte) conv.Integral1);
+			writer.Bytes.Push((byte) (conv.Integral1 >> 8));
+			writer.Bytes.Push((byte) (conv.Integral1 >> 16));
+			writer.Bytes.Push((byte) (conv.Integral1 >> 24));
+			writer.Bytes.Push((byte) (conv.Integral1 >> 32));
+			writer.Bytes.Push((byte) (conv.Integral1 >> 40));
+			writer.Bytes.Push((byte) (conv.Integral1 >> 48));
+			writer.Bytes.Push((byte) (conv.Integral1 >> 56));
+
+			writer.Bytes.Push((byte) conv.Integral2);
+			writer.Bytes.Push((byte) (conv.Integral2 >> 8));
+			writer.Bytes.Push((byte) (conv.Integral2 >> 16));
+			writer.Bytes.Push((byte) (conv.Integral2 >> 24));
+			writer.Bytes.Push((byte) (conv.Integral2 >> 32));
+			writer.Bytes.Push((byte) (conv.Integral2 >> 40));
+			writer.Bytes.Push((byte) (conv.Integral2 >> 48));
+			writer.Bytes.Push((byte) (conv.Integral2 >> 56));
 		}
 
 		[StructLayout(LayoutKind.Explicit)]

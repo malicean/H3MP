@@ -5,10 +5,10 @@ namespace H3MP.Peers
 {
 	public class Husk
 	{
-		private Snapshots<MoveMessage> _movementSnapshots;
+		private Snapshots<BodyMessage> _movementSnapshots;
 
-		private Timestamped<MoveMessage> _lastDelta;
-		public Timestamped<MoveMessage> LastDelta
+		private Timestamped<BodyMessage> _lastDelta;
+		public Timestamped<BodyMessage> LastDelta
 		{
 			get => _lastDelta;
 			set
@@ -22,12 +22,12 @@ namespace H3MP.Peers
 
 		public Husk(bool isSelf, double maxSnapshotAge)
 		{
-			var killer = new TimeSnapshotKiller<MoveMessage>(() => LocalTime.Now, maxSnapshotAge);
+			var killer = new TimeSnapshotKiller<BodyMessage>(() => LocalTime.Now, maxSnapshotAge);
 
-			_movementSnapshots = new Snapshots<MoveMessage>(killer);
+			_movementSnapshots = new Snapshots<BodyMessage>(killer);
 			IsSelf = isSelf;
 
-			LastDelta = Timestamped<MoveMessage>.Now();
+			LastDelta = Timestamped<BodyMessage>.Now();
 		}
 	}
 }

@@ -1,28 +1,26 @@
 namespace H3MP.Utils
 {
-	public static class PrimitiveSerializer
+	public static class PrimitiveSerializers
 	{
-		// We can use default on all of the following because the serializers are stateless structs.
+		public static ISerializer<bool> Bool { get; } = new BoolSerializer();
 
-		public static BoolSerializer Bool { get; } = default;
+		public static ISerializer<byte> Byte { get; } = new ByteSerializer();
+		public static ISerializer<sbyte> SByte { get; } = new SByteSerializer();
 
-		public static ByteSerializer Byte { get; } = default;
-		public static SByteSerializer<ByteSerializer> SByte { get; } = default;
+		public static ISerializer<ushort> UShort { get; } = new UShortSerializer();
+		public static ISerializer<short> Short { get; } = new ShortSerializer();
 
-		public static UShortSerializer<ByteSerializer> UShort { get; } = default;
-		public static ShortSerializer<UShortSerializer<ByteSerializer>> Short { get; } = default;
+		public static ISerializer<char> Char { get; } = new CharSerializer();
 
-		public static CharSerializer<UShortSerializer<ByteSerializer>> Char { get; } = default;
+		public static ISerializer<uint> UInt { get; } = new UIntSerializer();
+		public static ISerializer<int> Int { get; } = new IntSerializer();
 
-		public static UIntSerializer<ByteSerializer> UInt { get; } = default;
-		public static IntSerializer<UIntSerializer<ByteSerializer>> Int { get; } = default;
+		public static ISerializer<ulong> ULong { get; } = new ULongSerializer();
+		public static ISerializer<long> Long { get; } = new LongSerializer();
 
-		public static ULongSerializer<ByteSerializer> ULong { get; } = default;
-		public static LongSerializer<ULongSerializer<ByteSerializer>> Long { get; } = default;
-
-		public static FloatSerializer<UIntSerializer<ByteSerializer>> Float { get; } = default;
-		public static DoubleSerializer<ULongSerializer<ByteSerializer>> Double { get; } = default;
-		public static DecimalSerializer<ULongSerializer<ByteSerializer>> Decimal { get; } = default;
+		public static ISerializer<float> Float { get; } = new FloatSerializer();
+		public static ISerializer<double> Double { get; } = new DoubleSerializer();
+		public static ISerializer<decimal> Decimal { get; } = new DecimalSerializer();
 
 		// String is not here because it is a dynamically sized type.
 	}

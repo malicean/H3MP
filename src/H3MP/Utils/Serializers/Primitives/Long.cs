@@ -1,22 +1,25 @@
 namespace H3MP.Utils
 {
-	public readonly struct LongSerializer<TULongSerializer> : ISerializer<long> where TULongSerializer : ISerializer<ulong>
+	public readonly struct LongSerializer : ISerializer<long>
 	{
-		private readonly TULongSerializer _ulong;
-
-		public LongSerializer(TULongSerializer @ulong)
-		{
-			_ulong = @ulong;
-		}
-
 		public long Deserialize(ref BitPackReader reader)
 		{
-			return (long) _ulong.Deserialize(ref reader);
+			long conv;
+
+			conv = reader.Bytes.Pop();
+			conv |= (long) reader.Bytes.Pop() << 8;
+			conv |= (long) reader.Bytes.Pop() << 16;
+			conv |= (long) reader.Bytes.Pop() << 24;
+
+			return conv;
 		}
 
 		public void Serialize(ref BitPackWriter writer, long value)
 		{
-			_ulong.Serialize(ref writer, (ulong) value);
+			writer.Bytes.Push((byte) value);
+			writer.Bytes.Push((byte) (value >> 8));
+			writer.Bytes.Push((byte) (value >> 16));
+			writer.Bytes.Push((byte) (value >> 24));
 		}
 	}
 }

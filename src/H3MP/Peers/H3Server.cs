@@ -60,7 +60,7 @@ namespace H3MP.Peers
 
 			base.Update();
 
-			var deltas = new Dictionary<byte, Timestamped<MoveMessage>>();
+			var deltas = new Dictionary<byte, Timestamped<BodyMessage>>();
 			foreach (KeyValuePair<byte, Husk> husk in _husks)
 			{
 				var delta = husk.Value.Delta;
@@ -77,7 +77,7 @@ namespace H3MP.Peers
 					var peer = peerID.Key;
 					var id = peerID.Value;
 
-					Timestamped<MoveMessage>? popped;
+					Timestamped<BodyMessage>? popped;
 					if (deltas.TryGetValue(id, out var delta))
 					{
 						popped = delta;
@@ -105,7 +105,7 @@ namespace H3MP.Peers
 			peer.Send(Timestamped<PingMessage>.Now(message));
 		}
 
-		internal static void OnPlayerMoveDelta(H3Server self, Peer peer, Timestamped<MoveMessage> message)
+		internal static void OnPlayerMoveDelta(H3Server self, Peer peer, Timestamped<BodyMessage> message)
 		{
 			self[peer].LastDelta = message;
 		}
@@ -222,7 +222,7 @@ namespace H3MP.Peers
 				server._husks.Add(id, peerHusk);
 
 				// Initialize just-joined puppet on other clients
-				server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<MoveMessage>.Now(default)));
+				server.BroadcastExcept(peer, new PlayerJoinMessage(id, Timestamped<BodyMessage>.Now(default)));
 			}
 
 			public void OnClientDisconnected(H3Server server, Peer peer, DisconnectInfo info)

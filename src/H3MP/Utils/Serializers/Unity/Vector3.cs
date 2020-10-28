@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace H3MP.Utils
 {
-	public readonly struct Vector3Serializer<TFloatSerializer> : ISerializer<Vector3> where TFloatSerializer : ISerializer<float>
+	public class Vector3Serializer : ISerializer<Vector3>
 	{
-		private readonly TFloatSerializer _float;
+		private readonly ISerializer<float> _float;
 
-		public Vector3Serializer(TFloatSerializer @float)
+		public Vector3Serializer(ISerializer<float> @float)
 		{
 			_float = @float;
 		}

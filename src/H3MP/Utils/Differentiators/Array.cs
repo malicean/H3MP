@@ -1,22 +1,20 @@
-using System;
-
 namespace H3MP.Utils
 {
-	public static class ArrayDeltaExtensions
+	public static class ArrayDifferentiatorExtensions
 	{
-		public static ArrayDelta<TValue, TDelta, TDeltable> ToArray<TValue, TDelta, TDeltable>(this TDeltable @this) where TDeltable : IDeltable<TValue, TDelta>
+		public static IDifferentiator<TValue[], Option<TDelta>[]> ToArray<TValue, TDelta>(this IDifferentiator<TValue, TDelta> @this)
 		{
-			return new ArrayDelta<TValue, TDelta, TDeltable>(@this);
+			return new ArrayDifferentiator<TValue, TDelta>(@this);
 		}
 	}
 
-	public readonly struct ArrayDelta<TValue, TDelta, TDeltable> : IDeltable<TValue[], Option<TDelta>[]> where TDeltable : IDeltable<TValue, TDelta>
+	public class ArrayDifferentiator<TValue, TDelta> : IDifferentiator<TValue[], Option<TDelta>[]>
 	{
-		private readonly TDeltable _deltable;
+		private readonly IDifferentiator<TValue, TDelta> _differentiator;
 
-		public ArrayDelta(TDeltable deltable)
+		public ArrayDifferentiator(IDifferentiator<TValue, TDelta> differentiator)
 		{
-			_deltable = deltable;
+			_differentiator = differentiator;
 		}
 
 		public Option<Option<TDelta>[]> CreateDelta(TValue[] now, Option<TValue[]> baseline)
@@ -31,7 +29,7 @@ namespace H3MP.Utils
 						? Option.Some(baselineArray[i])
 						: Option.None<TValue>();
 
-					var delta = _deltable.CreateDelta(now[i], baselineValue);
+					var delta = _differentiator.CreateDelta(now[i], baselineValue);
 					deltas[i] = delta;
 					dirty |= delta.IsSome;
 				}
@@ -42,7 +40,7 @@ namespace H3MP.Utils
 
 				for (var i = 0; i < deltas.Length; ++i)
 				{
-					deltas[i] = _deltable.CreateDelta(now[i], Option.None<TValue>());
+					deltas[i] = _differentiator.CreateDelta(now[i], Option.None<TValue>());
 				}
 			}
 
@@ -62,14 +60,14 @@ namespace H3MP.Utils
 						? Option.Some(baselineArray[i])
 						: Option.None<TValue>();
 
-					values[i] = _deltable.ConsumeDelta(nowValue, baselineValue);
+					values[i] = _differentiator.ConsumeDelta(nowValue, baselineValue);
 				}
 			}
 			else
 			{
 				for (var i = 0; i < now.Length; ++i)
 				{
-					values[i] = _deltable.ConsumeDelta(now[i].Unwrap(), Option.None<TValue>());
+					values[i] = _differentiator.ConsumeDelta(now[i].Unwrap(), Option.None<TValue>());
 				}
 			}
 

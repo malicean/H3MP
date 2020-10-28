@@ -3,21 +3,21 @@ using UnityEngine;
 
 namespace H3MP.Utils
 {
-	public static class OptionDeltaExtensions
+	public static class OptionDifferentiatorExtensions
 	{
-		public static OptionDelta<TValue, TDelta, TDeltable> ToOption<TValue, TDelta, TDeltable>(this TDeltable @this) where TDeltable : IDeltable<TValue, TDelta>
+		public static OptionDifferentiator<TValue, TDelta> ToOption<TValue, TDelta>(this IDifferentiator<TValue, TDelta> @this)
 		{
-			return new OptionDelta<TValue, TDelta, TDeltable>(@this);
+			return new OptionDifferentiator<TValue, TDelta>(@this);
 		}
 	}
 
-	public readonly struct OptionDelta<TValue, TDelta, TDeltable> : IDeltable<Option<TValue>, Option<TDelta>> where TDeltable : IDeltable<TValue, TDelta>
+	public class OptionDifferentiator<TValue, TDelta> : IDifferentiator<Option<TValue>, Option<TDelta>>
 	{
-		private readonly TDeltable _deltable;
+		private readonly IDifferentiator<TValue, TDelta> _differentiator;
 
-		public OptionDelta(TDeltable deltable)
+		public OptionDifferentiator(IDifferentiator<TValue, TDelta> differentiator)
 		{
-			_deltable = deltable;
+			_differentiator = differentiator;
 		}
 
 		public Option<Option<TDelta>> CreateDelta(Option<TValue> now, Option<Option<TValue>> baseline)
@@ -27,7 +27,7 @@ namespace H3MP.Utils
 				if (now.MatchSome(out var nowValue))
 				{
 					// some -> some
-					return Option.Some(_deltable.CreateDelta(nowValue, baselineValue));
+					return Option.Some(_differentiator.CreateDelta(nowValue, baselineValue));
 				}
 
 				// some -> none
@@ -36,7 +36,7 @@ namespace H3MP.Utils
 			else if (now.MatchSome(out var nowValue))
 			{
 				// none -> some
-				return Option.Some(_deltable.CreateDelta(nowValue, Option.None<TValue>()));
+				return Option.Some(_differentiator.CreateDelta(nowValue, Option.None<TValue>()));
 			}
 
 			// none -> none
@@ -50,7 +50,7 @@ namespace H3MP.Utils
 				if (now.MatchSome(out var nowValue))
 				{
 					// some -> some
-					return Option.Some(_deltable.ConsumeDelta(nowValue, baselineValue));
+					return Option.Some(_differentiator.ConsumeDelta(nowValue, baselineValue));
 				}
 
 				// some -> none
@@ -59,7 +59,7 @@ namespace H3MP.Utils
 			else if (now.MatchSome(out var nowValue))
 			{
 				// none -> some
-				return Option.Some(_deltable.ConsumeDelta(nowValue, Option.None<TValue>()));
+				return Option.Some(_differentiator.ConsumeDelta(nowValue, Option.None<TValue>()));
 			}
 
 			// none -> none

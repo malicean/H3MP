@@ -1,22 +1,25 @@
 namespace H3MP.Utils
 {
-	public readonly struct IntSerializer<TUIntSerializer> : ISerializer<int> where TUIntSerializer : ISerializer<uint>
+	public readonly struct IntSerializer : ISerializer<int>
 	{
-		private readonly TUIntSerializer _uint;
-
-		public IntSerializer(TUIntSerializer @uint)
-		{
-			_uint = @uint;
-		}
-
 		public int Deserialize(ref BitPackReader reader)
 		{
-			return (int) _uint.Deserialize(ref reader);
+			int value;
+			
+			value = reader.Bytes.Pop();
+			value |= reader.Bytes.Pop() << 8;
+			value |= reader.Bytes.Pop() << 16;
+			value |= reader.Bytes.Pop() << 24;
+
+			return value;
 		}
 
 		public void Serialize(ref BitPackWriter writer, int value)
 		{
-			_uint.Serialize(ref writer, (uint) value);
+			writer.Bytes.Push((byte) value);
+			writer.Bytes.Push((byte) (value >> 8));
+			writer.Bytes.Push((byte) (value >> 16));
+			writer.Bytes.Push((byte) (value >> 24));
 		}
 	}
 }

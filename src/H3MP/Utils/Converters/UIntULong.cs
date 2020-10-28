@@ -1,6 +1,8 @@
+using System;
+
 namespace H3MP.Utils
 {
-	public readonly struct UIntULongConverter : IConverter<uint, ulong>, IConverter<ulong, uint>
+	public class UIntULongConverter : IConverter<uint, ulong>, IConverter<ulong, uint>
 	{
 		public ulong Convert(uint value)
 		{
@@ -9,6 +11,12 @@ namespace H3MP.Utils
 
 		public uint Convert(ulong value)
 		{
+			const byte max = byte.MaxValue;
+			if (max < value)
+			{
+				throw new ArgumentOutOfRangeException(nameof(value), value, "Value must be less than or equal to the max byte: " + max);
+			}
+
 			return (uint) value;
 		}
 	}

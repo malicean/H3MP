@@ -2,29 +2,36 @@ using System.Runtime.InteropServices;
 
 namespace H3MP.Utils
 {
-	public readonly struct DoubleSerializer<TULongSerializer> : ISerializer<double> where TULongSerializer : ISerializer<ulong>
+	public readonly struct DoubleSerializer : ISerializer<double>
 	{
-		private readonly TULongSerializer _ulong;
-
-		public DoubleSerializer(TULongSerializer @ulong)
-		{
-			_ulong = @ulong;
-		}
-
 		public double Deserialize(ref BitPackReader reader)
 		{
-			return new DoubleToULong
-			{
-				Integral = _ulong.Deserialize(ref reader)
-			}.Floating;
+			DoubleToULong conv = default;
+
+			conv.Integral = reader.Bytes.Pop();
+			conv.Integral |= (ulong) reader.Bytes.Pop() << 8;
+			conv.Integral |= (ulong) reader.Bytes.Pop() << 16;
+			conv.Integral |= (ulong) reader.Bytes.Pop() << 24;
+			conv.Integral |= (ulong) reader.Bytes.Pop() << 32;
+			conv.Integral |= (ulong) reader.Bytes.Pop() << 40;
+			conv.Integral |= (ulong) reader.Bytes.Pop() << 48;
+			conv.Integral |= (ulong) reader.Bytes.Pop() << 56;
+
+			return conv.Floating;
 		}
 
 		public void Serialize(ref BitPackWriter writer, double value)
 		{
-			_ulong.Serialize(ref writer, new DoubleToULong
-			{
-				Floating = value
-			}.Integral);
+			DoubleToULong conv = default;
+
+			writer.Bytes.Push((byte) conv.Integral);
+			writer.Bytes.Push((byte) (conv.Integral >> 8));
+			writer.Bytes.Push((byte) (conv.Integral >> 16));
+			writer.Bytes.Push((byte) (conv.Integral >> 24));
+			writer.Bytes.Push((byte) (conv.Integral >> 32));
+			writer.Bytes.Push((byte) (conv.Integral >> 40));
+			writer.Bytes.Push((byte) (conv.Integral >> 48));
+			writer.Bytes.Push((byte) (conv.Integral >> 56));
 		}
 
 		[StructLayout(LayoutKind.Explicit)]

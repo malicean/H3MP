@@ -1,31 +1,39 @@
+using System;
+
 namespace H3MP.Utils
 {
-	public readonly struct FixedArraySerializer<TValue, TSerializer> : ISerializer<TValue[]> where TSerializer : ISerializer<TValue>
+	public class FixedArraySerializer<TValue> : ISerializer<TValue[]>
 	{
-		private readonly TSerializer _serializer;
-		private readonly TValue[] _buffer;
+		private readonly ISerializer<TValue> _serializer;
+		private readonly int _length;
 
-		public FixedArraySerializer(TSerializer serializer, TValue[] buffer)
+		public FixedArraySerializer(ISerializer<TValue> serializer, int length)
 		{
 			_serializer = serializer;
-			_buffer = buffer;
+			_length = length;
 		}
 
 		public TValue[] Deserialize(ref BitPackReader reader)
 		{
-			for (var i = 0; i < _buffer.Length; ++i)
+			var buffer = new TValue[_length];
+			for (var i = 0; i < _length; ++i)
 			{
-				_buffer[i] = _serializer.Deserialize(ref reader);
+				buffer[i] = _serializer.Deserialize(ref reader);
 			}
 
-			return _buffer;
+			return buffer;
 		}
 
 		public void Serialize(ref BitPackWriter writer, TValue[] value)
 		{
-			for (var i = 0; i < _buffer.Length; ++i)
+			if (value.Length != _length)
 			{
-				_serializer.Serialize(ref writer, _buffer[i]);
+				throw new ArgumentOutOfRangeException(nameof(value), value.Length, "Array length must be equal to the fixed size: " + _length);
+			}
+
+			for (var i = 0; i < _length; ++i)
+			{
+				_serializer.Serialize(ref writer, value[i]);
 			}
 		}
 	}

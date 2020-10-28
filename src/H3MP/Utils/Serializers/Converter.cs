@@ -1,36 +1,26 @@
 namespace H3MP.Utils
 {
-	public static class ConverterSerializerExtensions
+	public class ConverterSerializer<TValue, TConverted> : ISerializer<TValue>
 	{
-		public static ConverterSerializer<TValue, TConverted, TConverter, TSerializer> ToConverter<TValue, TConverted, TConverter, TSerializer>(this TSerializer @this, TConverter converter)
-			where TConverter : IConverter<TValue, TConverted>, IConverter<TConverted, TValue>
-			where TSerializer : ISerializer<TConverted>
-		{
-			return new ConverterSerializer<TValue, TConverted, TConverter, TSerializer>(@this, converter);
-		}
-	}
+		private readonly ISerializer<TConverted> _serializer;
+		private readonly IConverter<TValue, TConverted> _convertTo;
+		private readonly IConverter<TConverted, TValue> _convertFrom;
 
-	public readonly struct ConverterSerializer<TValue, TConverted, TConverter, TSerializer> : ISerializer<TValue>
-		where TConverter : IConverter<TValue, TConverted>, IConverter<TConverted, TValue>
-		where TSerializer : ISerializer<TConverted>
-	{
-		private readonly TSerializer _serializer;
-		private readonly TConverter _converter;
-
-		public ConverterSerializer(TSerializer serializer, TConverter converter)
+		public ConverterSerializer(ISerializer<TConverted> serializer, IConverter<TValue, TConverted> convertTo, IConverter<TConverted, TValue> convertFrom)
 		{
 			_serializer = serializer;
-			_converter = converter;
+			_convertTo = convertTo;
+			_convertFrom = convertFrom;
 		}
 
 		public TValue Deserialize(ref BitPackReader reader)
 		{
-			return _converter.Convert(_serializer.Deserialize(ref reader));
+			return _convertFrom.Convert(_serializer.Deserialize(ref reader));
 		}
 
 		public void Serialize(ref BitPackWriter writer, TValue value)
 		{
-			_serializer.Serialize(ref writer, _converter.Convert(value));
+			_serializer.Serialize(ref writer, _convertTo.Convert(value));
 		}
 	}
 }

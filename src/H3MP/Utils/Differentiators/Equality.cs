@@ -2,8 +2,10 @@ using System;
 
 namespace H3MP.Utils
 {
-	public readonly struct EqualityDelta<TValue> : IDeltable<TValue, TValue> where TValue : IEquatable<TValue>
+	public class EqualityDifferentiator<TValue> : IDifferentiator<TValue, TValue> where TValue : IEquatable<TValue>
 	{
+		public static IDifferentiator<TValue, TValue> Instance { get; } = new EqualityDifferentiator<TValue>();
+
 		public Option<TValue> CreateDelta(TValue now, Option<TValue> baseline)
 		{
 			if (baseline.MatchSome(out var value))

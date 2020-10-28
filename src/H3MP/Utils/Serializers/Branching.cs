@@ -4,24 +4,19 @@ namespace H3MP.Utils
 {
 	public static class BranchingSerializerExtensions
 	{
-		// @this is TSerializer2 so the conditional function is next to the conditional result
-		public static BranchingSerializer<TValue, TSerializer1, TSerializer2> ToBranching<TValue, TSerializer1, TSerializer2>(this TSerializer2 @this, Func<TValue, bool> @if, TSerializer1 then)
-			where TSerializer1 : ISerializer<TValue>
-			where TSerializer2 : ISerializer<TValue>
+		public static ISerializer<TValue> ToBranching<TValue>(this ISerializer<TValue> @this, Func<TValue, bool> @if, ISerializer<TValue> then)
 		{
-			return new BranchingSerializer<TValue, TSerializer1, TSerializer2>(@if, then, @this);
+			return new BranchingSerializer<TValue>(@if, then, @this);
 		}
 	}
 
-	public readonly struct BranchingSerializer<TValue, TSerializer1, TSerializer2> : ISerializer<TValue>
-		where TSerializer1 : ISerializer<TValue>
-		where TSerializer2 : ISerializer<TValue>
+	public class BranchingSerializer<TValue> : ISerializer<TValue>
 	{
 		private readonly Func<TValue, bool> _if;
-		private readonly TSerializer1 _then;
-		private readonly TSerializer2 _else;
+		private readonly ISerializer<TValue> _then;
+		private readonly ISerializer<TValue> _else;
 
-		public BranchingSerializer(Func<TValue, bool> @if, TSerializer1 then, TSerializer2 @else)
+		public BranchingSerializer(Func<TValue, bool> @if, ISerializer<TValue> then, ISerializer<TValue> @else)
 		{
 			_if = @if;
 			_then = then;

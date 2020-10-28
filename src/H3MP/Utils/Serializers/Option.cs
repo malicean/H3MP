@@ -2,17 +2,17 @@ namespace H3MP.Utils
 {
 	public static class OptionSerializerExtensions
 	{
-		public static OptionSerializer<TValue, TSerializer> ToOption<TValue, TSerializer>(this TSerializer @this) where TSerializer : ISerializer<TValue>
+		public static ISerializer<Option<TValue>> ToOption<TValue>(this ISerializer<TValue> @this)
 		{
-			return new OptionSerializer<TValue, TSerializer>(@this);
+			return new OptionSerializer<TValue>(@this);
 		}
 	}
 
-	public readonly struct OptionSerializer<TValue, TSerializer> : ISerializer<Option<TValue>> where TSerializer : ISerializer<TValue>
+	public class OptionSerializer<TValue> : ISerializer<Option<TValue>>
 	{
-		private readonly TSerializer _serializer;
+		private readonly ISerializer<TValue> _serializer;
 
-		public OptionSerializer(TSerializer serializer)
+		public OptionSerializer(ISerializer<TValue> serializer)
 		{
 			_serializer = serializer;
 		}

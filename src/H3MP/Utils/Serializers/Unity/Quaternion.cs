@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace H3MP.Utils
 {
-	public readonly struct QuaternionSerializer<TFloatSerializer> : ISerializer<Quaternion> where TFloatSerializer : ISerializer<float>
+	public class QuaternionSerializer : ISerializer<Quaternion>
 	{
-		private readonly TFloatSerializer _float;
+		private readonly ISerializer<float> _float;
 
-		public QuaternionSerializer(TFloatSerializer @float)
+		public QuaternionSerializer(ISerializer<float> @float)
 		{
 			_float = @float;
 		}
@@ -31,7 +31,7 @@ namespace H3MP.Utils
 		}
 	}
 
-	public readonly struct SmallestThreeQuaternionSerializer<TFloatSerializer> : ISerializer<Quaternion> where TFloatSerializer : ISerializer<float>
+	public class SmallestThreeQuaternionSerializer : ISerializer<Quaternion>
 	{
 		private enum QuaternionComponent : byte
 		{
@@ -64,9 +64,9 @@ namespace H3MP.Utils
 			return component;
 		}
 
-		private readonly TFloatSerializer _float;
+		private readonly ISerializer<float> _float;
 
-		public SmallestThreeQuaternionSerializer(TFloatSerializer @float)
+		public SmallestThreeQuaternionSerializer(ISerializer<float> @float)
 		{
 			_float = @float;
 		}
@@ -76,16 +76,16 @@ namespace H3MP.Utils
 			QuaternionComponent largest = default;
 			if (reader.Bits.Pop())
 			{
-				largest |= (QuaternionComponent) 0b10;
+				largest |= (QuaternionComponent) 0b01;
 			}
 			if (reader.Bits.Pop())
 			{
-				largest |= (QuaternionComponent) 0b01;
+				largest |= (QuaternionComponent) 0b10;
 			}
 
-			var a = PrimitiveSerializer.Float.Deserialize(ref reader);
-			var b = PrimitiveSerializer.Float.Deserialize(ref reader);
-			var c = PrimitiveSerializer.Float.Deserialize(ref reader);
+			var a = _float.Deserialize(ref reader);
+			var b = _float.Deserialize(ref reader);
+			var c = _float.Deserialize(ref reader);
 			var largestValue = Mathf.Sqrt(1 - a * a  - b * b - c * c);
 
 			float x;
@@ -170,11 +170,11 @@ namespace H3MP.Utils
 					throw new ArgumentOutOfRangeException();
 			}
 
-			PrimitiveSerializer.Bool.Serialize(ref writer, HasComponent(largestComponent, (QuaternionComponent) 0b10));
-			PrimitiveSerializer.Bool.Serialize(ref writer, HasComponent(largestComponent, (QuaternionComponent) 0b01));
-			PrimitiveSerializer.Float.Serialize(ref writer, a);
-			PrimitiveSerializer.Float.Serialize(ref writer, b);
-			PrimitiveSerializer.Float.Serialize(ref writer, c);
+			writer.Bits.Push(HasComponent(largestComponent, (QuaternionComponent) 0b01));
+			writer.Bits.Push(HasComponent(largestComponent, (QuaternionComponent) 0b10));
+			_float.Serialize(ref writer, a);
+			_float.Serialize(ref writer, b);
+			_float.Serialize(ref writer, c);
 		}
 	}
 }

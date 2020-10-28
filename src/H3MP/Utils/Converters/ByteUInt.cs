@@ -1,6 +1,8 @@
+using System;
+
 namespace H3MP.Utils
 {
-	public readonly struct ByteUIntConverter : IConverter<byte, uint>, IConverter<uint, byte>
+	public class ByteUIntConverter : IConverter<byte, uint>, IConverter<uint, byte>
 	{
 		public uint Convert(byte value)
 		{
@@ -9,6 +11,12 @@ namespace H3MP.Utils
 
 		public byte Convert(uint value)
 		{
+			const byte max = byte.MaxValue;
+			if (max < value)
+			{
+				throw new ArgumentOutOfRangeException(nameof(value), value, "Value must be less than or equal to the max byte: " + max);
+			}
+
 			return (byte) value;
 		}
 	}

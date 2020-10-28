@@ -1,17 +1,32 @@
 namespace H3MP.Utils
 {
-	public static class PackedSerializer
+	public static class PackedSerializers
 	{
-		public static BranchingSerializer<ushort, UShortSerializer<ByteSerializer>, ConverterSerializer<ushort, byte, ByteUShortConverter, ByteSerializer>> UShort { get; } = new BranchingSerializer<ushort, UShortSerializer<ByteSerializer>, ConverterSerializer<ushort, byte, ByteUShortConverter, ByteSerializer>>(x => x > byte.MaxValue, default, new ConverterSerializer<ushort, byte, ByteUShortConverter, ByteSerializer>(default, default));
+		public static ISerializer<ushort> UShort { get; } = TruncatedSerializers.ByteAsUShort.ToBranching(x => x > byte.MaxValue, PrimitiveSerializers.UShort);
+		public static ISerializer<short> Short { get; } = TruncatedSerializers.SByteAsShort.ToBranching(x => x > sbyte.MaxValue, PrimitiveSerializers.Short);
 
-		public static BranchingSerializer<short, ShortSerializer<UShortSerializer<ByteSerializer>>, ConverterSerializer<short, sbyte, SByteShortConverter, SByteSerializer<ByteSerializer>>> Short { get; } = new BranchingSerializer<short, ShortSerializer<UShortSerializer<ByteSerializer>>, ConverterSerializer<short, sbyte, SByteShortConverter, SByteSerializer<ByteSerializer>>>(x => x < short.MinValue || x < short.MaxValue, default, default);
+		public static ISerializer<uint> UInt { get; } = TruncatedSerializers.ByteAsUInt.ToBranching(x => x > byte.MaxValue, TruncatedSerializers.UShortAsUInt)
+															.ToBranching(x => x > ushort.MaxValue, PrimitiveSerializers.UInt);
+		public static ISerializer<int> Int { get; } = TruncatedSerializers.SByteAsInt.ToBranching(x => x < sbyte.MinValue || sbyte.MaxValue < x, TruncatedSerializers.ShortAsInt)
+															.ToBranching(x => x < short.MinValue || short.MaxValue < x, PrimitiveSerializers.Int);
 
-		public static BranchingSerializer<uint, UIntSerializer<ByteSerializer>, ConverterSerializer<uint, ushort, UShortUIntConverter, BranchingSerializer<ushort, UShortSerializer<ByteSerializer>, ConverterSerializer<ushort, byte, ByteUShortConverter, ByteSerializer>>>> UInt { get; } = new BranchingSerializer<uint, UIntSerializer<ByteSerializer>, ConverterSerializer<uint, ushort, UShortUIntConverter, BranchingSerializer<ushort, UShortSerializer<ByteSerializer>, ConverterSerializer<ushort, byte, ByteUShortConverter, ByteSerializer>>>>(x => x > ushort.MaxValue, default, new ConverterSerializer<uint, ushort, UShortUIntConverter, BranchingSerializer<ushort, UShortSerializer<ByteSerializer>, ConverterSerializer<ushort, byte, ByteUShortConverter, ByteSerializer>>>(default, default));
+		public static ISerializer<ulong> ULong { get; } = TruncatedSerializers.ByteAsULong.ToBranching(x => x > byte.MaxValue, TruncatedSerializers.UShortAsULong)
+															.ToBranching(x => x > ushort.MaxValue, TruncatedSerializers.UIntAsULong.ToBranching(x => x > uint.MaxValue, PrimitiveSerializers.ULong));
+		public static ISerializer<long> Long { get; } = TruncatedSerializers.SByteAsLong.ToBranching(x => x < sbyte.MinValue || sbyte.MaxValue < x, TruncatedSerializers.ShortAsLong)
+															.ToBranching(x => x < short.MinValue || short.MaxValue < x, TruncatedSerializers.IntAsLong.ToBranching(x => x < int.MinValue || int.MaxValue < x, PrimitiveSerializers.Long));
 
-		public static BranchingSerializer<int, IntSerializer<UIntSerializer<ByteSerializer>>, ConverterSerializer<int, short, ShortIntConverter, BranchingSerializer<short, ShortSerializer<UShortSerializer<ByteSerializer>>, ConverterSerializer<short, sbyte, SByteShortConverter, SByteSerializer<ByteSerializer>>>>> Int { get; } = new BranchingSerializer<int, IntSerializer<UIntSerializer<ByteSerializer>>, ConverterSerializer<int, short, ShortIntConverter, BranchingSerializer<short, ShortSerializer<UShortSerializer<ByteSerializer>>, ConverterSerializer<short, sbyte, SByteShortConverter, SByteSerializer<ByteSerializer>>>>>(x => x < short.MinValue ||  short.MaxValue < x, default, new ConverterSerializer<int, short, ShortIntConverter, BranchingSerializer<short, ShortSerializer<UShortSerializer<ByteSerializer>>, ConverterSerializer<short, sbyte, SByteShortConverter, SByteSerializer<ByteSerializer>>>>(default, default));
+		public static ISerializer<float> UFloat(float max)
+		{
+			var converter = new UShortFloatConverter(max);
 
-		public static BranchingSerializer<ulong, BranchingSerializer<ulong, ULongSerializer<ByteSerializer>, ConverterSerializer<ulong, uint, UIntULongConverter, UIntSerializer<ByteSerializer>>>, BranchingSerializer<ulong, ConverterSerializer<ulong, ushort, UShortULongConverter, UShortSerializer<ByteSerializer>>, ConverterSerializer<ulong, byte, ByteULongConverter, ByteSerializer>>> ULong { get; } = new BranchingSerializer<ulong, BranchingSerializer<ulong, ULongSerializer<ByteSerializer>, ConverterSerializer<ulong, uint, UIntULongConverter, UIntSerializer<ByteSerializer>>>, BranchingSerializer<ulong, ConverterSerializer<ulong, ushort, UShortULongConverter, UShortSerializer<ByteSerializer>>, ConverterSerializer<ulong, byte, ByteULongConverter, ByteSerializer>>>(x => x > ushort.MaxValue, new BranchingSerializer<ulong, ULongSerializer<ByteSerializer>, ConverterSerializer<ulong, uint, UIntULongConverter, UIntSerializer<ByteSerializer>>>(x => x > uint.MaxValue, default, default), new BranchingSerializer<ulong, ConverterSerializer<ulong, ushort, UShortULongConverter, UShortSerializer<ByteSerializer>>, ConverterSerializer<ulong, byte, ByteULongConverter, ByteSerializer>>(x => x > byte.MaxValue, default, default));
+			return new ConverterSerializer<float, ushort>(PrimitiveSerializers.UShort, converter, converter);
+		}
 
-		public static BranchingSerializer<long, BranchingSerializer<long, LongSerializer<ULongSerializer<ByteSerializer>>, ConverterSerializer<long, int, IntLongConverter, IntSerializer<UIntSerializer<ByteSerializer>>>>, BranchingSerializer<long, ConverterSerializer<long, short, ShortLongConverter, ShortSerializer<UShortSerializer<ByteSerializer>>>, ConverterSerializer<long, sbyte, SByteLongConverter, SByteSerializer<ByteSerializer>>>> Long { get; } = new BranchingSerializer<long, BranchingSerializer<long, LongSerializer<ULongSerializer<ByteSerializer>>, ConverterSerializer<long, int, IntLongConverter, IntSerializer<UIntSerializer<ByteSerializer>>>>, BranchingSerializer<long, ConverterSerializer<long, short, ShortLongConverter, ShortSerializer<UShortSerializer<ByteSerializer>>>, ConverterSerializer<long, sbyte, SByteLongConverter, SByteSerializer<ByteSerializer>>>>(x => x < short.MinValue || short.MaxValue < x, new BranchingSerializer<long, LongSerializer<ULongSerializer<ByteSerializer>>, ConverterSerializer<long, int, IntLongConverter, IntSerializer<UIntSerializer<ByteSerializer>>>>(x => x < int.MinValue || int.MaxValue < x, default, default), new BranchingSerializer<long, ConverterSerializer<long, short, ShortLongConverter, ShortSerializer<UShortSerializer<ByteSerializer>>>, ConverterSerializer<long, sbyte, SByteLongConverter, SByteSerializer<ByteSerializer>>>(x => x < sbyte.MinValue || sbyte.MaxValue < x, default, default));
+		public static ISerializer<float> Float(float maxAbs)
+		{
+			var converter = new ShortFloatConverter(maxAbs);
+
+			return new ConverterSerializer<float, short>(PrimitiveSerializers.Short, converter, converter);
+		}
 	}
 }

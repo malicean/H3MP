@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace H3MP.Utils
 {
-	public class Snapshots<T> where T : ILinearFittable<T>
+	public class Snapshots<T> where T : IFitter<T>
 	{
 		// Queue but indexable
 		private readonly List<KeyValuePair<double, T>> _snapshots;

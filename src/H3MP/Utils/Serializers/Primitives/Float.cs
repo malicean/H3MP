@@ -2,29 +2,31 @@ using System.Runtime.InteropServices;
 
 namespace H3MP.Utils
 {
-	public readonly struct FloatSerializer<TUIntSerializer> : ISerializer<float> where TUIntSerializer : ISerializer<uint>
+	public readonly struct FloatSerializer : ISerializer<float>
 	{
-		private readonly TUIntSerializer _uint;
-
-		public FloatSerializer(TUIntSerializer @uint)
-		{
-			_uint = @uint;
-		}
-
 		public float Deserialize(ref BitPackReader reader)
 		{
-			return new FloatToUInt
-			{
-				Integral = _uint.Deserialize(ref reader)
-			}.Floating;
+			FloatToUInt conv = default;
+
+			conv.Integral = reader.Bytes.Pop();
+			conv.Integral |= (uint) reader.Bytes.Pop() << 8;
+			conv.Integral |= (uint) reader.Bytes.Pop() << 16;
+			conv.Integral |= (uint) reader.Bytes.Pop() << 24;
+
+			return conv.Floating;
 		}
 
 		public void Serialize(ref BitPackWriter writer, float value)
 		{
-			_uint.Serialize(ref writer, new FloatToUInt
+			FloatToUInt conv = new FloatToUInt
 			{
 				Floating = value
-			}.Integral);
+			};
+
+			writer.Bytes.Push((byte) conv.Integral);
+			writer.Bytes.Push((byte) (conv.Integral >> 8));
+			writer.Bytes.Push((byte) (conv.Integral >> 16));
+			writer.Bytes.Push((byte) (conv.Integral >> 24));
 		}
 
 		[StructLayout(LayoutKind.Explicit)]

@@ -1,6 +1,6 @@
 namespace H3MP.Utils
 {
-	public interface IDeltable<TValue, TDelta>
+	public interface IDifferentiator<TValue, TDelta>
 	{
 		/// <summary>
 		/// 	Creates a delta that represents the difference between this and the head.

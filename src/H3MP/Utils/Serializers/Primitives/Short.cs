@@ -1,22 +1,21 @@
 namespace H3MP.Utils
 {
-	public readonly struct ShortSerializer<TUShortSerializer> : ISerializer<short> where TUShortSerializer : ISerializer<ushort>
+	public readonly struct ShortSerializer : ISerializer<short>
 	{
-		private readonly TUShortSerializer _ushort;
-
-		public ShortSerializer(TUShortSerializer @ushort)
-		{
-			_ushort = @ushort;
-		}
-
 		public short Deserialize(ref BitPackReader reader)
 		{
-			return (short) _ushort.Deserialize(ref reader);
+			short value;
+
+			value = reader.Bytes.Pop();
+			value |= (short) (reader.Bytes.Pop() << 8);
+
+			return value;
 		}
 
 		public void Serialize(ref BitPackWriter writer, short value)
 		{
-			_ushort.Serialize(ref writer, (ushort) value);
+			writer.Bytes.Push((byte) value);
+			writer.Bytes.Push((byte) (value >> 8));
 		}
 	}
 }

@@ -35,7 +35,7 @@ namespace H3MP.Peers
 		private bool _disposed;
 		private readonly Dictionary<byte, Puppet> _players;
 		private ServerTime _time;
-		private MoveMessage _lastTransforms;
+		private BodyMessage _lastTransforms;
 		private HealthInfo _health;
 
 		public double Time => _time?.Now ?? 0;
@@ -162,7 +162,7 @@ namespace H3MP.Peers
 
 			var player = GM.CurrentPlayerBody;
 			var transforms = new MoveMessage(player.Head, player.LeftHand, player.RightHand);
-			var timestamped = new Timestamped<MoveMessage>(tickTime, transforms);
+			var timestamped = new Timestamped<BodyMessage>(tickTime, transforms);
 
 			Server.Send(timestamped);
 		}
@@ -266,7 +266,7 @@ namespace H3MP.Peers
 
 		internal static void OnPlayersMove(H3Client self, Peer peer, WorldSnapshotMessage message)
 		{
-			foreach (KeyValuePair<byte, Timestamped<MoveMessage>> delta in message.Puppets)
+			foreach (KeyValuePair<byte, Timestamped<BodyMessage>> delta in message.Puppets)
 			{
 				// In case the player hasn't spawned yet.
 				if (self._players.TryGetValue(delta.Key, out var puppet))

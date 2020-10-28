@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace H3MP.Messages
 {
-	public struct WorldSnapshotMessage : ISerializer, IDeltable<WorldSnapshotMessage, WorldSnapshotMessage>, IEquatable<WorldSnapshotMessage>
+	public struct WorldSnapshotMessage : ISerializer, IDifferentiator<WorldSnapshotMessage, WorldSnapshotMessage>, IEquatable<WorldSnapshotMessage>
 	{
 		#region Party information
 
@@ -21,7 +21,7 @@ namespace H3MP.Messages
 
 		public Option<byte[]> PlayersLeft;
 		public Option<byte[]> PlayersJoined;
-		public Option<MoveMessage>[] Puppets;
+		public Option<BodyMessage>[] Puppets;
 
 		public WorldSnapshotMessage InitialDelta => this;
 

@@ -1,6 +1,8 @@
+using System;
+
 namespace H3MP.Utils
 {
-	public readonly struct UIntLongConverter : IConverter<uint, long>, IConverter<long, uint>
+	public class UIntLongConverter : IConverter<uint, long>, IConverter<long, uint>
 	{
 		public long Convert(uint value)
 		{
@@ -9,6 +11,13 @@ namespace H3MP.Utils
 
 		public uint Convert(long value)
 		{
+			const uint min = uint.MinValue;
+			const uint max = uint.MaxValue;
+			if (value < min || max < value)
+			{
+				throw new ArgumentOutOfRangeException(nameof(value), value, "Value must be within the range of a uint: " + min + " <= x <= " + max);
+			}
+
 			return (uint) value;
 		}
 	}
