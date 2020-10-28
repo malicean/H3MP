@@ -50,6 +50,14 @@
     <Reference Include="UnityEngine">
       <HintPath>..\..\game\h3vr_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\game\h3vr_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="Valve.Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\game\h3vr_Data\Managed\Valve.Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configs\ClientConfig.cs" />
@@ -73,6 +81,7 @@
     <Compile Include="Discord\StoreManager.cs" />
     <Compile Include="HarmonyPatches\HarmonyState.cs" />
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
+    <Compile Include="Utils\ChangelogPanel.cs" />
     <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />
