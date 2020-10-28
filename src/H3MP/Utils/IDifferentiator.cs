@@ -10,6 +10,6 @@ namespace H3MP.Utils
 		/// <summary>
 		/// 	Consumes this delta to create a new head based on the current head.
 		/// </summary>
-		TValue ConsumeDelta(TDelta now, Option<TValue> baseline);
+		TValue ConsumeDelta(TDelta delta, Option<TValue> now);
 	}
 }

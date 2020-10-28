@@ -9,46 +9,54 @@ namespace H3MP.Messages
 		public BodyMessage Body;
 	}
 
+	public struct DeltaInputSnapshotMessage : IOptionComposite
+	{
+		public Option<Option<string>> Level;
+		public Option<DeltaBodyMessage> Body;
+
+		public bool HasSome => Level.IsSome || Body.IsSome;
+    }
+
 	public class InputSnapshotFitter : IFitter<InputSnapshotMessage>
 	{
 		private IFitter<Option<string>> _level;
-		private IFitter<BodyMessage> _velocity;
+		private IFitter<BodyMessage> _body;
 
 		public InputSnapshotMessage Fit(InputSnapshotMessage a, InputSnapshotMessage b, float t)
 		{
 			var fitter = new SuperFitter<InputSnapshotMessage>(a, b, t);
 
-			return new InputSnapshotMessage
-			{
-				Level = fitter.Fit(x => x.Level),
-				Body = fitter.Fit(x => x.Body, Fitter)
-			};
+			fitter.Include(x => x.Level, (ref InputSnapshotMessage body, Option<string> value) => body.Level = value, _level);
+			fitter.Include(x => x.Body, (ref InputSnapshotMessage body, BodyMessage value) => body.Body = value, _body);
+
+			return fitter.Body;
 		}
 	}
 
-	public class InputSnapshotSerializer : IDeltaSerializer<InputSnapshotMessage>
+	public class DeltaInputSnapshotSerializer : ISerializer<DeltaInputSnapshotMessage>
 	{
-		private readonly IDeltaSerializer<Option<string>> _level;
-		private readonly IDeltaSerializer<BodyMessage> _velocity;
+		private readonly ISerializer<Option<Option<string>>> _level;
+		private readonly ISerializer<Option<DeltaBodyMessage>> _body;
 
-		public InputSnapshotSerializer()
+		public DeltaInputSnapshotSerializer()
 		{
-			_level = EqualityDifferentiator<string>.Instance.ToOption().ToSerializer(PrimitiveSerializers.Char.ToString(TruncatedSerializers.ByteAsInt).ToOption());
-			_velocity = new MoveMessageDeltaSerializer();
+			_level = PrimitiveSerializers.Char.ToString(TruncatedSerializers.ByteAsInt).ToOption().ToOption();
+			_body = new DeltaBodyMessageSerializer().ToOption();
 		}
 
-		public InputSnapshotMessage Deserialize(ref BitPackReader reader, Option<InputSnapshotMessage> baseline)
+		public DeltaInputSnapshotMessage Deserialize(ref BitPackReader reader)
 		{
-			return new InputSnapshotMessage
+			return new DeltaInputSnapshotMessage
 			{
-				Level = _level.Deserialize(ref reader, baseline.Map(x => x.Level)),
-				Body = _velocity.Deserialize(ref reader, baseline.Map(x => x.Body))
+				Level = _level.Deserialize(ref reader),
+				Body = _body.Deserialize(ref reader)
 			};
 		}
 
-		public void Serialize(ref BitPackWriter writer, InputSnapshotMessage value, Option<InputSnapshotMessage> baseline)
+		public void Serialize(ref BitPackWriter writer, DeltaInputSnapshotMessage value)
 		{
-			throw new System.NotImplementedException();
+			_level.Serialize(ref writer, value.Level);
+			_body.Serialize(ref writer, value.Body);
 		}
 	}
 }

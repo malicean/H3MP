@@ -15,11 +15,11 @@ namespace H3MP.Utils
 				: Option.Some(delta);
 		}
 
-		public Vector3 ConsumeDelta(Vector3 now, Option<Vector3> baseline)
+		public Vector3 ConsumeDelta(Vector3 delta, Option<Vector3> now)
 		{
-			return baseline.MatchSome(out var baselineValue)
-				? now + baselineValue
-				: now;
+			return now.MatchSome(out var baselineValue)
+				? delta + baselineValue
+				: delta;
 		}
 	}
 }

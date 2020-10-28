@@ -18,9 +18,9 @@ namespace H3MP.Utils
 			return Option.Some(now);
 		}
 
-		public TValue ConsumeDelta(TValue now, Option<TValue> baseline)
+		public TValue ConsumeDelta(TValue delta, Option<TValue> now)
 		{
-			return now;
+			return delta;
 		}
 	}
 }

@@ -49,14 +49,14 @@ namespace H3MP.Utils
 				: Option.None<Option<TDelta>[]>();
 		}
 
-		public TValue[] ConsumeDelta(Option<TDelta>[] now, Option<TValue[]> baseline)
+		public TValue[] ConsumeDelta(Option<TDelta>[] delta, Option<TValue[]> now)
 		{
-			var values = new TValue[now.Length];
-			if (baseline.MatchSome(out var baselineArray))
+			var values = new TValue[delta.Length];
+			if (now.MatchSome(out var baselineArray))
 			{
-				for (var i = 0; i < now.Length; ++i)
+				for (var i = 0; i < delta.Length; ++i)
 				{
-					var baselineValue = now[i].MatchSome(out var nowValue)
+					var baselineValue = delta[i].MatchSome(out var nowValue)
 						? Option.Some(baselineArray[i])
 						: Option.None<TValue>();
 
@@ -65,9 +65,9 @@ namespace H3MP.Utils
 			}
 			else
 			{
-				for (var i = 0; i < now.Length; ++i)
+				for (var i = 0; i < delta.Length; ++i)
 				{
-					values[i] = _differentiator.ConsumeDelta(now[i].Unwrap(), Option.None<TValue>());
+					values[i] = _differentiator.ConsumeDelta(delta[i].Unwrap(), Option.None<TValue>());
 				}
 			}
 

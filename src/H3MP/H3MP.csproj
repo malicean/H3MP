@@ -172,6 +172,7 @@
     <Compile Include="Utils\Values\ConstantRef.cs" />
     <Compile Include="Utils\Values\FunctionRef.cs" />
     <Compile Include="Utils\Values\IMutRef.cs" />
+    <Compile Include="Utils\Values\IOptionComposite.cs" />
     <Compile Include="Utils\Values\IRef.cs" />
     <Compile Include="Utils\Values\Option.cs" />
     <Compile Include="Utils\Values\OptionFittable.cs" />
@@ -182,6 +183,7 @@
     <Compile Include="Utils\BitPackWriter.cs" />
     <Compile Include="Utils\BridgeDeltaSerializer.cs" />
     <Compile Include="Utils\Buffer.cs" />
+    <Compile Include="Utils\ChildSetter.cs" />
     <Compile Include="Utils\Fitting.cs" />
     <Compile Include="Utils\IBidirectionalConverter.cs" />
     <Compile Include="Utils\IBuffer.cs" />
@@ -197,6 +199,8 @@
     <Compile Include="Utils\NetDataWriterPoolSource.cs" />
     <Compile Include="Utils\NetToPackedSerializable.cs" />
     <Compile Include="Utils\Pool.cs" />
+    <Compile Include="Utils\SuperDeltaCreator.cs" />
+    <Compile Include="Utils\SuperDeltaConsumer.cs" />
     <Compile Include="Utils\SuperFitter.cs" />
     <Compile Include="Utils\WriterPool.cs" />
     <Compile Include="Plugin.cs" />

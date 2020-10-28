@@ -31,7 +31,7 @@ namespace H3MP.Utils
 		{
 			var components = new Dictionary<Type, object>();
 
-			var id = PrimitiveSerializer.UShort.Deserialize(ref reader);
+			var id = PrimitiveSerializers.UShort.Deserialize(ref reader);
 			foreach (var serializer in Serializers)
 			{
 				var type = serializer.Deserialize(ref reader, out var boxed);
@@ -43,7 +43,7 @@ namespace H3MP.Utils
 
 		public void Serialize(ref BitPackWriter writer, Entity value)
 		{
-			PrimitiveSerializer.UShort.Serialize(ref writer, value.ID);
+			PrimitiveSerializers.UShort.Serialize(ref writer, value.ID);
 			foreach (var serializer in Serializers)
 			{
 				serializer.Serialize(ref writer, value.Components);

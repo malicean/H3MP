@@ -2,22 +2,27 @@ using System;
 
 namespace H3MP.Utils
 {
-	public readonly struct SuperFitter<T>
+	public struct SuperFitter<T> where T : new()
 	{
 		private readonly T _a;
 		private readonly T _b;
 		private readonly float _t;
+
+		private T _body;
+		public T Body => _body;
 
 		public SuperFitter(T a, T b, float t)
 		{
 			_a = a;
 			_b = b;
 			_t = t;
+
+			_body = new T();
 		}
 
-		public TValue Fit<TValue, TFitter>(Func<T, TValue> valueOf, TFitter fitter) where TFitter : IFitter<TValue>
+		public void Include<TValue>(Func<T, TValue> valueGetter, ChildSetter<T, TValue> valueSetter, IFitter<TValue> fitter)
 		{
-			return fitter.Fit(valueOf(_a), valueOf(_b), _t);
+			valueSetter(ref _body, fitter.Fit(valueGetter(_a), valueGetter(_b), _t));
 		}
 	}
 }

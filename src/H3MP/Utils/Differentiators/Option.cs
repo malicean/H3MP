@@ -43,23 +43,23 @@ namespace H3MP.Utils
 			return Option.None<Option<TDelta>>();
 		}
 
-		public Option<TValue> ConsumeDelta(Option<TDelta> now, Option<Option<TValue>> baseline)
+		public Option<TValue> ConsumeDelta(Option<TDelta> delta, Option<Option<TValue>> now)
 		{
-			if (baseline.MatchSome(out var baselineValue))
+			if (now.MatchSome(out var nowValue))
 			{
-				if (now.MatchSome(out var nowValue))
+				if (delta.MatchSome(out var deltaValue))
 				{
 					// some -> some
-					return Option.Some(_differentiator.ConsumeDelta(nowValue, baselineValue));
+					return Option.Some(_differentiator.ConsumeDelta(deltaValue, nowValue));
 				}
 
 				// some -> none
 				return Option.None<TValue>();
 			}
-			else if (now.MatchSome(out var nowValue))
+			else if (delta.MatchSome(out var deltaValue))
 			{
 				// none -> some
-				return Option.Some(_differentiator.ConsumeDelta(nowValue, Option.None<TValue>()));
+				return Option.Some(_differentiator.ConsumeDelta(deltaValue, Option.None<TValue>()));
 			}
 
 			// none -> none

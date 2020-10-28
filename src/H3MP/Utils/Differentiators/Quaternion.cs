@@ -15,11 +15,11 @@ namespace H3MP.Utils
 				: Option.Some(delta);
 		}
 
-		public Quaternion ConsumeDelta(Quaternion now, Option<Quaternion> baseline)
+		public Quaternion ConsumeDelta(Quaternion delta, Option<Quaternion> now)
 		{
-			return baseline.MatchSome(out var baselineValue)
-				? now * baselineValue
-				: now;
+			return now.MatchSome(out var baselineValue)
+				? delta * baselineValue
+				: delta;
 		}
 	}
 }
