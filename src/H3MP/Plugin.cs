@@ -22,9 +22,6 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using Valve.Newtonsoft.Json;
-using Valve.Newtonsoft.Json.Linq;
 
 namespace H3MP
 {
@@ -54,9 +51,7 @@ namespace H3MP
 		private readonly ManualLogSource _serverLog;
 		private readonly ManualLogSource _discordLog;
 
-		private Text[] _panelTextArray;
-		private Text _panelTitle;
-		private Text _panelBody;
+		private readonly ChangelogPanel _changelogPanel;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
 
@@ -162,7 +157,7 @@ namespace H3MP
 			HarmonyState.Init(Activity);
 
 			Logger.LogDebug("Hooking into sceneLoaded...");
-			SceneManager.sceneLoaded += OnSceneLoaded;
+			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -349,82 +344,6 @@ namespace H3MP
 			}					
 		}
 
-		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-		{
-			if (scene.name == "MainMenu3")
-			{
-				// Creates a cloned mainscreen panel for H3MP changelog
-				CreatePanel();
-
-				// Gets body text from GitHub to populate H3MP panel
-				StartCoroutine(SendGetCoroutine());
-			}
-
-			IEnumerator SendGetCoroutine()
-			{
-				var needsUpdate = false;
-				var currentVersion = "v" + _version.ToString();
-				var latestVersion = currentVersion;
-
-				// Get the latest release from GitHub
-				using (UnityWebRequest www = UnityWebRequest.Get("https://api.github.com/repos/ash-hat/h3mp/releases/latest"))
-				{
-					yield return www.Send();
-
-					if (www.isError)
-					{
-						_clientLog.LogError(www.error);
-					}
-					else
-					{
-						// Check if this matches the installed version
-						var latetestVersion = JObject.Parse(www.downloadHandler.text)["tag_name"].ToString();
-						if (!(currentVersion == latestVersion))
-						{
-							needsUpdate = true;
-						}					
-					}
-				}
-
-				// Get the main body text from GitHub
-				using (UnityWebRequest www = UnityWebRequest.Get($"https://raw.githubusercontent.com/ash-hat/H3MP/{currentVersion}/ui/mainmenu3-panel.txt"))
-				{
-					yield return www.Send();
-
-					if (www.isError)
-					{
-						_clientLog.LogError(www.error);
-					}
-					else
-					{
-						// Build the body text with version info & highlighting
-						StringBuilder body = new StringBuilder($"<b>Installed version: </b>");
-						if (needsUpdate)
-							body.Append($"<b><color=#ff0000>{currentVersion}</color>  <color=#ff0000>(update available: {latestVersion})</color></b>");
-						else
-							body.Append($"<b><color=#00b300>{currentVersion}</color>  <color=#00b300>(latest)</color></b>");
-						body.Append($"\n\n{www.downloadHandler.text}" );
-						_panelBody.text = body.ToString();
-					}
-				}
-			}
-		}
-
-		void CreatePanel()
-		{
-			//TODO: Clean this up
-			GameObject changelogPanel = GameObject.Find("MainScreen1");
-			GameObject panel = GameObject.Instantiate(changelogPanel, changelogPanel.transform.parent);
-			panel.transform.position = new Vector3(-1.376f, 1.046f, -3.621f);
-			panel.transform.localEulerAngles = new Vector3(0, -71.437f, 0);
-			panel.name = "H3MPPanel";
-			_panelTextArray = panel.GetComponentsInChildren<Text>();
-			_panelTitle = _panelTextArray[0];
-			_panelBody = _panelTextArray[1];
-			_panelTitle.text = "H3MP";
-			_panelBody.text = "Awaiting webrequest...";
-		}
-
 		private void Update()
 		{
 			Client?.RenderUpdate();
@@ -441,6 +360,7 @@ namespace H3MP
 		private void OnDestroy()
 		{
 			DiscordClient.Dispose();
+			_changelogPanel.Dispose();
 
 			Server?.Dispose();
 			Client?.Dispose();
