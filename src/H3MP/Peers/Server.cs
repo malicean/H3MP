@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Net;
+using System.Security.Cryptography;
 using BepInEx.Logging;
 using H3MP.Configs;
 using H3MP.Differentiation;
@@ -16,8 +17,9 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Peers
 {
-	public class Server : Peer<WorldSnapshotMessage, DeltaWorldSnapshotMessage, HostConfig>
+	public class Server : Peer<WorldSnapshotMessage, HostConfig>
 	{
+		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 		private readonly IDifferentiator<BodyMessage, DeltaBodyMessage> _bodyDiff;
 
@@ -25,7 +27,6 @@ namespace H3MP.Peers
 		private readonly ISerializer<TickstampedMessage<DeltaInputSnapshotMessage>> _inputSerializer;
 		private readonly ISerializer<TickstampedResponseMessage<DeltaWorldSnapshotMessage>> _worldSerializer;
 
-		public readonly Key32 AccessKey;
 		public readonly Key32 AdminKey;
 
 		private readonly Dictionary<NetPeer, int> _peerIDs;
@@ -47,13 +48,20 @@ namespace H3MP.Peers
 			}
 		}
 
-		public Server(ManualLogSource log, HostConfig config, double tickStep, int maxPlayers) : base(log, config, tickStep, new WorldSnapshotMessageDifferentiator())
+		public Server(Log log, HostConfig config, double tickStep, IPEndPoint publicEndPoint) : base(log, config, tickStep)
 		{
+			var maxPlayers = config.PlayerLimit.Value;
+			var rng = Plugin.Instance.Random;
+
+			_worldDiff = new WorldSnapshotMessageDifferentiator();
 			_inputDiff = new InputSnapshotMessageDifferentiator();
 
 			_requestSerializer = new ConnectionRequestSerializer();
 			_inputSerializer = new TickstampedMessageSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
 			_worldSerializer = new TickstampedResponseMessageSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
+
+			LocalSnapshot.PartyID = Key32.FromRandom(rng);
+			LocalSnapshot.Secret = new JoinSecret(Plugin.Instance.Version, publicEndPoint, Key32.FromRandom(rng), tickStep, maxPlayers);
 
 			_peerIDs = new Dictionary<NetPeer, int>();
 
@@ -84,7 +92,7 @@ namespace H3MP.Peers
 			}
 
 			var isAdmin = content.IsAdmin;
-			var key = isAdmin ? AdminKey : AccessKey;
+			var key = isAdmin ? AdminKey : LocalSnapshot.Secret.Key;
 			if (content.Key != key)
 			{
 				request.Reject();
@@ -154,12 +162,17 @@ namespace H3MP.Peers
 			husk.InputDelta = Option.Some(_inputSerializer.Deserialize(ref reader));
 		}
 
-		protected override void SendDelta(DeltaWorldSnapshotMessage delta)
+		protected override void SendSnapshot(WorldSnapshotMessage snapshot)
 		{
 			var data = new NetDataWriter();
 
 			foreach (var husk in ConnectedHusks)
 			{
+				if (!_worldDiff.CreateDelta(snapshot, husk.LastSent).MatchSome(out var delta))
+				{
+					continue;
+				}
+
 				var writer = new BitPackWriter(data);
 				_worldSerializer.Serialize(ref writer, new TickstampedResponseMessage<DeltaWorldSnapshotMessage>
 				{
@@ -170,6 +183,8 @@ namespace H3MP.Peers
 
 				writer.Dispose();
 				husk.Peer.Send(data, DeliveryMethod.ReliableOrdered);
+
+				husk.LastSent = Option.Some(snapshot);
 
 				data.Reset();
 			}
@@ -195,6 +210,8 @@ namespace H3MP.Peers
 			public readonly List<KeyValuePair<uint, InputSnapshotMessage>> InputSnapshots;
 			public Option<TickstampedMessage<DeltaInputSnapshotMessage>> InputDelta;
 
+			public Option<WorldSnapshotMessage> LastSent;
+
 			public Husk(int id, NetPeer peer, bool isAdmin)
 			{
 				ID = id;
@@ -204,6 +221,8 @@ namespace H3MP.Peers
 
 				InputSnapshots = new List<KeyValuePair<uint, InputSnapshotMessage>>();
 				InputDelta = Option.None<TickstampedMessage<DeltaInputSnapshotMessage>>();
+
+				LastSent = Option.None<WorldSnapshotMessage>();
 			}
 		}
     }

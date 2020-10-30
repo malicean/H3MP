@@ -1,4 +1,4 @@
-namespace H3MP.Time
+namespace H3MP.Timing
 {
 	public class LoopTimer
 	{

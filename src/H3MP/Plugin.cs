@@ -14,6 +14,10 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using UnityEngine;
 using System.Text;
+using H3MP.Extensions;
+using LiteNetLib.Utils;
+using H3MP.IO;
+using H3MP.Serialization;
 
 namespace H3MP
 {
@@ -34,13 +38,14 @@ namespace H3MP
 		// Unity moment
 		public static Plugin Instance { get; private set; }
 
-		private readonly Version _version;
 		private readonly RootConfig _config;
-
-		private readonly RandomNumberGenerator _rng;
 		private readonly Logs _logs;
 
 		private readonly ActivityManager _activityManager;
+
+		public Version Version { get; }
+
+		public RandomNumberGenerator Random { get; }
 
 		public Discord.Discord GameSDK { get; }
 
@@ -52,6 +57,8 @@ namespace H3MP
 
 		public Plugin()
 		{
+			Instance = this;
+
 			Logger.LogDebug("Binding configs...");
 			{
 				TomlTypeConverter.AddConverter(typeof(IPAddress), new TypeConverter
@@ -65,9 +72,9 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing utilities...");
 			{
-				_version = new Version(VERSION);
+				Version = new Version(VERSION);
 
-				_rng = RandomNumberGenerator.Create();
+				Random = RandomNumberGenerator.Create();
 
 				var sensitiveLogging = _config.SensitiveLogging.Value;
 				if (sensitiveLogging)
@@ -101,7 +108,7 @@ namespace H3MP
 				GameSDK = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				GameSDK.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
 				{
-					var log = _logs.Discord;
+					var log = _logs.Discord.Common;
 					switch (level)
 					{
 						case Discord.LogLevel.Error:
@@ -131,8 +138,9 @@ namespace H3MP
 				_activityManager.OnActivityJoin += OnJoin;
 			}
 
-			Logger.LogDebug("Initializing shared Harmony state...");
-			HarmonyState.Init(Activity);
+			Logger.LogDebug("Initializing Harmony...");
+			HarmonyState.Init(_logs.Harmony);
+			new Harmony(Info.Metadata.GUID).PatchAll();
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -147,11 +155,16 @@ namespace H3MP
 
 		private void OnJoin(string rawSecret)
 		{
-			const string errorPrefix = "Failed to handle join event: ";
-
 			var log = _logs.Discord;
 
-			log.LogDebug($"Received Discord join secret \"{rawSecret}\"");
+			if (log.Sensitive.MatchSome(out var sensitiveLog))
+			{
+				sensitiveLog.LogDebug($"Received Discord join secret: \"{rawSecret}\"");
+			}
+			else
+			{
+				log.Common.LogDebug("Received Discord join secret");
+			}
 
 			byte[] data;
 			try
@@ -160,20 +173,29 @@ namespace H3MP
 			}
 			catch
 			{
-				log.LogError(errorPrefix + "could not parse base 64 secret.");
+				log.Common.LogError("Could not parse base 64 join secret.");
 				return;
 			}
 
-			bool success = JoinSecret.TryParse(data, out var secret, out var version);
-			if (!_version.CompatibleWith(version))
+			var netData = new NetDataReader();
+			var reader = new BitPackReader(netData);
+			var serializer = CustomSerializers.JoinSecret;
+
+			var version = serializer.DeserializeVersion(ref reader);
+			if (!Version.CompatibleWith(version))
 			{
-				log.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
+				log.Common.LogError($"Version incompatibility detected (you: {Version}; host: {version})");
 				return;
 			}
 
-			if (!success)
+			JoinSecret secret;
+			try
 			{
-				log.LogError(errorPrefix + "join secret was malformed.");
+				secret = serializer.ContinueDeserialize(ref reader, version);
+			}
+			catch
+			{
+				log.Common.LogError("Join secret was malformed.");
 				return;
 			}
 
@@ -189,7 +211,8 @@ namespace H3MP
 
 		private IEnumerator _HostUnsafe()
 		{
-			_serverLog.LogDebug("Starting server...");
+			var log = _logs.Server;
+			log.Common.LogDebug("Starting server...");
 
 			var config = _config.Host;
 
@@ -210,7 +233,7 @@ namespace H3MP
 
 					if (!result.Key)
 					{
-						_serverLog.LogFatal($"Failed to get public IP address to host server with: {result.Value}");
+						log.Common.LogFatal($"Failed to get public IP address to host server with: {result.Value}");
 						yield break;
 					}
 
@@ -232,22 +255,22 @@ namespace H3MP
 			double tps = config.TickRate.Value;
 			if (tps <= 0)
 			{
-				_serverLog.LogFatal("The configurable tick rate must be a positive value.");
+				log.Common.LogFatal("The configurable tick rate must be a positive value.");
 				yield break;
 			}
 
 			if (tps > ups)
 			{
 				tps = ups;
-				_serverLog.LogWarning($"The configurable tick rate ({tps:.00}) is greater than the local fixed update rate ({ups:.00}). The config will be ignored and the fixed update rate will be used instead; running a tick rate higher than your own fixed update rate has no benefits.");
+				log.Common.LogWarning($"The configurable tick rate ({tps:.00}) is greater than the local fixed update rate ({ups:.00}). The config will be ignored and the fixed update rate will be used instead; running a tick rate higher than your own fixed update rate has no benefits.");
 			}
 
 			double tickDeltaTime = 1 / tps;
 
-			Server = new H3Server(_serverLog, _config.Host, _rng, _messages.Server, _messages.ChannelsCount, _version, tickDeltaTime, publicEndPoint);
-			_serverLog.LogInfo($"Now hosting on {publicEndPoint}!");
+			Server = new Server(_logs.Server, _config.Host, tickDeltaTime, publicEndPoint);
+			log.Common.LogInfo($"Now hosting on {publicEndPoint}!");
 
-			ConnectLocal(localhost, Server.Secret, Server.HostKey);
+			ConnectLocal(localhost, Server.LocalSnapshot.Secret, Server.AdminKey);
 		}
 
 		private IEnumerator _Host()
@@ -263,37 +286,50 @@ namespace H3MP
 			return _HostUnsafe();
 		}
 
-		private void Connect(IPEndPoint endPoint, Key32? hostKey, JoinSecret secret, OnH3ClientDisconnect onDisconnect)
+		private void Connect(IPEndPoint endPoint, JoinSecret secret, ConnectionRequestMessage request)
 		{
-			_clientLog.LogInfo($"Connecting to {endPoint}...");
+			var log = _logs.Client;
+			log.Common.LogInfo($"Connecting to {endPoint}...");
 
 			float ups = 1 / Time.fixedDeltaTime;
-			double tps = 1 / secret.TickDeltaTime;
+			double tps = 1 / secret.TickStep;
 
-			_clientLog.LogDebug($"Fixed update rate: {ups:.00} u/s");
-			_clientLog.LogDebug($"Tick rate: {tps:.00} t/s");
+			log.Common.LogDebug($"Fixed update rate: {ups:.00} u/s");
+			log.Common.LogDebug($"Tick rate: {tps:.00} t/s");
 
-			var request = new ConnectionRequestMessage(secret.Key, hostKey);
-			Client = new H3Client(_clientLog, _config.Client, Activity, _messages.Client, _messages.ChannelsCount, secret.TickDeltaTime, _version, endPoint, request, onDisconnect);
+			Client = new Client(_logs.Client, _config.Client, secret.TickStep, secret.MaxPlayers);
 		}
 
-		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 hostKey)
+		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 adminKey)
 		{
-			Connect(endPoint, hostKey, secret, info =>
+			Connect(endPoint, secret, new ConnectionRequestMessage
 			{
-				_clientLog.LogError("Disconnected from local server. Something probably caused the frame to hang for more than 5s (debugging breakpoint?). Restarting host...");
+				IsAdmin = true,
+				Key = adminKey
+			});
+
+			Client.Disconnected += info =>
+			{
+				_logs.Client.Common.LogError("Disconnected from local server. Something probably caused the frame to hang for more than 5s (debugging breakpoint?). Restarting host...");
 
 				StartCoroutine(_Host());
-			});
+			};
 		}
 
 		private void ConnectRemote(JoinSecret secret)
 		{
 			Client?.Dispose();
+			Server?.Dispose();
 
-			Connect(secret.EndPoint, null, secret, info =>
+			Connect(secret.EndPoint, secret, new ConnectionRequestMessage
 			{
-				_clientLog.LogError("Disconnected from remote server.");
+				IsAdmin = false,
+				Key = secret.Key
+			});
+
+			Client.Disconnected += info =>
+			{
+				_logs.Client.Common.LogError("Disconnected from remote server: " + info.Reason);
 
 				if (_config.AutoHost.Value)
 				{
@@ -301,14 +337,7 @@ namespace H3MP
 
 					StartCoroutine(_Host());
 				}
-			});
-		}
-
-		private void Awake()
-		{
-			Instance = this;
-
-			new Harmony(Info.Metadata.GUID).PatchAll();
+			};
 		}
 
 		private void Start()
@@ -323,15 +352,14 @@ namespace H3MP
 
 		private void Update()
 		{
-			Client?.RenderUpdate();
 		}
 
 		private void FixedUpdate()
 		{
 			GameSDK.RunCallbacks();
 
-			Client?.Update();
-			Server?.Update();
+			Client?.FixedUpdate();
+			Server?.FixedUpdate();
 		}
 
 		private void OnDestroy()

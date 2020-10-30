@@ -22,15 +22,25 @@ namespace H3MP.Serialization
 			_maxPlayers = PrimitiveSerializers.Byte;
         }
 
-        public JoinSecret Deserialize(ref BitPackReader reader)
-        {
-			var version = _version.Deserialize(ref reader);
+		public Version DeserializeVersion(ref BitPackReader reader)
+		{
+			return _version.Deserialize(ref reader);
+		}
+
+		public JoinSecret ContinueDeserialize(ref BitPackReader reader, Version version)
+		{
 			var endPoint = _endPoint.Deserialize(ref reader);
 			var key = _key.Deserialize(ref reader);
 			var tickDeltaTime = _tickDeltaTime.Deserialize(ref reader);
 			var maxPlayers = _maxPlayers.Deserialize(ref reader);
 
 			return new JoinSecret(version, endPoint, key, tickDeltaTime, maxPlayers);
+		}
+
+        public JoinSecret Deserialize(ref BitPackReader reader)
+        {
+			var version = DeserializeVersion(ref reader);
+			return ContinueDeserialize(ref reader, version);
         }
 
         public void Serialize(ref BitPackWriter writer, JoinSecret value)
@@ -38,7 +48,7 @@ namespace H3MP.Serialization
             _version.Serialize(ref writer, value.Version);
 			_endPoint.Serialize(ref writer, value.EndPoint);
 			_key.Serialize(ref writer, value.Key);
-			_tickDeltaTime.Serialize(ref writer, value.TickDeltaTime);
+			_tickDeltaTime.Serialize(ref writer, value.TickStep);
 			_maxPlayers.Serialize(ref writer, value.MaxPlayers);
         }
     }

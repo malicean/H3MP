@@ -4,7 +4,7 @@ namespace H3MP.Serialization
 {
 	public static class CustomSerializers
 	{
-		public static ISerializer<Key32> Key32 { get; } = new Key32Serializer();
-		public static ISerializer<JoinSecret> JoinSecret { get; } = new JoinSecretSerializer();
+		public static Key32Serializer Key32 { get; } = new Key32Serializer();
+		public static JoinSecretSerializer JoinSecret { get; } = new JoinSecretSerializer();
 	}
 }

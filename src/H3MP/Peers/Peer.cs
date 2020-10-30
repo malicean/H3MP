@@ -2,22 +2,20 @@ using System;
 using BepInEx.Logging;
 using H3MP.Differentiation;
 using H3MP.IO;
-using H3MP.Time;
+using H3MP.Timing;
 using H3MP.Utils;
 using LiteNetLib;
 
 namespace H3MP.Peers
 {
-	public abstract class Peer<TLocalSnapshot, TDeltaLocalSnapshot, TConfig> : IFixedUpdatable, IDisposable where TLocalSnapshot : ICopyable<TLocalSnapshot>, new()
+	public abstract class Peer<TSnapshot, TConfig> : IFixedUpdatable, IDisposable where TSnapshot : ICopyable<TSnapshot>, new()
     {
 		private readonly LoopTimer _tickTimer;
 #if DEBUG
 		private readonly LoopTimer _statsTimer;
 #endif
 
-		private readonly IDifferentiator<TLocalSnapshot, TDeltaLocalSnapshot> _localSnapshotDifferentiator;
-
-		protected readonly ManualLogSource Log;
+		protected readonly Log Log;
 		protected readonly TConfig Config;
 
 		protected readonly EventBasedNetListener Listener;
@@ -26,16 +24,13 @@ namespace H3MP.Peers
 		protected readonly double TickStep;
 		protected uint Tick { get; private set; }
 
-		private Option<TLocalSnapshot> _localSnapshotOld;
-		public TLocalSnapshot LocalSnapshot;
+		public TSnapshot LocalSnapshot;
 
 		public event Action<Exception> UnhandledReadException;
 		public event Action UnreadData;
 
-		public Peer(ManualLogSource log, TConfig config, double tickStep, IDifferentiator<TLocalSnapshot, TDeltaLocalSnapshot> localSnapshotDifferentiator)
+		public Peer(Log log, TConfig config, double tickStep)
 		{
-			_localSnapshotDifferentiator = localSnapshotDifferentiator;
-
 			Log = log;
 			Config = config;
 
@@ -55,18 +50,9 @@ namespace H3MP.Peers
 
 			TickStep = tickStep;
 
-			LocalSnapshot = new TLocalSnapshot();
+			LocalSnapshot = new TSnapshot();
 
 			Listener.NetworkReceiveEvent += NetworkReceived;
-		}
-
-		private Option<TDeltaLocalSnapshot> PopDelta()
-		{
-			var delta = _localSnapshotDifferentiator.CreateDelta(LocalSnapshot, _localSnapshotOld);
-
-			_localSnapshotOld = Option.Some(LocalSnapshot.Copy());
-
-			return delta;
 		}
 
 		private void NetUpdate()
@@ -78,11 +64,7 @@ namespace H3MP.Peers
 
 			Net.PollEvents();
 			OnNetUpdate();
-
-			if (PopDelta().MatchSome(out var delta))
-			{
-				SendDelta(delta);
-			}
+			SendSnapshot(LocalSnapshot);
 
 			++Tick;
 		}
@@ -95,7 +77,7 @@ namespace H3MP.Peers
 				return;
 			}
 
-			Log.LogDebug("\n" + Net.Statistics.ToString());
+			Log.Common.LogDebug("\n" + Net.Statistics.ToString());
 		}
 #endif
 
@@ -121,7 +103,7 @@ namespace H3MP.Peers
 
 		protected abstract void ReceiveDelta(NetPeer peer, ref BitPackReader reader);
 
-		protected abstract void SendDelta(TDeltaLocalSnapshot delta);
+		protected abstract void SendSnapshot(TSnapshot snapshot);
 
 		protected virtual void OnNetUpdate() { }
 

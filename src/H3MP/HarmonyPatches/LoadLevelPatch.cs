@@ -57,7 +57,7 @@ namespace H3MP.HarmonyPatches
 				tooltip = levelName;
 			}
 
-			HarmonyState.DiscordActivity.Update(x =>
+			Plugin.Instance.Activity.Update(x =>
 			{
 				x.Assets = new ActivityAssets
 				{
@@ -75,9 +75,8 @@ namespace H3MP.HarmonyPatches
 
 		private static bool Prefix(string levelName)
 		{
-			var plugin = Plugin.Instance;
-			var log = HarmonyState.Log;
-			var client = plugin.Client;
+			var log = HarmonyState.Log.Common;
+			var client = Plugin.Instance.Client;
 
 			if (!(client is null) && HarmonyState.LockLoadLevel)
 			{

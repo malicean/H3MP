@@ -1,3 +1,4 @@
+using System;
 using BepInEx.Logging;
 using UnityEngine.SceneManagement;
 
@@ -5,9 +6,7 @@ namespace H3MP.HarmonyPatches
 {
 	internal class HarmonyState
 	{
-		public static ManualLogSource Log { get; } = BepInEx.Logging.Logger.CreateLogSource(Plugin.NAME + "-HM");
-
-		public static StatefulActivity DiscordActivity { get; private set; }
+		public static Log Log { get; private set; }
 
 		private static string _currentLevel;
 		public static string CurrentLevel
@@ -18,9 +17,14 @@ namespace H3MP.HarmonyPatches
 
 		public static bool LockLoadLevel { get; set; } = true;
 
-		public static void Init(StatefulActivity discordActivity)
+		public static void Init(Log log)
 		{
-			DiscordActivity = discordActivity;
+			if (Log != null)
+			{
+				throw new InvalidOperationException("Already initialized.");
+			}
+
+			Log = log;
 		}
 	}
 }

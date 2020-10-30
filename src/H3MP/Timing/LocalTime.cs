@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace H3MP.Time
+namespace H3MP.Timing
 {
 	public static class LocalTime
 	{

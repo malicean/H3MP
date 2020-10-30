@@ -1,6 +1,6 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
-using BepInEx.Logging;
 using FistVR;
 using H3MP.Configs;
 using H3MP.Differentiation;
@@ -10,33 +10,49 @@ using H3MP.IO;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Serialization;
+using H3MP.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using UnityEngine;
 
 namespace H3MP.Peers
 {
-	public class Client : Peer<InputSnapshotMessage, DeltaInputSnapshotMessage, ClientConfig>
+	public class Client : Peer<InputSnapshotMessage, ClientConfig>
 	{
+		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
 
 		private readonly ISerializer<ConnectionRequestMessage> _requestSerializer;
 		private readonly ISerializer<TickstampedMessage<DeltaInputSnapshotMessage>> _inputSerializer;
 		private readonly ISerializer<TickstampedResponseMessage<DeltaWorldSnapshotMessage>> _worldSerializer;
 
+		private Option<InputSnapshotMessage> _oldSnapshot;
+
 		public readonly List<KeyValuePair<uint, WorldSnapshotMessage>> WorldSnapshots;
 		public readonly DataSetFitter<uint, WorldSnapshotMessage> WorldSnapshotsFitter;
 
-		public Client(ManualLogSource log, ClientConfig config, double tickStep, int playerCount) : base(log, config, tickStep, new InputSnapshotMessageDifferentiator())
+		public event Action<DisconnectInfo> Disconnected;
+
+		public Client(Log log, ClientConfig config, double tickStep, int playerCount) : base(log, config, tickStep)
 		{
+			_inputDiff = new InputSnapshotMessageDifferentiator();
 			_worldDiff = new WorldSnapshotMessageDifferentiator();
 
 			_requestSerializer = new ConnectionRequestSerializer();
 			_inputSerializer = new TickstampedMessageSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
 			_worldSerializer = new TickstampedResponseMessageSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(playerCount));
 
+			_oldSnapshot = Option.None<InputSnapshotMessage>();
+
 			WorldSnapshots = new List<KeyValuePair<uint, WorldSnapshotMessage>>((int) (5 / tickStep));
 			WorldSnapshotsFitter = new DataSetFitter<uint, WorldSnapshotMessage>(Comparer<uint>.Default, InverseFitters.UInt, new WorldSnapshotMessageFitter());
+
+			Listener.PeerDisconnectedEvent += InternalDisconnected;
+		}
+
+		private void InternalDisconnected(NetPeer peer, DisconnectInfo info)
+		{
+			Disconnected?.Invoke(info);
 		}
 
 		private void SetBody()
@@ -74,8 +90,13 @@ namespace H3MP.Peers
 			WorldSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(tickstamped.Tick, snapshot));
 		}
 
-		protected override void SendDelta(DeltaInputSnapshotMessage delta)
+		protected override void SendSnapshot(InputSnapshotMessage snapshot)
 		{
+			if (!_inputDiff.CreateDelta(snapshot, _oldSnapshot).MatchSome(out var delta))
+			{
+				return;
+			}
+
 			var data = new NetDataWriter();
 			var writer = new BitPackWriter();
 

@@ -172,11 +172,11 @@
     <Compile Include="Serialization\JoinSecret.cs" />
     <Compile Include="Serialization\Key32.cs" />
     <Compile Include="Serialization\Option.cs" />
-    <Compile Include="Time\LocalTime.cs" />
-    <Compile Include="Time\LoopCounter.cs" />
-    <Compile Include="Time\LoopTimer.cs" />
-    <Compile Include="Time\IFixedUpdatable.cs" />
-    <Compile Include="Time\IRenderUpdatable.cs" />
+    <Compile Include="Timing\LocalTime.cs" />
+    <Compile Include="Timing\LoopCounter.cs" />
+    <Compile Include="Timing\LoopTimer.cs" />
+    <Compile Include="Timing\IFixedUpdatable.cs" />
+    <Compile Include="Timing\IRenderUpdatable.cs" />
     <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />
