@@ -4,11 +4,11 @@ namespace H3MP.Timing
 	{
 		public double End { get; private set; }
 
-		public double Duration { get; }
+		public double Interval { get; }
 
 		public LoopTimer(double interval, double now)
 		{
-			Duration = interval;
+			Interval = interval;
 
 			Reset(now);
 		}
@@ -20,12 +20,12 @@ namespace H3MP.Timing
 
 		public void Cycle()
 		{
-			End += Duration;
+			End += Interval;
 		}
 
 		public void Reset(double now)
 		{
-			End = now + Duration;
+			End = now + Interval;
 		}
 
 		public bool TryCycle(double now)
