@@ -1,37 +1,49 @@
 using H3MP.Extensions;
+using H3MP.IO;
 using H3MP.Models;
+using H3MP.Serialization;
 using H3MP.Utils;
 using LiteNetLib.Utils;
 
 namespace H3MP.Messages
 {
-	public struct ConnectionRequestMessage : INetSerializable
+	public struct ConnectionRequestMessage
 	{
-		public Key32 AccessKey { get; private set; }
+		public Key32 AccessKey;
 
-		public Key32? HostKey { get; private set; }
+		public Option<Key32> HostKey;
 
-		public double ClientTime { get; private set; }
+		public double ClientTime;
+	}
 
-		public ConnectionRequestMessage(Key32 accessKey, Key32? hostKey = null)
+	public class ConnectionRequestSerializer : ISerializer<ConnectionRequestMessage>
+	{
+		private readonly ISerializer<Key32> _accessKey;
+		private readonly ISerializer<Option<Key32>> _hostKey;
+		private readonly ISerializer<double> _clientTime;
+
+		public ConnectionRequestSerializer()
+        {
+            _accessKey = CustomSerializers.Key32;
+			_hostKey = CustomSerializers.Key32.ToOption();
+			_clientTime = PrimitiveSerializers.Double;
+        }
+
+        public ConnectionRequestMessage Deserialize(ref BitPackReader reader)
 		{
-			AccessKey = accessKey;
-			HostKey = hostKey;
-			ClientTime = LocalTime.Now;
+			return new ConnectionRequestMessage
+			{
+				AccessKey = _accessKey.Deserialize(ref reader),
+				HostKey =_hostKey.Deserialize(ref reader),
+				ClientTime =_clientTime.Deserialize(ref reader)
+			};
 		}
 
-		public void Deserialize(NetDataReader reader)
+		public void Serialize(ref BitPackWriter writer, ConnectionRequestMessage value)
 		{
-			AccessKey = reader.GetKey32();
-			HostKey = reader.GetNullable<Key32>(NetDataReaderExtensions.GetKey32);
-			ClientTime = reader.GetDouble();
-		}
-
-		public void Serialize(NetDataWriter writer)
-		{
-			writer.Put(AccessKey);
-			writer.Put(HostKey, NetDataWriterExtensions.Put);
-			writer.Put(ClientTime);
-		}
+			_accessKey.Serialize(ref writer, value.AccessKey);
+            _hostKey.Serialize(ref writer, value.HostKey);
+            _clientTime.Serialize(ref writer, value.ClientTime);
+        }
 	}
 }

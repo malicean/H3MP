@@ -1,4 +1,8 @@
 using System;
+using H3MP.Differentiation;
+using H3MP.Fitting;
+using H3MP.IO;
+using H3MP.Serialization;
 using H3MP.Utils;
 using UnityEngine;
 

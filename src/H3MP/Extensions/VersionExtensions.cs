@@ -1,6 +1,6 @@
 using System;
 
-namespace H3MP.Networking.Extensions
+namespace H3MP.Extensions
 {
 	public static class VersionExtensions
 	{

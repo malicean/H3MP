@@ -1,3 +1,7 @@
+using H3MP.Differentiation;
+using H3MP.Fitting;
+using H3MP.IO;
+using H3MP.Serialization;
 using H3MP.Utils;
 
 namespace H3MP.Messages
@@ -17,7 +21,7 @@ namespace H3MP.Messages
 		public bool HasSome => Level.IsSome || Body.IsSome;
     }
 
-	public class InputSnapshotFitter : IFitter<InputSnapshotMessage>
+	public class InputSnapshotMessageFitter : IFitter<InputSnapshotMessage>
 	{
 		private IFitter<Option<string>> _level;
 		private IFitter<BodyMessage> _body;
@@ -30,6 +34,37 @@ namespace H3MP.Messages
 			fitter.Include(x => x.Body, (ref InputSnapshotMessage body, BodyMessage value) => body.Body = value, _body);
 
 			return fitter.Body;
+		}
+	}
+
+	public class InputSnapshotMessageDifferentiator : IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage>
+	{
+		private readonly IDifferentiator<Option<string>, Option<string>> _level;
+		private readonly BodyMessageDifferentiator _body;
+
+		public InputSnapshotMessageDifferentiator()
+		{
+			_level = EqualityDifferentiator<string>.Instance.ToOption();
+		}
+
+		public Option<DeltaInputSnapshotMessage> CreateDelta(InputSnapshotMessage now, Option<InputSnapshotMessage> baseline)
+		{
+			var creator = new SuperDeltaCreator<InputSnapshotMessage, DeltaInputSnapshotMessage>(now, baseline);
+
+			creator.Include(x => x.Level, (ref DeltaInputSnapshotMessage body, Option<Option<string>> value) => body.Level = value, _level);
+			creator.Include(x => x.Body, (ref DeltaInputSnapshotMessage body, Option<DeltaBodyMessage> value) => body.Body = value, _body);
+
+			return creator.Body;
+		}
+
+		public InputSnapshotMessage ConsumeDelta(DeltaInputSnapshotMessage delta, Option<InputSnapshotMessage> now)
+		{
+			var consumer = new SuperDeltaConsumer<DeltaInputSnapshotMessage, InputSnapshotMessage>(delta, now);
+
+			consumer.Include(x => x.Level, x => x.Level, (ref InputSnapshotMessage body, Option<string> value) => body.Level = value, _level);
+			consumer.Include(x => x.Body, x => x.Body, (ref InputSnapshotMessage body, BodyMessage value) => body.Body = value, _body);
+
+			return consumer.Body;
 		}
 	}
 

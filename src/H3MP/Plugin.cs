@@ -7,23 +7,18 @@ using H3MP.Configs;
 using H3MP.HarmonyPatches;
 using H3MP.Messages;
 using H3MP.Models;
-using H3MP.Networking;
-using H3MP.Networking.Extensions;
 using H3MP.Peers;
-using H3MP.Utils;
 using LiteNetLib;
 using System;
 using System.Collections;
-using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using UnityEngine;
-using UnityEngine.Networking;
 
 namespace H3MP
 {
-	[BepInPlugin(Plugin.GUID, Plugin.NAME, Plugin.VERSION)]
+    [BepInPlugin(Plugin.GUID, Plugin.NAME, Plugin.VERSION)]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
 	{
@@ -63,7 +58,7 @@ namespace H3MP
 
 		public Plugin()
 		{
-			
+
 			Logger.LogDebug("Binding configs...");
 			{
 				TomlTypeConverter.AddConverter(typeof(IPAddress), new TypeConverter
@@ -131,15 +126,15 @@ namespace H3MP
 					// Time synchronization (reliable adds latency)
 					.AddClient<PingMessage>(0, DeliveryMethod.Sequenced, H3Server.OnClientPing)
 					// Snapshots
-					.AddClient<Timestamped<InputSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Server.OnClientInput)
+					.AddClient<TickstampedMessage<InputSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Server.OnClientInput)
 					//
 					// =======
 					// Server
 					// =======
 					// Time synchronization (reliable adds latency)
-					.AddServer<Timestamped<PingMessage>>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
+					.AddServer<TickstampedMessage<PingMessage>>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
 					// Snapshots
-					.AddServer<Timestamped<WorldSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerWorld)
+					.AddServer<TickstampedMessage<WorldSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerWorld)
 				;
 			}
 
