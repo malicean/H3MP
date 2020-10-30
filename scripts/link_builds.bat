@@ -4,7 +4,7 @@
 setlocal EnableDelayedExpansion
 
 set "H3MP_DEFAULT_H3VR_PATH=C:\Program Files (x86)\Steam\steamapps\common\H3VR"
-set "H3MP_BINS=discord_game_sdk.dll H3MP.dll H3MP.Networking.dll LiteNetLib.dll"
+set "H3MP_BINS=discord_game_sdk.dll H3MP.dll LiteNetLib.dll"
 
 if exist "%H3MP_DEFAULT_H3VR_PATH%" (
     echo Found the game at the default path: "%H3MP_DEFAULT_H3VR_PATH%"
