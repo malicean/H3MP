@@ -98,7 +98,7 @@ namespace H3MP.Peers
 			}
 
 			var data = new NetDataWriter();
-			var writer = new BitPackWriter();
+			var writer = new BitPackWriter(data);
 
 			_inputSerializer.Serialize(ref writer, new TickstampedMessage<DeltaInputSnapshotMessage>
 			{

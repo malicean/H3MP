@@ -53,6 +53,32 @@ namespace H3MP.Peers
 			LocalSnapshot = new TSnapshot();
 
 			Listener.NetworkReceiveEvent += NetworkReceived;
+			Listener.PeerConnectedEvent += Connected;
+			Listener.PeerDisconnectedEvent += Disconnected;
+		}
+
+		private void Connected(NetPeer peer)
+		{
+			if (Log.Sensitive.MatchSome(out var sensitiveLog))
+			{
+				sensitiveLog.LogInfo($"Peer ({peer.Id}; {peer.EndPoint}) connected!");
+			}
+			else
+			{
+				Log.Common.LogInfo($"Peer ({peer.Id}) connected!");
+			}
+		}
+
+		private void Disconnected(NetPeer peer, DisconnectInfo disconnectInfo)
+		{
+			if (Log.Sensitive.MatchSome(out var sensitiveLog))
+			{
+				sensitiveLog.LogInfo($"Peer ({peer.Id}; {peer.EndPoint}) disconnected!");
+			}
+			else
+			{
+				Log.Common.LogInfo($"Peer ({peer.Id}) disconnected!");
+			}
 		}
 
 		private void NetUpdate()

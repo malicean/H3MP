@@ -268,7 +268,14 @@ namespace H3MP
 			double tickDeltaTime = 1 / tps;
 
 			Server = new Server(_logs.Server, _config.Host, tickDeltaTime, publicEndPoint);
-			log.Common.LogInfo($"Now hosting on {publicEndPoint}!");
+			if (log.Sensitive.MatchSome(out var sensitiveLog))
+			{
+				sensitiveLog.LogInfo($"Now hosting on {publicEndPoint}!");
+			}
+			else
+			{
+				log.Common.LogInfo("Now hosting!");
+			}
 
 			ConnectLocal(localhost, Server.LocalSnapshot.Secret, Server.AdminKey);
 		}
@@ -289,7 +296,14 @@ namespace H3MP
 		private void Connect(IPEndPoint endPoint, JoinSecret secret, ConnectionRequestMessage request)
 		{
 			var log = _logs.Client;
-			log.Common.LogInfo($"Connecting to {endPoint}...");
+			if (log.Sensitive.MatchSome(out var sensitiveLog))
+			{
+				sensitiveLog.LogInfo($"Connecting to {endPoint}...");
+			}
+			else
+			{
+				log.Common.LogInfo("Connecting...");
+			}
 
 			float ups = 1 / Time.fixedDeltaTime;
 			double tps = 1 / secret.TickStep;

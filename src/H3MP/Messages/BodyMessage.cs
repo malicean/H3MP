@@ -88,7 +88,7 @@ namespace H3MP.Messages
 
 		public DeltaBodyMessageSerializer()
 		{
-			var rot = new SmallestThreeQuaternionSerializer(PackedSerializers.UFloat(1));
+			var rot = new SmallestThreeQuaternionSerializer(PackedSerializers.Float(1));
 
 			var rootPos = new Vector3Serializer(PackedSerializers.Float(50)); // In case of sticky jumping
 			_root = new TransformMessageSerializer(rootPos, rot).ToOption();
