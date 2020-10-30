@@ -21,7 +21,6 @@ namespace H3MP.Peers
 	{
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
-		private readonly IDifferentiator<BodyMessage, DeltaBodyMessage> _bodyDiff;
 
 		private readonly ISerializer<ConnectionRequestMessage> _requestSerializer;
 		private readonly ISerializer<TickstampedMessage<DeltaInputSnapshotMessage>> _inputSerializer;
