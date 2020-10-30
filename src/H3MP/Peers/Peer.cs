@@ -72,7 +72,7 @@ namespace H3MP.Peers
 #if DEBUG
 		private void StatsUpdate()
 		{
-			if (_statsTimer.TryCycle(LocalTime.Now))
+			if (!_statsTimer.TryCycle(LocalTime.Now))
 			{
 				return;
 			}
