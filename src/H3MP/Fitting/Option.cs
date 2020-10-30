@@ -2,11 +2,19 @@ using H3MP.Utils;
 
 namespace H3MP.Fitting
 {
-	public class OptionFitter<T, TFitter> : IFitter<Option<T>> where TFitter : IFitter<T>
+	public static class OptionFitterExtensions
 	{
-		private readonly TFitter _fitter;
+		public static IFitter<Option<T>> ToOption<T>(this IFitter<T> @this)
+		{
+			return new OptionFitter<T>(@this);
+		}
+	}
 
-		public OptionFitter(TFitter fitter)
+	public class OptionFitter<T> : IFitter<Option<T>>
+	{
+		private readonly IFitter<T> _fitter;
+
+		public OptionFitter(IFitter<T> fitter)
 		{
 			_fitter = fitter;
 		}

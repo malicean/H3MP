@@ -3,23 +3,23 @@ using H3MP.Utils;
 
 namespace H3MP.Differentiation
 {
-	public class EqualityDifferentiator<TValue> : IDifferentiator<TValue, TValue> where TValue : IEquatable<TValue>
+	public class EqualityDifferentiator<T> : IDifferentiator<T, T> where T : IEquatable<T>
 	{
-		public static IDifferentiator<TValue, TValue> Instance { get; } = new EqualityDifferentiator<TValue>();
+		public static EqualityDifferentiator<T> Instance { get; } = new EqualityDifferentiator<T>();
 
-		public Option<TValue> CreateDelta(TValue now, Option<TValue> baseline)
+		public Option<T> CreateDelta(T now, Option<T> baseline)
 		{
 			if (baseline.MatchSome(out var value))
 			{
 				return now.Equals(value)
-					? Option.None<TValue>()
+					? Option.None<T>()
 					: Option.Some(now);
 			}
 
 			return Option.Some(now);
 		}
 
-		public TValue ConsumeDelta(TValue delta, Option<TValue> now)
+		public T ConsumeDelta(T delta, Option<T> now)
 		{
 			return delta;
 		}

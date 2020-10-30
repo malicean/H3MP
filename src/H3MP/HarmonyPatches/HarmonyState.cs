@@ -1,9 +1,4 @@
 using BepInEx.Logging;
-using H3MP.Messages;
-using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace H3MP.HarmonyPatches

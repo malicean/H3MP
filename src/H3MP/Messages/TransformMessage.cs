@@ -30,10 +30,10 @@ namespace H3MP.Messages
 		private readonly IFitter<Vector3> _position;
 		private readonly IFitter<Quaternion> _rotation;
 
-		public TransformMessageFitter(IFitter<Vector3> position, IFitter<Quaternion> rotation)
+		public TransformMessageFitter()
 		{
-			_position = position;
-			_rotation = rotation;
+			_position = Fitters.Vector3;
+			_rotation = Fitters.Quaternion;
 		}
 
 		public TransformMessage Fit(TransformMessage a, TransformMessage b, float t)

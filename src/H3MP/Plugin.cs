@@ -1,6 +1,5 @@
 using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.Logging;
 using Discord;
 using HarmonyLib;
 using H3MP.Configs;
@@ -8,17 +7,17 @@ using H3MP.HarmonyPatches;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Peers;
-using LiteNetLib;
 using System;
 using System.Collections;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using UnityEngine;
+using System.Text;
 
 namespace H3MP
 {
-    [BepInPlugin(Plugin.GUID, Plugin.NAME, Plugin.VERSION)]
+	[BepInPlugin(GUID, NAME, VERSION)]
 	[BepInProcess("h3vr.exe")]
 	public class Plugin : BaseUnityPlugin
 	{
@@ -35,30 +34,24 @@ namespace H3MP
 		// Unity moment
 		public static Plugin Instance { get; private set; }
 
+		private readonly Version _version;
 		private readonly RootConfig _config;
 
-		private readonly Version _version;
 		private readonly RandomNumberGenerator _rng;
+		private readonly Logs _logs;
 
-		private readonly ManualLogSource _clientLog;
-		private readonly ManualLogSource _serverLog;
-		private readonly ManualLogSource _discordLog;
+		private readonly ActivityManager _activityManager;
 
-		private readonly UniversalMessageList<H3Client, H3Server> _messages;
-
-		public Discord.Discord DiscordClient { get; }
-
-		public ActivityManager ActivityManager { get; }
+		public Discord.Discord GameSDK { get; }
 
 		public StatefulActivity Activity { get; }
 
-		public H3Server Server { get; private set; }
+		public Server Server { get; private set; }
 
-		public H3Client Client { get; private set; }
+		public Client Client { get; private set; }
 
 		public Plugin()
 		{
-
 			Logger.LogDebug("Binding configs...");
 			{
 				TomlTypeConverter.AddConverter(typeof(IPAddress), new TypeConverter
@@ -73,11 +66,31 @@ namespace H3MP
 			Logger.LogDebug("Initializing utilities...");
 			{
 				_version = new Version(VERSION);
+
 				_rng = RandomNumberGenerator.Create();
 
-				_clientLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-CL");
-				_serverLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-SV");
-				_discordLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-DC");
+				var sensitiveLogging = _config.SensitiveLogging.Value;
+				if (sensitiveLogging)
+				{
+					var warning = @"
+┌───────────────────────── SENSITIVE LOGS ENABLED ─────────────────────────┐
+│                                                                          │
+│ If you do not know what this is or no longer need it, please disable it. │
+│        If you do need it enabled, remember to follow the rules:          │
+│                                                                          │
+|     1. Only share this log file (or console) with people you trust.      │
+│     2. Do not share it in a public environment.                          │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘";
+
+					Logger.LogWarning(warning);
+				}
+				else
+				{
+					Logger.LogInfo("Sensitive logs will be ignored (this is normal).");
+				}
+
+				_logs = new Logs(NAME, sensitiveLogging);
 			}
 
 			Logger.LogDebug("Initializing Discord game SDK...");
@@ -85,57 +98,37 @@ namespace H3MP
 				// TODO: when BepInEx next releases (>5.3), uncomment this line and move discord_game_sdk.dll to the plugin folder
 				// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 
-				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
-				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
+				GameSDK = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
+				GameSDK.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
 				{
+					var log = _logs.Discord;
 					switch (level)
 					{
 						case Discord.LogLevel.Error:
-							_discordLog.LogError(message);
+							log.LogError(message);
 							break;
 						case Discord.LogLevel.Warn:
-							_discordLog.LogWarning(message);
+							log.LogWarning(message);
 							break;
 						case Discord.LogLevel.Info:
-							_discordLog.LogInfo(message);
+							log.LogInfo(message);
 							break;
 						case Discord.LogLevel.Debug:
-							_discordLog.LogDebug(message);
+							log.LogDebug(message);
 							break;
 
 						default:
-							throw new NotImplementedException(level.ToString());
+							throw new ArgumentOutOfRangeException(level.ToString());
 					}
 				});
 
-				ActivityManager = DiscordClient.GetActivityManager();
-				Activity = new StatefulActivity(ActivityManager, DiscordCallbackHandler);
+				_activityManager = GameSDK.GetActivityManager();
+				Activity = new StatefulActivity(_activityManager, DiscordCallbackHandler);
 
-				ActivityManager.RegisterSteam(STEAM_APP_ID);
+				_activityManager.RegisterSteam(STEAM_APP_ID);
 
-				ActivityManager.OnActivityJoinRequest += OnJoinRequested;
-				ActivityManager.OnActivityJoin += OnJoin;
-			}
-
-			Logger.LogDebug("Creating message table...");
-			{
-				_messages = new UniversalMessageList<H3Client, H3Server>(_clientLog, _serverLog)
-					// =======
-					// Client
-					// =======
-					// Time synchronization (reliable adds latency)
-					.AddClient<PingMessage>(0, DeliveryMethod.Sequenced, H3Server.OnClientPing)
-					// Snapshots
-					.AddClient<TickstampedMessage<InputSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Server.OnClientInput)
-					//
-					// =======
-					// Server
-					// =======
-					// Time synchronization (reliable adds latency)
-					.AddServer<TickstampedMessage<PingMessage>>(0, DeliveryMethod.Sequenced, H3Client.OnServerPong)
-					// Snapshots
-					.AddServer<TickstampedMessage<WorldSnapshotMessage>>(1, DeliveryMethod.ReliableOrdered, H3Client.OnServerWorld)
-				;
+				_activityManager.OnActivityJoinRequest += OnJoinRequested;
+				_activityManager.OnActivityJoin += OnJoin;
 			}
 
 			Logger.LogDebug("Initializing shared Harmony state...");
@@ -156,7 +149,9 @@ namespace H3MP
 		{
 			const string errorPrefix = "Failed to handle join event: ";
 
-			_discordLog.LogDebug($"Received Discord join secret \"{rawSecret}\"");
+			var log = _logs.Discord;
+
+			log.LogDebug($"Received Discord join secret \"{rawSecret}\"");
 
 			byte[] data;
 			try
@@ -165,20 +160,20 @@ namespace H3MP
 			}
 			catch
 			{
-				_discordLog.LogError(errorPrefix + "could not parse base 64 secret.");
+				log.LogError(errorPrefix + "could not parse base 64 secret.");
 				return;
 			}
 
 			bool success = JoinSecret.TryParse(data, out var secret, out var version);
 			if (!_version.CompatibleWith(version))
 			{
-				_discordLog.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
+				log.LogError(errorPrefix + $"version incompatibility detected (you: {_version}; host: {version})");
 				return;
 			}
 
 			if (!success)
 			{
-				_discordLog.LogError(errorPrefix + "join secret was malformed.");
+				log.LogError(errorPrefix + "join secret was malformed.");
 				return;
 			}
 
@@ -189,7 +184,7 @@ namespace H3MP
 		{
 			// All friends can join
 			// TODO: Change this.
-			ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+			_activityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
 		}
 
 		private IEnumerator _HostUnsafe()
@@ -333,7 +328,7 @@ namespace H3MP
 
 		private void FixedUpdate()
 		{
-			DiscordClient.RunCallbacks();
+			GameSDK.RunCallbacks();
 
 			Client?.Update();
 			Server?.Update();
@@ -341,7 +336,7 @@ namespace H3MP
 
 		private void OnDestroy()
 		{
-			DiscordClient.Dispose();
+			GameSDK.Dispose();
 
 			Server?.Dispose();
 			Client?.Dispose();

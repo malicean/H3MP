@@ -29,9 +29,9 @@ namespace H3MP.Messages
 	{
 		private readonly TransformMessageFitter _transform;
 
-		public BodyMessageFitter(TransformMessageFitter transform)
+		public BodyMessageFitter()
 		{
-			_transform = transform;
+			_transform = new TransformMessageFitter();
 		}
 
 		public BodyMessage Fit(BodyMessage a, BodyMessage b, float t)
@@ -49,11 +49,11 @@ namespace H3MP.Messages
 
 	public class BodyMessageDifferentiator : IDifferentiator<BodyMessage, DeltaBodyMessage>
 	{
-		private TransformMessageDifferentiator _transform;
+		private readonly TransformMessageDifferentiator _transform;
 
-		public BodyMessageDifferentiator(TransformMessageDifferentiator transform)
+		public BodyMessageDifferentiator()
 		{
-			_transform = transform;
+			_transform = new TransformMessageDifferentiator();
 		}
 
 		public Option<DeltaBodyMessage> CreateDelta(BodyMessage now, Option<BodyMessage> baseline)

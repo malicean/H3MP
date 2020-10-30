@@ -1,111 +1,175 @@
-using H3MP.Extensions;
+using H3MP.Differentiation;
+using H3MP.Fitting;
+using H3MP.IO;
 using H3MP.Models;
+using H3MP.Serialization;
 using H3MP.Utils;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace H3MP.Messages
 {
-	public struct WorldSnapshotMessage : ISerializer, IDifferentiator<WorldSnapshotMessage, WorldSnapshotMessage>, IEquatable<WorldSnapshotMessage>
+	public struct WorldSnapshotMessage : ICopyable<WorldSnapshotMessage>
 	{
-		#region Party information
+		public Key32 PartyID;
+		public JoinSecret Secret;
 
-		public Option<Key32> PartyID;
-		public Option<JoinSecret> Secret;
-		public Option<byte> MaxPlayers;
+		public string Level;
 
-		#endregion
+		public Option<BodyMessage>[] PlayerBodies;
 
-		public Option<string> Level;
-
-		public Option<byte[]> PlayersLeft;
-		public Option<byte[]> PlayersJoined;
-		public Option<BodyMessage>[] Puppets;
-
-		public WorldSnapshotMessage InitialDelta => this;
-
-		public void Deserialize(ref BitPackReader reader)
+		public WorldSnapshotMessage Copy()
 		{
-			PartyID = reader.GetOption((ref BitPackReader r) => r.Bytes.GetKey32());
-			Secret = reader.GetOption((ref BitPackReader r) => r.Bytes.GetJoinSecret());
-			MaxPlayers = reader.GetOption((ref BitPackReader r) => r.Bytes.GetByte());
-
-			Level = reader.GetOption((ref BitPackReader r) => r.Bytes.GetStringWithByteLength());
-
-			PlayersLeft = reader.GetOption((ref BitPackReader r) => r.Bytes.GetBytesWithByteLength());
-			PlayersJoined = reader.GetOption((ref BitPackReader r) => r.Bytes.GetBytesWithByteLength());
-			reader.GetFixedOptionArray(Puppets);
-		}
-
-		public void Serialize(ref BitPackWriter writer)
-		{
-			writer.Put(PartyID, (ref BitPackWriter w, Key32 v) => w.Bytes.Put(v));
-			writer.Put(Secret, (ref BitPackWriter w, JoinSecret v) => w.Bytes.Put(v));
-			writer.Put(MaxPlayers, (ref BitPackWriter w, byte v) => w.Bytes.Put(v));
-
-			writer.Put(Level, (ref BitPackWriter w, string v) => w.Bytes.PutStringWithByteLength(v));
-
-			writer.Put(PlayersLeft, (ref BitPackWriter w, byte[] v) => w.Bytes.Put(v));
-			writer.Put(PlayersJoined, (ref BitPackWriter w, byte[] v) => w.Bytes.Put(v));
-			writer.PutFixed(Puppets);
-		}
-
-		public Option<WorldSnapshotMessage> CreateDelta(WorldSnapshotMessage baseline)
-		{
-			var deltas = new DeltaCreator<WorldSnapshotMessage>(this, baseline);
-
-			var delta = new WorldSnapshotMessage
-			{
-				PartyID = deltas.Create(x => x.PartyID, x => x.ToEqualityDelta()),
-				Secret = deltas.Create(x => x.Secret, x => x.ToEqualityDelta()),
-				MaxPlayers = deltas.Create(x => x.MaxPlayers, x => x.ToEqualityDelta()),
-
-				Level = deltas.Create(x => x.Level, x => x.ToEqualityDelta()),
-
-				PlayersLeft = deltas.Create(x => x.PlayersLeft, x => x.ToEqualityDelta()),
-				PlayersJoined = deltas.Create(x => x.PlayersJoined, x => x.ToEqualityDelta()),
-				Puppets = deltas.Create(x => x.Puppets)
-			};
-
-			return delta.Equals(default)
-				? Option.None<WorldSnapshotMessage>()
-				: Option.Some(delta);
-		}
-
-		public WorldSnapshotMessage ConsumeDelta(WorldSnapshotMessage delta)
-		{
-			var deltas = new DeltaConsumer<WorldSnapshotMessage>(this, delta);
+			var playerBodies = new Option<BodyMessage>[PlayerBodies.Length];
+			PlayerBodies.CopyTo(playerBodies, 0);
 
 			return new WorldSnapshotMessage
 			{
-				PartyID = deltas.Consume(x => x.PartyID, x => x.ToEqualityDelta(), x => x),
-				Secret = deltas.Consume(x => x.Secret, x => x.ToEqualityDelta(), x => x),
-				MaxPlayers = deltas.Consume(x => x.MaxPlayers, x => x.ToEqualityDelta(), x => x),
+				PartyID = PartyID,
+				Secret = Secret,
 
-				Level = deltas.Consume(x => x.Level, x => x.ToEqualityDelta(), x => x),
+				Level = Level,
 
-				PlayersLeft = deltas.Consume(x => x.PlayersLeft, x => x.ToEqualityDelta(), x => x),
-				PlayersJoined = deltas.Consume(x => x.PlayersJoined, x => x.ToEqualityDelta(), x => x),
+				PlayerBodies = playerBodies
+			};
+		}
+	}
 
-				Puppets = deltas.Consume(x => x.Puppets)
+	public struct DeltaWorldSnapshotMessage : IOptionComposite
+	{
+
+		public Option<Key32> PartyID;
+		public Option<JoinSecret> Secret;
+
+		public Option<string> Level;
+
+		public Option<Option<Option<DeltaBodyMessage>>[]> PlayerBodies;
+
+		public bool HasSome => PartyID.IsSome || Secret.IsSome || Level.IsSome || PlayerBodies.IsSome;
+	}
+
+	public class WorldSnapshotMessageFitter : IFitter<WorldSnapshotMessage>
+	{
+		private readonly IFitter<Key32> _partyID;
+		private readonly IFitter<JoinSecret> _secret;
+
+		private readonly IFitter<string> _level;
+
+		private readonly IFitter<Option<BodyMessage>[]> _playerBodies;
+
+		public WorldSnapshotMessageFitter()
+		{
+			_partyID = BinaryFitter<Key32>.Instance;
+			_secret = BinaryFitter<JoinSecret>.Instance;
+
+			_level = BinaryFitter<string>.Instance;
+
+			_playerBodies = new BodyMessageFitter().ToOption().ToFixedArray();
+		}
+
+		public WorldSnapshotMessage Fit(WorldSnapshotMessage a, WorldSnapshotMessage b, float t)
+		{
+			var fitter = new SuperFitter<WorldSnapshotMessage>(a, b, t);
+
+			fitter.Include(x => x.PartyID, (ref WorldSnapshotMessage body, Key32 value) => body.PartyID = value, _partyID);
+			fitter.Include(x => x.Secret, (ref WorldSnapshotMessage body, JoinSecret value) => body.Secret = value, _secret);
+
+			fitter.Include(x => x.Level, (ref WorldSnapshotMessage body, string value) => body.Level = value, _level);
+
+			fitter.Include(x => x.PlayerBodies, (ref WorldSnapshotMessage body, Option<BodyMessage>[] value) => body.PlayerBodies = value, _playerBodies);
+
+			return fitter.Body;
+		}
+	}
+
+	public class WorldSnapshotMessageDifferentiator : IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage>
+	{
+		private readonly IDifferentiator<Key32, Key32> _partyID;
+		private readonly IDifferentiator<JoinSecret, JoinSecret> _secret;
+
+		private readonly IDifferentiator<string, string> _level;
+
+		private readonly IDifferentiator<Option<BodyMessage>[], Option<Option<DeltaBodyMessage>>[]> _playerBodies;
+
+		public WorldSnapshotMessageDifferentiator()
+		{
+			_partyID = EqualityDifferentiator<Key32>.Instance;
+			_secret = EqualityDifferentiator<JoinSecret>.Instance;
+
+			_level = EqualityDifferentiator<string>.Instance;
+
+			_playerBodies = new BodyMessageDifferentiator().ToOption().ToArray();
+		}
+
+		public WorldSnapshotMessage ConsumeDelta(DeltaWorldSnapshotMessage delta, Option<WorldSnapshotMessage> now)
+		{
+			var consumer = new SuperDeltaConsumer<DeltaWorldSnapshotMessage, WorldSnapshotMessage>(delta, now);
+
+			consumer.Include(x => x.PartyID, x => x.PartyID, (ref WorldSnapshotMessage body, Key32 value) => body.PartyID = value, _partyID);
+			consumer.Include(x => x.Secret, x => x.Secret, (ref WorldSnapshotMessage body, JoinSecret value) => body.Secret = value, _secret);
+
+			consumer.Include(x => x.Level, x => x.Level, (ref WorldSnapshotMessage body, string value) => body.Level = value, _level);
+
+			consumer.Include(x => x.PlayerBodies, x => x.PlayerBodies, (ref WorldSnapshotMessage body, Option<BodyMessage>[] value) => body.PlayerBodies = value, _playerBodies);
+
+			return consumer.Body;
+		}
+
+		public Option<DeltaWorldSnapshotMessage> CreateDelta(WorldSnapshotMessage now, Option<WorldSnapshotMessage> baseline)
+		{
+			var creator = new SuperDeltaCreator<WorldSnapshotMessage, DeltaWorldSnapshotMessage>(now, baseline);
+
+			creator.Include(x => x.PartyID, (ref DeltaWorldSnapshotMessage body, Option<Key32> value) => body.PartyID = value, _partyID);
+			creator.Include(x => x.Secret, (ref DeltaWorldSnapshotMessage body, Option<JoinSecret> value) => body.Secret = value, _secret);
+
+			creator.Include(x => x.Level, (ref DeltaWorldSnapshotMessage body, Option<string> value) => body.Level = value, _level);
+
+			creator.Include(x => x.PlayerBodies, (ref DeltaWorldSnapshotMessage body, Option<Option<Option<DeltaBodyMessage>>[]> value) => body.PlayerBodies = value, _playerBodies);
+
+			return creator.Body;
+		}
+	}
+
+	public class DeltaWorldSnapshotSerializer : ISerializer<DeltaWorldSnapshotMessage>
+	{
+		private readonly ISerializer<Option<Key32>> _partyID;
+		private readonly ISerializer<Option<JoinSecret>> _secret;
+
+		private readonly ISerializer<Option<string>> _level;
+
+		private readonly ISerializer<Option<Option<Option<DeltaBodyMessage>>[]>> _playerBodies;
+
+		public DeltaWorldSnapshotSerializer(int maxPlayers)
+        {
+			_partyID = CustomSerializers.Key32.ToOption();
+			_secret = CustomSerializers.JoinSecret.ToOption();
+
+			_level = PrimitiveSerializers.Char.ToString(TruncatedSerializers.ByteAsInt).ToOption();
+
+			_playerBodies = new DeltaBodyMessageSerializer().ToOption().ToOption().ToArrayFixed(maxPlayers).ToOption();
+        }
+
+		public DeltaWorldSnapshotMessage Deserialize(ref BitPackReader reader)
+		{
+			return new DeltaWorldSnapshotMessage
+			{
+				PartyID = _partyID.Deserialize(ref reader),
+				Secret = _secret.Deserialize(ref reader),
+
+				Level = _level.Deserialize(ref reader),
+
+				PlayerBodies = _playerBodies.Deserialize(ref reader)
 			};
 		}
 
-		public bool Equals(WorldSnapshotMessage other)
+		public void Serialize(ref BitPackWriter writer, DeltaWorldSnapshotMessage value)
 		{
-			for (var i = 0; i < Puppets.Length; ++i)
-			{
-				if (!Puppets[i].Equals(other.Puppets[i]))
-				{
-					return false;
-				}
-			}
+			_partyID.Serialize(ref writer, value.PartyID);
+			_secret.Serialize(ref writer, value.Secret);
 
-			return PartyID.Equals(other.PartyID) && Secret.Equals(other.Secret) && MaxPlayers.Equals(other.MaxPlayers) &&
-				Level.Equals(other.Level, (x, y) => x == y) &&
-				PlayersLeft.Equals(other.PlayersLeft, (x, y) => x.SequenceEqual(y)) &&
-				PlayersJoined.Equals(other.PlayersJoined, (x, y) => x.SequenceEqual(y));
+			_level.Serialize(ref writer, value.Level);
+
+			_playerBodies.Serialize(ref writer, value.PlayerBodies);
 		}
 	}
 }

@@ -1,49 +1,40 @@
-using H3MP.Extensions;
 using H3MP.IO;
 using H3MP.Models;
 using H3MP.Serialization;
-using H3MP.Utils;
-using LiteNetLib.Utils;
 
 namespace H3MP.Messages
 {
 	public struct ConnectionRequestMessage
 	{
-		public Key32 AccessKey;
+		public bool IsAdmin;
 
-		public Option<Key32> HostKey;
-
-		public double ClientTime;
+		public Key32 Key;
 	}
 
 	public class ConnectionRequestSerializer : ISerializer<ConnectionRequestMessage>
 	{
-		private readonly ISerializer<Key32> _accessKey;
-		private readonly ISerializer<Option<Key32>> _hostKey;
-		private readonly ISerializer<double> _clientTime;
+		private readonly ISerializer<bool> _isAdmin;
+		private readonly ISerializer<Key32> _key;
 
 		public ConnectionRequestSerializer()
         {
-            _accessKey = CustomSerializers.Key32;
-			_hostKey = CustomSerializers.Key32.ToOption();
-			_clientTime = PrimitiveSerializers.Double;
+			_isAdmin = PrimitiveSerializers.Bool;
+            _key = CustomSerializers.Key32;
         }
 
         public ConnectionRequestMessage Deserialize(ref BitPackReader reader)
 		{
 			return new ConnectionRequestMessage
 			{
-				AccessKey = _accessKey.Deserialize(ref reader),
-				HostKey =_hostKey.Deserialize(ref reader),
-				ClientTime =_clientTime.Deserialize(ref reader)
+				IsAdmin =_isAdmin.Deserialize(ref reader),
+				Key = _key.Deserialize(ref reader)
 			};
 		}
 
 		public void Serialize(ref BitPackWriter writer, ConnectionRequestMessage value)
 		{
-			_accessKey.Serialize(ref writer, value.AccessKey);
-            _hostKey.Serialize(ref writer, value.HostKey);
-            _clientTime.Serialize(ref writer, value.ClientTime);
+			_isAdmin.Serialize(ref writer, value.IsAdmin);
+			_key.Serialize(ref writer, value.Key);
         }
 	}
 }

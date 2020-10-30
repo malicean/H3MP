@@ -1,68 +1,42 @@
-using System;
 using System.Collections.Generic;
 using System.Net;
 using BepInEx.Logging;
 using FistVR;
+using H3MP.Configs;
 using H3MP.Differentiation;
+using H3MP.Extensions;
 using H3MP.Fitting;
 using H3MP.IO;
 using H3MP.Messages;
+using H3MP.Models;
 using H3MP.Serialization;
-using H3MP.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using UnityEngine;
 
 namespace H3MP.Peers
 {
-	public class Client : Peer
+	public class Client : Peer<InputSnapshotMessage, DeltaInputSnapshotMessage, ClientConfig>
 	{
-		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
 
-		private readonly ISerializer<DeltaInputSnapshotMessage> _inputSerializer;
-		private readonly ISerializer<DeltaWorldSnapshotMessage> _worldSerializer;
+		private readonly ISerializer<ConnectionRequestMessage> _requestSerializer;
+		private readonly ISerializer<TickstampedMessage<DeltaInputSnapshotMessage>> _inputSerializer;
+		private readonly ISerializer<TickstampedResponseMessage<DeltaWorldSnapshotMessage>> _worldSerializer;
 
 		public readonly List<KeyValuePair<uint, WorldSnapshotMessage>> WorldSnapshots;
 		public readonly DataSetFitter<uint, WorldSnapshotMessage> WorldSnapshotsFitter;
 
-		private Option<InputSnapshotMessage> _inputSnapshotOld;
-		public InputSnapshotMessage InputSnapshot;
-
-		public Client(ManualLogSource log, double tickStep) : base(log, tickStep)
+		public Client(ManualLogSource log, ClientConfig config, double tickStep, int playerCount) : base(log, config, tickStep, new InputSnapshotMessageDifferentiator())
 		{
-			_inputDiff = new InputSnapshotMessageDifferentiator();
 			_worldDiff = new WorldSnapshotMessageDifferentiator();
 
-			_inputSerializer = new DeltaInputSnapshotSerializer();
-			_inputSerializer = new DeltaWorldSnapshotSerializer();
+			_requestSerializer = new ConnectionRequestSerializer();
+			_inputSerializer = new TickstampedMessageSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
+			_worldSerializer = new TickstampedResponseMessageSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(playerCount));
 
 			WorldSnapshots = new List<KeyValuePair<uint, WorldSnapshotMessage>>((int) (5 / tickStep));
 			WorldSnapshotsFitter = new DataSetFitter<uint, WorldSnapshotMessage>(Comparer<uint>.Default, InverseFitters.UInt, new WorldSnapshotMessageFitter());
-
-			_inputSnapshotOld = Option.None<InputSnapshotMessage>();
-			InputSnapshot = new InputSnapshotMessage();
-
-			Listener.NetworkReceiveEvent += NetworkReceive;
-		}
-
-		private void NetworkReceive(NetPeer peer, NetPacketReader netReader, DeliveryMethod deliveryMethod)
-		{
-			var reader = new BitPackReader(netReader);
-
-			var tickstamped = _worldSerializer.Deserialize(ref reader);
-			var baseline = WorldSnapshots.Count > 0
-				? Option.Some(WorldSnapshots[WorldSnapshots.Count - 1].Value)
-				: Option.None<WorldSnapshotMessage>();
-			var snapshot = _worldDiff.ConsumeDelta(tickstamped.Content, baseline);
-
-			WorldSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(tickstamped.Tick, snapshot));
-		}
-
-		public void Connect(IPEndPoint endPoint, NetDataWriter data)
-		{
-			Net.Start();
-			Net.Connect(endPoint, data);
 		}
 
 		private void SetBody()
@@ -78,7 +52,7 @@ namespace H3MP.Peers
 				};
 			}
 
-			InputSnapshot.Body = new BodyMessage
+			LocalSnapshot.Body = new BodyMessage
 			{
 				Root = new TransformMessage
 				{
@@ -91,23 +65,55 @@ namespace H3MP.Peers
 			};
 		}
 
-        protected override bool NetUpdate()
-        {
-            if (!base.NetUpdate())
-			{
-				return false;
-			}
+		protected override void ReceiveDelta(NetPeer peer, ref BitPackReader reader)
+		{
+			var tickstamped = _worldSerializer.Deserialize(ref reader);
+			var baseline = WorldSnapshots.LastOrNone().Map(x => x.Value);
+			var snapshot = _worldDiff.ConsumeDelta(tickstamped.Content, baseline);
 
-			InputSnapshot = default;
+			WorldSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(tickstamped.Tick, snapshot));
+		}
+
+		protected override void SendDelta(DeltaInputSnapshotMessage delta)
+		{
+			var data = new NetDataWriter();
+			var writer = new BitPackWriter();
+
+			_inputSerializer.Serialize(ref writer, new TickstampedMessage<DeltaInputSnapshotMessage>
+			{
+				Tick = Tick,
+				Content = delta
+			});
+
+			writer.Dispose();
+			Net.SendToAll(data, DeliveryMethod.ReliableOrdered);
+		}
+
+        protected override void OnNetUpdate()
+        {
+			base.OnNetUpdate();
 
 			SetBody();
-
-			var writer = new BitPackWriter(new NetDataWriter());
-			_inputSerializer.Serialize(ref writer, InputSnapshot, _inputSnapshotOld);
-
-			_inputSnapshotOld = Option.Some(InputSnapshot);
-
-			return true;
         }
+
+		public void Connect(IPEndPoint endPoint, Key32 key, bool isAdmin)
+		{
+			var data = new NetDataWriter();
+			var writer = new BitPackWriter(data);
+			_requestSerializer.Serialize(ref writer, new ConnectionRequestMessage
+			{
+				IsAdmin = isAdmin,
+				Key = key
+			});
+			writer.Dispose();
+
+			Net.Start();
+			Net.Connect(endPoint, data);
+		}
+
+		public void Disconnect()
+		{
+			Net.Stop();
+		}
     }
 }

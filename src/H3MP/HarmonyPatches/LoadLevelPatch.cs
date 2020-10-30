@@ -1,11 +1,9 @@
-using Discord;
-using H3MP.Extensions;
-using H3MP.Messages;
-using HarmonyLib;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.SceneManagement;
+using Discord;
+using H3MP.Extensions;
+using H3MP.Utils;
+using HarmonyLib;
 
 namespace H3MP.HarmonyPatches
 {
@@ -84,7 +82,7 @@ namespace H3MP.HarmonyPatches
 			if (!(client is null) && HarmonyState.LockLoadLevel)
 			{
 				log.LogDebug($"Blocking level load ({levelName}) and sending request to server...");
-				client.Server.Send(new LevelChangeMessage(levelName));
+				client.LocalSnapshot.Level = Option.Some(levelName);
 
 				return false;
 			}

@@ -98,11 +98,15 @@
     <Compile Include="Discord\StorageManager.cs" />
     <Compile Include="Discord\StoreManager.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
+    <Compile Include="Extensions\ListExtensions.cs" />
     <Compile Include="Extensions\VersionExtensions.cs" />
+    <Compile Include="Fitting\Utils\DataSetFitter.cs" />
     <Compile Include="Fitting\Utils\SuperFitter.cs" />
-    <Compile Include="Fitting\DataSetFitter.cs" />
+    <Compile Include="Fitting\BinaryFitter.cs" />
+    <Compile Include="Fitting\FixedArrayFitter.cs" />
     <Compile Include="Fitting\IFitter.cs" />
     <Compile Include="Fitting\IInverseFitter.cs" />
+    <Compile Include="Fitting\OldestFitter.cs" />
     <Compile Include="Fitting\Option.cs" />
     <Compile Include="Fitting\Presets.cs" />
     <Compile Include="Fitting\Quaternion.cs" />
@@ -162,7 +166,6 @@
     <Compile Include="Serialization\Unity\Vector3.cs" />
     <Compile Include="Serialization\BitArray.cs" />
     <Compile Include="Serialization\Branching.cs" />
-    <Compile Include="Serialization\BridgeDeltaSerializer.cs" />
     <Compile Include="Serialization\Converter.cs" />
     <Compile Include="Serialization\IDeltaSerializer.cs" />
     <Compile Include="Serialization\ISerializer.cs" />
@@ -178,8 +181,11 @@
     <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />
     <Compile Include="Utils\ChildSetter.cs" />
+    <Compile Include="Utils\ICopyable.cs" />
     <Compile Include="Utils\IOptionComposite.cs" />
     <Compile Include="Utils\Option.cs" />
+    <Compile Include="Log.cs" />
+    <Compile Include="Logs.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="StatefulActivity.cs" />
   </ItemGroup>

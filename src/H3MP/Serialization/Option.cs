@@ -11,23 +11,23 @@ namespace H3MP.Serialization
 		}
 	}
 
-	public class OptionSerializer<TValue> : ISerializer<Option<TValue>>
+	public class OptionSerializer<T> : ISerializer<Option<T>>
 	{
-		private readonly ISerializer<TValue> _serializer;
+		private readonly ISerializer<T> _serializer;
 
-		public OptionSerializer(ISerializer<TValue> serializer)
+		public OptionSerializer(ISerializer<T> serializer)
 		{
 			_serializer = serializer;
 		}
 
-		public Option<TValue> Deserialize(ref BitPackReader reader)
+		public Option<T> Deserialize(ref BitPackReader reader)
 		{
 			return reader.Bits.Pop()
 				? Option.Some(_serializer.Deserialize(ref reader))
-				: Option.None<TValue>();
+				: Option.None<T>();
 		}
 
-		public void Serialize(ref BitPackWriter writer, Option<TValue> value)
+		public void Serialize(ref BitPackWriter writer, Option<T> value)
 		{
 			var isSome = value.MatchSome(out var inner);
 

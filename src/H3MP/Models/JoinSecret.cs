@@ -1,26 +1,38 @@
-using H3MP.Utils;
-using LiteNetLib.Utils;
 using System;
+using System.Linq;
 using System.Net;
 
 namespace H3MP.Models
 {
-    public readonly struct JoinSecret
+	public readonly struct JoinSecret : IEquatable<JoinSecret>
 	{
-		public Version Version { get; }
+		public readonly Version Version;
 
-		public IPEndPoint EndPoint { get; }
+		public readonly IPEndPoint EndPoint;
 
-		public Key32 Key { get; }
+		public readonly Key32 Key;
 
-		public double TickDeltaTime { get; }
+		public readonly double TickDeltaTime;
 
-		public JoinSecret(Version version, IPEndPoint endPoint, Key32 key, double tickDeltaTime)
+		public readonly byte MaxPlayers;
+
+		public JoinSecret(Version version, IPEndPoint endPoint, Key32 key, double tickDeltaTime, byte maxPlayers)
 		{
 			Version = version;
 			EndPoint = endPoint;
 			Key = key;
 			TickDeltaTime = tickDeltaTime;
+			MaxPlayers = maxPlayers;
+		}
+
+		public bool Equals(JoinSecret other)
+		{
+			return
+				Version == other.Version &&
+				EndPoint.Port == other.EndPoint.Port && EndPoint.Address.GetAddressBytes().SequenceEqual(other.EndPoint.Address.GetAddressBytes()) &&
+				Key == other.Key &&
+				TickDeltaTime == other.TickDeltaTime &&
+				MaxPlayers == other.MaxPlayers;
 		}
 	}
 }
