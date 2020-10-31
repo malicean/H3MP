@@ -8,7 +8,7 @@ using LiteNetLib;
 
 namespace H3MP.Peers
 {
-	public abstract class Peer<TSnapshot, TConfig> : IFixedUpdatable, IDisposable where TSnapshot : ICopyable<TSnapshot>, new()
+	public abstract class Peer<TSnapshot, TConfig> : IFixedUpdatable where TSnapshot : ICopyable<TSnapshot>, new()
     {
 		private readonly LoopTimer _tickTimer;
 #if DEBUG
@@ -21,13 +21,14 @@ namespace H3MP.Peers
 		protected readonly EventBasedNetListener Listener;
 		protected readonly NetManager Net;
 
-		protected readonly double TickStep;
-		protected uint Tick { get; private set; }
+		public readonly double TickStep;
+		public uint Tick { get; private set; }
 
 		public TSnapshot LocalSnapshot;
 
+		public event Action Ticked;
 		public event Action<Exception> UnhandledReadException;
-		public event Action UnreadData;
+		public event Action DataUnread;
 
 		public Peer(Log log, TConfig config, double tickStep)
 		{
@@ -49,6 +50,7 @@ namespace H3MP.Peers
 #endif
 
 			TickStep = tickStep;
+			Tick = 0;
 
 			LocalSnapshot = new TSnapshot();
 
@@ -89,7 +91,7 @@ namespace H3MP.Peers
 			}
 
 			Net.PollEvents();
-			OnNetUpdate();
+			Ticked?.Invoke();
 			SendSnapshot(LocalSnapshot);
 
 			++Tick;
@@ -123,15 +125,13 @@ namespace H3MP.Peers
 
 			if (!reader.Bits.Done || !reader.Bytes.Done)
 			{
-				UnreadData?.Invoke();
+				DataUnread?.Invoke();
 			}
 		}
 
 		protected abstract void ReceiveDelta(NetPeer peer, ref BitPackReader reader);
 
 		protected abstract void SendSnapshot(TSnapshot snapshot);
-
-		protected virtual void OnNetUpdate() { }
 
         public virtual void FixedUpdate()
         {
@@ -140,11 +140,5 @@ namespace H3MP.Peers
 			StatsUpdate();
 #endif
         }
-
-        public void Dispose()
-        {
-			Net.DisconnectAll();
-            Net.Stop();
-        }
-    }
+	}
 }
