@@ -5,11 +5,18 @@ using H3MP.Serialization;
 
 namespace H3MP.Messages
 {
-	public struct ConnectionRequestMessage
+	public readonly struct ConnectionRequestMessage
 	{
-		public bool IsAdmin;
-		public Key32 Key;
-		public Version Version;
+		public readonly bool IsAdmin;
+		public readonly Key32 Key;
+		public readonly Version Version;
+
+		public ConnectionRequestMessage(bool isAdmin, Key32 key, Version version)
+		{
+			IsAdmin = isAdmin;
+			Key = key;
+			Version = version;
+		}
 	}
 
 	public class ConnectionRequestSerializer : ISerializer<ConnectionRequestMessage>
@@ -27,12 +34,11 @@ namespace H3MP.Messages
 
         public ConnectionRequestMessage Deserialize(ref BitPackReader reader)
 		{
-			return new ConnectionRequestMessage
-			{
-				IsAdmin =_isAdmin.Deserialize(ref reader),
-				Key = _key.Deserialize(ref reader),
-				Version = _version.Deserialize(ref reader)
-			};
+			return new ConnectionRequestMessage(
+				_isAdmin.Deserialize(ref reader),
+				_key.Deserialize(ref reader),
+				_version.Deserialize(ref reader)
+			);
 		}
 
 		public void Serialize(ref BitPackWriter writer, ConnectionRequestMessage value)

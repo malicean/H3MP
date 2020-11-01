@@ -8,12 +8,14 @@ using LiteNetLib;
 
 namespace H3MP.Peers
 {
-	public abstract class Peer<TSnapshot, TConfig> : IFixedUpdatable where TSnapshot : ICopyable<TSnapshot>, new()
+	public abstract class Peer<TSnapshot, TConfig> : IFixedUpdatable, IDisposable where TSnapshot : ICopyable<TSnapshot>, new()
     {
 		private readonly LoopTimer _tickTimer;
 #if DEBUG
 		private readonly LoopTimer _statsTimer;
 #endif
+
+		private bool _disposed;
 
 		protected readonly Log Log;
 		protected readonly TConfig Config;
@@ -27,7 +29,6 @@ namespace H3MP.Peers
 		public TSnapshot LocalSnapshot;
 
 		public event Action Ticked;
-		public event Action<Exception> UnhandledReadException;
 		public event Action DataUnread;
 
 		public Peer(Log log, TConfig config, double tickStep)
@@ -113,15 +114,7 @@ namespace H3MP.Peers
 		{
 			var reader = new BitPackReader(data);
 
-			try
-			{
-				ReceiveDelta(peer, ref reader);
-			}
-			catch (Exception e)
-			{
-				UnhandledReadException?.Invoke(e);
-				return;
-			}
+			ReceiveDelta(peer, ref reader);
 
 			if (!reader.Bits.Done || !reader.Bytes.Done)
 			{
@@ -140,5 +133,23 @@ namespace H3MP.Peers
 			StatsUpdate();
 #endif
         }
+
+		protected virtual void DisposeSafe()
+		{
+			Net.DisconnectAll();
+			Net.Stop();
+		}
+
+		public void Dispose()
+		{
+			if (_disposed)
+			{
+				return;
+			}
+
+			DisposeSafe();
+
+			_disposed = true;
+		}
 	}
 }

@@ -20,8 +20,8 @@ namespace H3MP.Peers
 {
 	public class Client : Peer<InputSnapshotMessage, ClientConfig>
 	{
-		public delegate void DeltaSnapshotReceivedHandler(Option<uint> inputTick, uint serverTick, DeltaWorldSnapshotMessage delta);
-		public delegate void SnapshotReceivedHandler(Option<uint> inputTick, uint serverTick, WorldSnapshotMessage delta);
+		public delegate void DeltaSnapshotReceivedHandler(Option<BufferTicks> bufferTicks, uint sentTick, DeltaWorldSnapshotMessage delta);
+		public delegate void SnapshotReceivedHandler(Option<BufferTicks> bufferTicks, uint sentTick, WorldSnapshotMessage snapshot);
 
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
@@ -32,8 +32,8 @@ namespace H3MP.Peers
 
 		private Option<InputSnapshotMessage> _oldSnapshot;
 
-		private Option<uint> _serverTickOffset;
-		public Option<uint> OffsetTick => _serverTickOffset.MatchSome(out var offset) ? Option.Some(Tick + offset) : Option.None<uint>();
+		private Option<long> _serverTickOffset;
+		public Option<uint> OffsetTick => _serverTickOffset.MatchSome(out var offset) ? Option.Some((uint) (Tick + offset)) : Option.None<uint>();
 
 		public readonly List<KeyValuePair<uint, WorldSnapshotMessage>> WorldSnapshots;
 		public readonly DataSetFitter<uint, WorldSnapshotMessage> WorldSnapshotsFitter;
@@ -58,43 +58,37 @@ namespace H3MP.Peers
 
 			Listener.PeerDisconnectedEvent += InternalDisconnected;
 
-			SnapshotUpdated += UpdateTick;
+			DeltaSnapshotReceived += UpdateTick;
 		}
 
-		private void UpdateTick(Option<uint> inputTick, uint serverTick, WorldSnapshotMessage delta)
+		private void UpdateTick(Option<BufferTicks> bufferTicks, uint sentTick, DeltaWorldSnapshotMessage delta)
 		{
-			if (inputTick.MatchSome(out var inputTickValue))
+			if (bufferTicks.MatchSome(out var bufferTicksValue))
 			{
-				// 1/2 RTT ~= serverTick - inputTick
-				// 1 RTT ~= 2 * 1/2 RTT
-				// tick ~= serverTick + ~1 RTT
+				// TODO: make it work
+				long sentOffset = bufferTicksValue.Queued - bufferTicksValue.Received;
 
-				uint rttHalf = serverTick - inputTickValue;
-				var rtt = 2 * rttHalf;
-				var tick = serverTick + rtt;
-
-				if (OffsetTick.MatchSome(out var nowTick))
+				if (_serverTickOffset.MatchSome(out var offset))
 				{
 					// Adjust via binary exponential decay
 
-					var offset = tick - nowTick;
-					var adjustment = offset > 1 ? offset / 2 : offset;
+					var adjustmentRaw = sentOffset - offset;
+					var adjustmentSoftened = adjustmentRaw > 1 ? adjustmentRaw / 2 : adjustmentRaw;
 
-					OffsetTick = Option.Some(nowTick + adjustment);
+					_serverTickOffset = Option.Some(offset + adjustmentSoftened);
 				}
 				else
 				{
 					// Tick should already be set at this point, but for the edge case.
 
-					OffsetTick = Option.Some(tick);
+					_serverTickOffset = Option.Some(sentOffset);
 				}
 			}
 			else
 			{
 				// RTT: unknown
-				// With no information, this is theoretically 1/2 RTT behind server.
 
-				OffsetTick = Option.Some(serverTick);
+				_serverTickOffset = Option.Some((long) (sentTick - Tick));
 			}
 		}
 
@@ -105,14 +99,27 @@ namespace H3MP.Peers
 
 		protected override void ReceiveDelta(NetPeer peer, ref BitPackReader reader)
 		{
-			var tickstamped = _worldSerializer.Deserialize(ref reader);
+			ResponseTickstamped<DeltaWorldSnapshotMessage> delta;
+			try
+			{
+				delta = _worldSerializer.Deserialize(ref reader);
+			}
+			catch (Exception e)
+			{
+				Log.Common.LogInfo("Received malformed data from server.");
+				Log.Common.LogDebug("Malformation error: " + e);
+
+				Net.DisconnectAll();
+				return;
+			}
+
 			var baseline = WorldSnapshots.LastOrNone().Map(x => x.Value);
-			var snapshot = _worldDiff.ConsumeDelta(tickstamped.Content, baseline);
+			var snapshot = _worldDiff.ConsumeDelta(delta.Content, baseline);
 
-			WorldSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(tickstamped.QueuedTick, snapshot));
+			WorldSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(delta.SentTick, snapshot));
 
-			DeltaSnapshotReceived?.Invoke(tickstamped.ReceivedTick, tickstamped.QueuedTick, tickstamped.Content);
-			SnapshotUpdated?.Invoke(tickstamped.ReceivedTick, tickstamped.QueuedTick, snapshot);
+			DeltaSnapshotReceived?.Invoke(delta.Buffer, delta.SentTick, delta.Content);
+			SnapshotUpdated?.Invoke(delta.Buffer, delta.SentTick, snapshot);
 		}
 
 		protected override void SendSnapshot(InputSnapshotMessage snapshot)
@@ -141,24 +148,15 @@ namespace H3MP.Peers
 			Net.SendToAll(data, DeliveryMethod.ReliableOrdered);
 		}
 
-		public void Connect(IPEndPoint endPoint, Key32 key, bool isAdmin)
+		public void Connect(IPEndPoint endPoint, ConnectionRequestMessage request)
 		{
 			var data = new NetDataWriter();
 			var writer = new BitPackWriter(data);
-			_requestSerializer.Serialize(ref writer, new ConnectionRequestMessage
-			{
-				IsAdmin = isAdmin,
-				Key = key
-			});
+			_requestSerializer.Serialize(ref writer, request);
 			writer.Dispose();
 
 			Net.Start();
 			Net.Connect(endPoint, data);
-		}
-
-		public void Disconnect()
-		{
-			Net.Stop();
 		}
     }
 }

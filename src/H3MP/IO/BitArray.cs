@@ -1,5 +1,6 @@
 using System;
 using LiteNetLib.Utils;
+using UnityEngine;
 
 namespace H3MP.IO
 {
@@ -9,7 +10,7 @@ namespace H3MP.IO
 
 		public static BitArray Deserialize(NetDataReader reader)
         {
-            var byteLength = reader.GetByte();
+            var byteLength = reader.GetByte() + 1;
 			var trailingBits = reader.GetByte();
 
 			var buffer = new byte[byteLength];
@@ -38,9 +39,9 @@ namespace H3MP.IO
 
 		private ref byte GetBitHolder(int index)
 		{
-			if (index < 0 && BitLength <= index)
+			if (index < 0 || BitLength <= index)
 			{
-				throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be a non-negative integer that is less than the size of the buffer.");
+				throw new ArgumentOutOfRangeException(nameof(index), index, $"Index must be a non-negative integer that is less than the size of the buffer ({BitLength}).");
 			}
 
 			return ref Buffer[index / BITS_PER_ELEMENT];

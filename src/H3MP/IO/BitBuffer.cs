@@ -1,5 +1,6 @@
 using System;
 using LiteNetLib.Utils;
+using UnityEngine;
 
 namespace H3MP.IO
 {
@@ -14,15 +15,16 @@ namespace H3MP.IO
 
 			var bits = value._buffer.Populated;
 			writer.Put(bits.Array, bits.Offset, bits.Count);
+			writer.Put(value._current);
 		}
 
 		private Buffer<byte> _buffer;
 		private byte _current;
 		private byte _index;
 
-		public int Length => _buffer.Length * BITS_PER_ELEMENT - (BITS_PER_ELEMENT - _index);
+		public int Length => (_buffer.Length + 1) * BITS_PER_ELEMENT - (BITS_PER_ELEMENT - _index);
 
-		public int Capacity => _buffer.Capacity * BITS_PER_ELEMENT;
+		public int Capacity => (_buffer.Capacity + 1) * BITS_PER_ELEMENT;
 
 		public ArraySegment<byte> Populated => _buffer.Populated;
 
@@ -38,6 +40,7 @@ namespace H3MP.IO
 			if (_index == BITS_PER_ELEMENT)
 			{
 				_buffer.Push(_current);
+				_current = 0;
 				_index = 0;
 			}
 

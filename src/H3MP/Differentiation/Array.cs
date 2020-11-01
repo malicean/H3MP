@@ -1,16 +1,17 @@
+using System;
 using H3MP.Utils;
 
 namespace H3MP.Differentiation
 {
 	public static class ArrayDifferentiatorExtensions
 	{
-		public static IDifferentiator<TValue[], Option<TDelta>[]> ToArray<TValue, TDelta>(this IDifferentiator<TValue, TDelta> @this)
+		public static IDifferentiator<Option<TValue>[], Option<TDelta>[]> ToArray<TValue, TDelta>(this IDifferentiator<TValue, TDelta> @this)
 		{
 			return new ArrayDifferentiator<TValue, TDelta>(@this);
 		}
 	}
 
-	public class ArrayDifferentiator<TValue, TDelta> : IDifferentiator<TValue[], Option<TDelta>[]>
+	public class ArrayDifferentiator<TValue, TDelta> : IDifferentiator<Option<TValue>[], Option<TDelta>[]>
 	{
 		private readonly IDifferentiator<TValue, TDelta> _differentiator;
 
@@ -19,61 +20,66 @@ namespace H3MP.Differentiation
 			_differentiator = differentiator;
 		}
 
-		public Option<Option<TDelta>[]> CreateDelta(TValue[] now, Option<TValue[]> baseline)
+		public Option<TValue>[] ConsumeDelta(Option<TDelta>[] delta, Option<Option<TValue>[]> now)
+		{
+			var values = new Option<TValue>[delta.Length];
+			if (now.MatchSome(out var nowArray))
+			{
+				for (var i = 0; i < delta.Length; ++i)
+				{
+					values[i] = delta[i].MatchSome(out var deltaValue)
+						? Option.Some(_differentiator.ConsumeDelta(deltaValue, nowArray[i]))
+						: nowArray[i];
+				}
+			}
+			else
+			{
+				for (var i = 0; i < delta.Length; ++i)
+				{
+					values[i] = delta[i].MatchSome(out var deltaValue)
+						? Option.Some(_differentiator.ConsumeDelta(deltaValue, Option.None<TValue>()))
+						: Option.None<TValue>();
+				}
+			}
+
+			return values;
+		}
+
+		public Option<Option<TDelta>[]> CreateDelta(Option<TValue>[] now, Option<Option<TValue>[]> baseline)
 		{
 			var deltas = new Option<TDelta>[now.Length];
 			var dirty = false;
 			if (baseline.MatchSome(out var baselineArray))
 			{
+				if (now.Length != baselineArray.Length)
+				{
+					throw new FormatException("Now array and baseline array have mismatching lengths.");
+				}
+
 				for (var i = 0; i < deltas.Length; ++i)
 				{
-					var baselineValue = i < baselineArray.Length
-						? Option.Some(baselineArray[i])
-						: Option.None<TValue>();
-
-					var delta = _differentiator.CreateDelta(now[i], baselineValue);
-					deltas[i] = delta;
-					dirty |= delta.IsSome;
+					if (now[i].MatchSome(out var nowValue))
+					{
+						deltas[i] = _differentiator.CreateDelta(nowValue, baselineArray[i]);
+						dirty = true;
+					}
 				}
 			}
 			else
 			{
-				dirty = true;
-
 				for (var i = 0; i < deltas.Length; ++i)
 				{
-					deltas[i] = _differentiator.CreateDelta(now[i], Option.None<TValue>());
+					if (now[i].MatchSome(out var nowValue))
+					{
+						deltas[i] = _differentiator.CreateDelta(nowValue, Option.None<TValue>());
+						dirty = true;
+					}
 				}
 			}
 
 			return dirty
 				? Option.Some(deltas)
 				: Option.None<Option<TDelta>[]>();
-		}
-
-		public TValue[] ConsumeDelta(Option<TDelta>[] delta, Option<TValue[]> now)
-		{
-			var values = new TValue[delta.Length];
-			if (now.MatchSome(out var baselineArray))
-			{
-				for (var i = 0; i < delta.Length; ++i)
-				{
-					var baselineValue = delta[i].MatchSome(out var nowValue)
-						? Option.Some(baselineArray[i])
-						: Option.None<TValue>();
-
-					values[i] = _differentiator.ConsumeDelta(nowValue, baselineValue);
-				}
-			}
-			else
-			{
-				for (var i = 0; i < delta.Length; ++i)
-				{
-					values[i] = _differentiator.ConsumeDelta(delta[i].Unwrap(), Option.None<TValue>());
-				}
-			}
-
-			return values;
 		}
 	}
 }

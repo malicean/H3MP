@@ -43,7 +43,7 @@ namespace H3MP.Messages
 
 		public Option<string> Level;
 
-		public Option<Option<Option<DeltaBodyMessage>>[]> PlayerBodies;
+		public Option<Option<DeltaBodyMessage>[]> PlayerBodies;
 
 		public bool HasSome => PartyID.IsSome || Secret.IsSome || Level.IsSome || PlayerBodies.IsSome;
 	}
@@ -89,7 +89,7 @@ namespace H3MP.Messages
 
 		private readonly IDifferentiator<string, string> _level;
 
-		private readonly IDifferentiator<Option<BodyMessage>[], Option<Option<DeltaBodyMessage>>[]> _playerBodies;
+		private readonly IDifferentiator<Option<BodyMessage>[], Option<DeltaBodyMessage>[]> _playerBodies;
 
 		public WorldSnapshotMessageDifferentiator()
 		{
@@ -98,7 +98,7 @@ namespace H3MP.Messages
 
 			_level = EqualityDifferentiator<string>.Instance;
 
-			_playerBodies = new BodyMessageDifferentiator().ToOption().ToArray();
+			_playerBodies = new BodyMessageDifferentiator().ToArray();
 		}
 
 		public WorldSnapshotMessage ConsumeDelta(DeltaWorldSnapshotMessage delta, Option<WorldSnapshotMessage> now)
@@ -124,7 +124,7 @@ namespace H3MP.Messages
 
 			creator.Include(x => x.Level, (ref DeltaWorldSnapshotMessage body, Option<string> value) => body.Level = value, _level);
 
-			creator.Include(x => x.PlayerBodies, (ref DeltaWorldSnapshotMessage body, Option<Option<Option<DeltaBodyMessage>>[]> value) => body.PlayerBodies = value, _playerBodies);
+			creator.Include(x => x.PlayerBodies, (ref DeltaWorldSnapshotMessage body, Option<Option<DeltaBodyMessage>[]> value) => body.PlayerBodies = value, _playerBodies);
 
 			return creator.Body;
 		}
@@ -137,7 +137,7 @@ namespace H3MP.Messages
 
 		private readonly ISerializer<Option<string>> _level;
 
-		private readonly ISerializer<Option<Option<Option<DeltaBodyMessage>>[]>> _playerBodies;
+		private readonly ISerializer<Option<Option<DeltaBodyMessage>[]>> _playerBodies;
 
 		public DeltaWorldSnapshotSerializer(int maxPlayers)
         {
@@ -146,7 +146,7 @@ namespace H3MP.Messages
 
 			_level = PrimitiveSerializers.Char.ToString(TruncatedSerializers.ByteAsInt).ToOption();
 
-			_playerBodies = new DeltaBodyMessageSerializer().ToOption().ToOption().ToArrayFixed(maxPlayers).ToOption();
+			_playerBodies = new DeltaBodyMessageSerializer().ToOption().ToArrayFixed(maxPlayers).ToOption();
         }
 
 		public DeltaWorldSnapshotMessage Deserialize(ref BitPackReader reader)

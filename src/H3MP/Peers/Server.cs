@@ -30,11 +30,11 @@ namespace H3MP.Peers
 		private readonly ISerializer<Tickstamped<DeltaInputSnapshotMessage>> _inputSerializer;
 		private readonly ISerializer<ResponseTickstamped<DeltaWorldSnapshotMessage>> _worldSerializer;
 
+		private readonly Version _version;
 		public readonly Key32 AdminKey;
 
 		private readonly Dictionary<NetPeer, int> _peerIDs;
 
-		public readonly IFitter<BodyMessage> BodyFitter;
 		public readonly Option<Husk>[] Husks;
 
 		public IEnumerable<Husk> ConnectedHusks
@@ -54,7 +54,7 @@ namespace H3MP.Peers
 		public event DeltaSnapshotReceivedHandler DeltaSnapshotReceived;
 		public event SnapshotReceivedHandler SnapshotUpdated;
 
-		public Server(Log log, HostConfig config, double tickStep, IPEndPoint publicEndPoint) : base(log, config, tickStep)
+		public Server(Log log, HostConfig config, double tickStep, Version version, IPEndPoint publicEndPoint) : base(log, config, tickStep)
 		{
 			var maxPlayers = config.PlayerLimit.Value;
 			var rng = Plugin.Instance.Random;
@@ -67,11 +67,15 @@ namespace H3MP.Peers
 			_worldSerializer = new ResponseTickstampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
 
 			LocalSnapshot.PartyID = Key32.FromRandom(rng);
-			LocalSnapshot.Secret = new JoinSecret(Plugin.Instance.Version, publicEndPoint, Key32.FromRandom(rng), tickStep, maxPlayers);
+			LocalSnapshot.Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng), tickStep, maxPlayers);
+			LocalSnapshot.Level = HarmonyState.CurrentLevel;
+			LocalSnapshot.PlayerBodies = new Option<BodyMessage>[maxPlayers];
+
+			_version = version;
+			AdminKey = Key32.FromRandom(rng);
 
 			_peerIDs = new Dictionary<NetPeer, int>();
 
-			BodyFitter = new BodyMessageFitter();
 			Husks = new Option<Husk>[maxPlayers];
 
 			Listener.ConnectionRequestEvent += ConnectionRequested;
@@ -82,11 +86,53 @@ namespace H3MP.Peers
 
 		private void ConnectionRequested(ConnectionRequest request)
 		{
+			const string rejectionPrefix = "Attempt rejected: ";
+			if (Log.Sensitive.MatchSome(out var sensitiveLog))
+			{
+				sensitiveLog.LogInfo($"Incoming connection attempt from {request.RemoteEndPoint}...");
+			}
+			else
+			{
+				Log.Common.LogInfo("Incoming connection attempt...");
+			}
+
 			var reader = new BitPackReader(request.Data);
 
-			var content = _requestSerializer.Deserialize(ref reader);
+			ConnectionRequestMessage content;
+			try
+			{
+				content = _requestSerializer.Deserialize(ref reader);
+			}
+			catch (Exception e)
+			{
+				Log.Common.LogInfo(rejectionPrefix + "data malformation");
+#if DEBUG
+				Log.Common.LogError("Malformation error: " + e);
+#endif
+
+				request.Reject();
+				return;
+			}
+
+			if (!content.Version.CompatibleWith(_version))
+			{
+				if (Log.Sensitive.MatchSome(out sensitiveLog))
+				{
+					sensitiveLog.LogInfo(rejectionPrefix + $"incompatible version (server: {_version}; requested: {content.Version})");
+				}
+				else
+				{
+					Log.Common.LogInfo(rejectionPrefix + $"incompatible version (server: {_version})");
+				}
+
+				request.Reject();
+				return;
+			}
+
 			if (!reader.Bits.Done || !reader.Bytes.Done)
 			{
+				Log.Common.LogInfo(rejectionPrefix + "excess data (form of data malformation)");
+
 				request.Reject();
 				return;
 			}
@@ -95,6 +141,8 @@ namespace H3MP.Peers
 			var key = isAdmin ? AdminKey : LocalSnapshot.Secret.Key;
 			if (content.Key != key)
 			{
+				Log.Common.LogInfo(rejectionPrefix + $"invalid key (admin: {isAdmin})");
+
 				request.Reject();
 				return;
 			}
@@ -108,10 +156,15 @@ namespace H3MP.Peers
 				}
 
 				var peer = request.Accept();
+				_peerIDs.Add(peer, i);
 				slot = Option.Some<Husk>(new Husk(i, peer, isAdmin));
+
+				Log.Common.LogInfo("Attempt accepted.");
+				return;
 			}
 
 			// Full
+			Log.Common.LogInfo(rejectionPrefix + "full lobby");
 			request.Reject();
 		}
 
@@ -119,6 +172,7 @@ namespace H3MP.Peers
 		{
 			var id = _peerIDs[peer];
 
+			_peerIDs.Remove(peer);
 			LocalSnapshot.PlayerBodies[id] = Option.None<BodyMessage>();
 			Husks[id] = Option.None<Husk>();
 		}
@@ -126,7 +180,28 @@ namespace H3MP.Peers
 		protected override void ReceiveDelta(NetPeer peer, ref BitPackReader reader)
 		{
 			var husk = Husks[_peerIDs[peer]].Unwrap();
-			var delta = _inputSerializer.Deserialize(ref reader);
+
+			Tickstamped<DeltaInputSnapshotMessage> delta;
+			try
+			{
+				delta = _inputSerializer.Deserialize(ref reader);
+			}
+			catch (Exception e)
+			{
+				if (Log.Sensitive.MatchSome(out var sensitiveLog))
+				{
+					sensitiveLog.LogInfo($"Received malformed data from peer ({peer.Id}; {peer.EndPoint})");
+				}
+				else
+				{
+					Log.Common.LogInfo($"Received malformed data from peer ({peer.Id})");
+				}
+
+				Log.Common.LogDebug("Malformation error: " + e);
+
+				Net.DisconnectPeer(peer);
+				return;
+			}
 
 			husk.InputBuffer.Enqueue(new QueueTickstamped<DeltaInputSnapshotMessage>
 			{
@@ -173,8 +248,11 @@ namespace H3MP.Peers
 				_worldSerializer.Serialize(ref writer, new ResponseTickstamped<DeltaWorldSnapshotMessage>
 				{
 					DuplicatedInput = husk.InputIsDuplicated,
-					QueuedTick = husk.Input.Map(x => x.QueuedTick),
-					ReceivedTick = husk.Input.Map(x => x.ReceivedTick),
+					Buffer = husk.Input.Map(x => new BufferTicks
+					{
+						Received = x.ReceivedTick,
+						Queued = x.QueuedTick
+					}),
 					SentTick = Tick,
 					Content = delta
 				});
@@ -188,14 +266,9 @@ namespace H3MP.Peers
 			}
 		}
 
-		public void Start(IPAddress ipv4, IPAddress ipv6, ushort port)
+		public void Start(ListenBinding binding)
 		{
-			Net.Start(ipv4, ipv6, port);
-		}
-
-		public void Stop()
-		{
-			Net.Stop();
+			Net.Start(binding.IPv4, binding.IPv6, binding.Port);
 		}
 
 		public class Husk

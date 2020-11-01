@@ -1,4 +1,5 @@
 using BepInEx.Configuration;
+using H3MP.Models;
 using System.Net;
 
 namespace H3MP.Configs
@@ -8,6 +9,8 @@ namespace H3MP.Configs
 		public ConfigEntry<IPAddress> IPv4 { get; }
 		public ConfigEntry<IPAddress> IPv6 { get; }
 		public ConfigEntry<ushort> Port { get; }
+
+		public ListenBinding Structured => new ListenBinding(IPv4.Value, IPv6.Value, Port.Value);
 
 		public HostBindingConfig(ConfigFile config, string section)
 		{
