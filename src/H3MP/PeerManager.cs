@@ -90,6 +90,7 @@ namespace H3MP
 
 			IPEndPoint publicEndPoint;
 			{
+				log.Common.LogDebug("Awaiting public address...");
 				IPAddress publicAddress;
 				{
 					var getter = config.PublicBinding.GetAddress();
@@ -137,6 +138,7 @@ namespace H3MP
 			Server = Option.Some(server);
 			ServerCreated?.Invoke(server);
 
+			log.Common.LogDebug("Binding server...");
 			server.Start(_config.Host.Binding.Structured);
 
 			if (log.Sensitive.MatchSome(out var sensitiveLog))
