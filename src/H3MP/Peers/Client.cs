@@ -136,6 +136,7 @@ namespace H3MP.Peers
 			var snapshot = _worldDiff.ConsumeDelta(delta.Content, baseline);
 
 			TickSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(delta.SentTick, snapshot));
+			TimeSnapshots.Add(new KeyValuePair<double, WorldSnapshotMessage>(Time, snapshot));
 
 			DeltaSnapshotReceived?.Invoke(delta.Buffer, delta.SentTick, delta.Content);
 			SnapshotUpdated?.Invoke(delta.Buffer, delta.SentTick, snapshot);
