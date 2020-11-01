@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using Discord;
-using FistVR;
 using H3MP.Configs;
 using H3MP.Differentiation;
 using H3MP.Extensions;
@@ -14,7 +12,6 @@ using H3MP.Serialization;
 using H3MP.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
-using UnityEngine;
 
 namespace H3MP.Peers
 {
@@ -33,12 +30,15 @@ namespace H3MP.Peers
 		public readonly int MaxPlayers;
 
 		private Option<InputSnapshotMessage> _oldSnapshot;
-
 		private Option<long> _serverTickOffset;
 		public Option<uint> OffsetTick => _serverTickOffset.MatchSome(out var offset) ? Option.Some((uint) (Tick + offset)) : Option.None<uint>();
 
-		public readonly List<KeyValuePair<uint, WorldSnapshotMessage>> WorldSnapshots;
-		public readonly DataSetFitter<uint, WorldSnapshotMessage> WorldSnapshotsFitter;
+		public readonly int SnapshotCount;
+		public readonly List<KeyValuePair<uint, WorldSnapshotMessage>> TickSnapshots;
+		public readonly List<KeyValuePair<double, WorldSnapshotMessage>> TimeSnapshots;
+		public readonly IFitter<WorldSnapshotMessage> SnapshotsFitter;
+		public readonly DataSetFitter<uint, WorldSnapshotMessage> TickSnapshotsDataFitter;
+		public readonly DataSetFitter<double, WorldSnapshotMessage> TimeSnapshotsDataFitter;
 
 		public event DeltaSnapshotReceivedHandler DeltaSnapshotReceived;
 		public event SnapshotReceivedHandler SnapshotUpdated;
@@ -57,8 +57,12 @@ namespace H3MP.Peers
 
 			_oldSnapshot = Option.None<InputSnapshotMessage>();
 
-			WorldSnapshots = new List<KeyValuePair<uint, WorldSnapshotMessage>>((int) (5 / tickStep));
-			WorldSnapshotsFitter = new DataSetFitter<uint, WorldSnapshotMessage>(Comparer<uint>.Default, InverseFitters.UInt, new WorldSnapshotMessageFitter());
+			SnapshotCount = (int) Math.Ceiling(5 / tickStep);
+			TickSnapshots = new List<KeyValuePair<uint, WorldSnapshotMessage>>(SnapshotCount);
+			TimeSnapshots = new List<KeyValuePair<double, WorldSnapshotMessage>>(SnapshotCount);
+			SnapshotsFitter = new WorldSnapshotMessageFitter();
+			TickSnapshotsDataFitter = new DataSetFitter<uint, WorldSnapshotMessage>(Comparer<uint>.Default, InverseFitters.UInt, SnapshotsFitter);
+			TimeSnapshotsDataFitter = new DataSetFitter<double, WorldSnapshotMessage>(Comparer<double>.Default, InverseFitters.Double, SnapshotsFitter);
 
 			Listener.PeerDisconnectedEvent += InternalDisconnected;
 
@@ -94,6 +98,17 @@ namespace H3MP.Peers
 
 				_serverTickOffset = Option.Some((long) (sentTick - Tick));
 			}
+
+			// TODO: tie these lists together
+			while (TimeSnapshots.Count > SnapshotCount)
+			{
+				TimeSnapshots.RemoveAt(0);
+			}
+
+			while (TickSnapshots.Count > SnapshotCount)
+			{
+				TickSnapshots.RemoveAt(0);
+			}
 		}
 
 		private void InternalDisconnected(NetPeer peer, DisconnectInfo info)
@@ -117,10 +132,10 @@ namespace H3MP.Peers
 				return;
 			}
 
-			var baseline = WorldSnapshots.LastOrNone().Map(x => x.Value);
+			var baseline = TickSnapshots.LastOrNone().Map(x => x.Value);
 			var snapshot = _worldDiff.ConsumeDelta(delta.Content, baseline);
 
-			WorldSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(delta.SentTick, snapshot));
+			TickSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(delta.SentTick, snapshot));
 
 			DeltaSnapshotReceived?.Invoke(delta.Buffer, delta.SentTick, delta.Content);
 			SnapshotUpdated?.Invoke(delta.Buffer, delta.SentTick, snapshot);

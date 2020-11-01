@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace H3MP.Utils
 {
@@ -31,6 +32,19 @@ namespace H3MP.Utils
 		public static bool Equals<T>(this Option<T> @this, Option<T> other, Func<T, T, bool> equals)
 		{
 			return @this.MatchSome(out var thisValue) && other.MatchSome(out var otherValue) && equals(thisValue, otherValue);
+		}
+
+		public static IEnumerable<T> WhereSome<T>(this IEnumerable<Option<T>> @this)
+		{
+			foreach (var item in @this)
+			{
+				if (!item.MatchSome(out var value))
+				{
+					continue;
+				}
+
+				yield return value;
+			}
 		}
 	}
 

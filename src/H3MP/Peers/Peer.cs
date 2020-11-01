@@ -25,6 +25,7 @@ namespace H3MP.Peers
 
 		public readonly double TickStep;
 		public uint Tick { get; private set; }
+		public double Time { get; private set; }
 
 		public TSnapshot LocalSnapshot;
 
@@ -33,6 +34,12 @@ namespace H3MP.Peers
 
 		public Peer(Log log, TConfig config, double tickStep)
 		{
+			var startTime = LocalTime.Now;
+			_tickTimer = new LoopTimer(tickStep, startTime);
+#if DEBUG
+			_statsTimer = new LoopTimer(60, startTime);
+#endif
+
 			Log = log;
 			Config = config;
 
@@ -45,13 +52,9 @@ namespace H3MP.Peers
 #endif
 			};
 
-			_tickTimer = new LoopTimer(tickStep, LocalTime.Now);
-#if DEBUG
-			_statsTimer = new LoopTimer(60, LocalTime.Now);
-#endif
-
 			TickStep = tickStep;
 			Tick = 0;
+			Time = startTime;
 
 			LocalSnapshot = new TSnapshot();
 
@@ -86,10 +89,13 @@ namespace H3MP.Peers
 
 		private void NetUpdate()
 		{
-			if (!_tickTimer.TryCycle(LocalTime.Now))
+			var time = LocalTime.Now;
+			if (!_tickTimer.TryCycle(time))
 			{
 				return;
 			}
+
+			Time = time;
 
 			Net.PollEvents();
 			Ticked?.Invoke();

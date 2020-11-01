@@ -37,21 +37,9 @@ namespace H3MP.Peers
 
 		public readonly Option<Husk>[] Husks;
 
-		public IEnumerable<Husk> ConnectedHusks
-		{
-			get
-			{
-				foreach (Option<Husk> husk in Husks)
-				{
-					if (husk.MatchSome(out var connected))
-					{
-						yield return connected;
-					}
-				}
-			}
-		}
+		public IEnumerable<Husk> ConnectedHusks => Husks.WhereSome();
 
-		public event DeltaSnapshotReceivedHandler DeltaSnapshotReceived;
+		public event DeltaSnapshotReceivedHandler DeltaSnapshotProcessed;
 		public event SnapshotReceivedHandler SnapshotUpdated;
 
 		public Server(Log log, HostConfig config, double tickStep, Version version, IPEndPoint publicEndPoint) : base(log, config, tickStep)
@@ -217,27 +205,30 @@ namespace H3MP.Peers
 			{
 				if (husk.InputBuffer.Count > 0)
 				{
-					if (husk.InputBuffer.Count > husk.InputBufferSize)
-					{
-						// Drop old input
-						husk.InputBuffer.Dequeue();
-					}
+					husk.InputIsDuplicated = false;
+					husk.InputBufferSize = Math.Min(1, husk.InputBufferSize - 1);
 
 					var delta = husk.InputBuffer.Dequeue();
 					var snapshot = _inputDiff.ConsumeDelta(delta.Content, husk.Input.Map(x => x.Content));
-
-					husk.Input = Option.Some(new QueueTickstamped<InputSnapshotMessage>
+					var input = new QueueTickstamped<InputSnapshotMessage>
 					{
 						ReceivedTick = delta.ReceivedTick,
 						QueuedTick = delta.QueuedTick,
 						Content = snapshot
-					});
-					husk.InputIsDuplicated = false;
-					--husk.InputBufferSize;
-				}
+					};
 
-				++husk.InputBufferSize;
-				husk.InputIsDuplicated = true;
+					husk.Input = Option.Some(input);
+
+					DeltaSnapshotProcessed?.Invoke(husk, delta.ReceivedTick, delta.Content);
+					SnapshotUpdated?.Invoke(husk, input.ReceivedTick, input.Content);
+				}
+				else if (husk.Input.MatchSome(out var input))
+				{
+					husk.InputIsDuplicated = true;
+					++husk.InputBufferSize;
+
+					SnapshotUpdated?.Invoke(husk, input.ReceivedTick, input.Content);
+				}
 			}
 		}
 

@@ -9,5 +9,6 @@ namespace H3MP.Fitting
 	public static class InverseFitters
 	{
 		public static UIntInverseFitter UInt { get; } = new UIntInverseFitter();
+		public static DoubleInverseFitter Double { get; } = new DoubleInverseFitter();
 	}
 }

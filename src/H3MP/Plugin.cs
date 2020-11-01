@@ -12,6 +12,7 @@ using H3MP.Models;
 using H3MP.Messages;
 using FistVR;
 using UnityEngine;
+using H3MP.Puppetting;
 
 namespace H3MP
 {
@@ -39,6 +40,8 @@ namespace H3MP
 		public DiscordManager Discord { get; }
 
 		public PeerManager Peers { get; }
+
+		public Option<Puppeteer> Puppeteer { get; private set; }
 
 		public Plugin()
 		{
@@ -98,6 +101,8 @@ namespace H3MP
 			// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 			Discord = new DiscordManager(_logs.Discord, Version);
 
+			Puppeteer = Option.None<Puppeteer>();
+
 			Discord.Joined += Joined;
 
 			Peers.ServerCreated += ServerCreated;
@@ -135,6 +140,8 @@ namespace H3MP
 		{
 			client.Ticked += ClientTick;
 			client.DeltaSnapshotReceived += (buffer, serverTick, delta) => Discord.HandleWorldDelta(client, delta);
+
+			Puppeteer = Option.Some(new Puppeteer(client));
 		}
 
 		private void ClientTick()
@@ -183,6 +190,14 @@ namespace H3MP
 		{
 			Discord.FixedUpdate();
 			Peers.FixedUpdate();
+		}
+
+		private void Update()
+		{
+			if (Puppeteer.MatchSome(out var puppeteer))
+			{
+				puppeteer.RenderUpdate();
+			}
 		}
 
 		private void OnDestroy()
