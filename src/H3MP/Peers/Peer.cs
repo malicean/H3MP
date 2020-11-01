@@ -107,6 +107,7 @@ namespace H3MP.Peers
 			}
 
 			Log.Common.LogDebug("\n" + Net.Statistics.ToString());
+			Net.Statistics.Reset();
 		}
 #endif
 
