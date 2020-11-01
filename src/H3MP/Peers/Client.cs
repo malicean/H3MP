@@ -30,6 +30,8 @@ namespace H3MP.Peers
 		private readonly ISerializer<Tickstamped<DeltaInputSnapshotMessage>> _inputSerializer;
 		private readonly ISerializer<ResponseTickstamped<DeltaWorldSnapshotMessage>> _worldSerializer;
 
+		public readonly int MaxPlayers;
+
 		private Option<InputSnapshotMessage> _oldSnapshot;
 
 		private Option<long> _serverTickOffset;
@@ -42,14 +44,16 @@ namespace H3MP.Peers
 		public event SnapshotReceivedHandler SnapshotUpdated;
 		public event Action<DisconnectInfo> Disconnected;
 
-		public Client(Log log, ClientConfig config, double tickStep, int playerCount) : base(log, config, tickStep)
+		public Client(Log log, ClientConfig config, double tickStep, int maxPlayers) : base(log, config, tickStep)
 		{
 			_inputDiff = new InputSnapshotMessageDifferentiator();
 			_worldDiff = new WorldSnapshotMessageDifferentiator();
 
 			_requestSerializer = new ConnectionRequestSerializer();
 			_inputSerializer = new TickstampedSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
-			_worldSerializer = new ResponseTickstampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(playerCount));
+			_worldSerializer = new ResponseTickstampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
+
+			MaxPlayers = maxPlayers;
 
 			_oldSnapshot = Option.None<InputSnapshotMessage>();
 

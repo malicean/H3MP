@@ -5,14 +5,13 @@ using H3MP.Configs;
 using H3MP.HarmonyPatches;
 using System;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using H3MP.Peers;
 using H3MP.Utils;
 using H3MP.Models;
 using H3MP.Messages;
-using H3MP.Extensions;
-using System.Collections.Generic;
+using FistVR;
+using UnityEngine;
 
 namespace H3MP
 {
@@ -101,6 +100,8 @@ namespace H3MP
 
 			Discord.Joined += Joined;
 
+			Peers.ServerCreated += ServerCreated;
+
 			Peers.ClientCreated += ClientCreated;
 			Peers.ClientKilled += ClientKilled;
 		}
@@ -110,9 +111,59 @@ namespace H3MP
 			Peers.Connect(secret);
 		}
 
+		private void ServerCreated(Server server)
+		{
+			server.Ticked += ServerTick;
+		}
+
+		private void ServerTick()
+		{
+			var server = Peers.Server.Unwrap();
+
+			foreach (var husk in server.ConnectedHusks)
+			{
+				if (!husk.Input.MatchSome(out var inputValue))
+				{
+					return;
+				}
+
+				server.LocalSnapshot.PlayerBodies[husk.ID] = Option.Some(inputValue.Content.Body);
+			}
+		}
+
 		private void ClientCreated(Client client)
 		{
-			client.DeltaSnapshotReceived += (buffer, serverTick, delta) => Discord.HandleWorldDelta(delta);
+			client.Ticked += ClientTick;
+			client.DeltaSnapshotReceived += (buffer, serverTick, delta) => Discord.HandleWorldDelta(client, delta);
+		}
+
+		private void ClientTick()
+		{
+			var client = Peers.Client.Unwrap();
+
+			var root = GM.CurrentPlayerRoot;
+			var body = GM.CurrentPlayerBody;
+
+			TransformMessage LocalTransform(Transform transform)
+			{
+				return new TransformMessage
+				{
+					Position = transform.localPosition,
+					Rotation = transform.localRotation
+				};
+			}
+
+			client.LocalSnapshot.Body = new BodyMessage
+			{
+				Root = new TransformMessage
+				{
+					Position = root.position,
+					Rotation = root.rotation
+				},
+				Head = LocalTransform(body.Head),
+				HandLeft = LocalTransform(body.LeftHand),
+				HandRight = LocalTransform(body.RightHand)
+			};
 		}
 
 		private void ClientKilled(Client obj)

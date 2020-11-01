@@ -5,13 +5,13 @@ namespace H3MP.Differentiation
 {
 	public static class ArrayDifferentiatorExtensions
 	{
-		public static IDifferentiator<Option<TValue>[], Option<TDelta>[]> ToArray<TValue, TDelta>(this IDifferentiator<TValue, TDelta> @this)
+		public static IDifferentiator<TValue[], Option<TDelta>[]> ToArray<TValue, TDelta>(this IDifferentiator<TValue, TDelta> @this)
 		{
 			return new ArrayDifferentiator<TValue, TDelta>(@this);
 		}
 	}
 
-	public class ArrayDifferentiator<TValue, TDelta> : IDifferentiator<Option<TValue>[], Option<TDelta>[]>
+	public class ArrayDifferentiator<TValue, TDelta> : IDifferentiator<TValue[], Option<TDelta>[]>
 	{
 		private readonly IDifferentiator<TValue, TDelta> _differentiator;
 
@@ -20,32 +20,32 @@ namespace H3MP.Differentiation
 			_differentiator = differentiator;
 		}
 
-		public Option<TValue>[] ConsumeDelta(Option<TDelta>[] delta, Option<Option<TValue>[]> now)
+		public TValue[] ConsumeDelta(Option<TDelta>[] delta, Option<TValue[]> now)
 		{
-			var values = new Option<TValue>[delta.Length];
+			var values = new TValue[delta.Length];
 			if (now.MatchSome(out var nowArray))
 			{
-				for (var i = 0; i < delta.Length; ++i)
+				for (var i = 0; i < values.Length; ++i)
 				{
 					values[i] = delta[i].MatchSome(out var deltaValue)
-						? Option.Some(_differentiator.ConsumeDelta(deltaValue, nowArray[i]))
+						? _differentiator.ConsumeDelta(deltaValue, Option.Some(nowArray[i]))
 						: nowArray[i];
 				}
 			}
 			else
 			{
-				for (var i = 0; i < delta.Length; ++i)
+				for (var i = 0; i < values.Length; ++i)
 				{
 					values[i] = delta[i].MatchSome(out var deltaValue)
-						? Option.Some(_differentiator.ConsumeDelta(deltaValue, Option.None<TValue>()))
-						: Option.None<TValue>();
+						? _differentiator.ConsumeDelta(deltaValue, Option.None<TValue>())
+						: default;
 				}
 			}
 
 			return values;
 		}
 
-		public Option<Option<TDelta>[]> CreateDelta(Option<TValue>[] now, Option<Option<TValue>[]> baseline)
+		public Option<Option<TDelta>[]> CreateDelta(TValue[] now, Option<TValue[]> baseline)
 		{
 			var deltas = new Option<TDelta>[now.Length];
 			var dirty = false;
@@ -58,22 +58,18 @@ namespace H3MP.Differentiation
 
 				for (var i = 0; i < deltas.Length; ++i)
 				{
-					if (now[i].MatchSome(out var nowValue))
-					{
-						deltas[i] = _differentiator.CreateDelta(nowValue, baselineArray[i]);
-						dirty = true;
-					}
+					var delta = _differentiator.CreateDelta(now[i], Option.Some(baselineArray[i]));
+					deltas[i] = delta;
+					dirty |= delta.IsSome;
 				}
 			}
 			else
 			{
+				dirty = true;
+
 				for (var i = 0; i < deltas.Length; ++i)
 				{
-					if (now[i].MatchSome(out var nowValue))
-					{
-						deltas[i] = _differentiator.CreateDelta(nowValue, Option.None<TValue>());
-						dirty = true;
-					}
+					deltas[i] = _differentiator.CreateDelta(now[i], Option.None<TValue>());
 				}
 			}
 

@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Discord;
 using H3MP.Extensions;
 using H3MP.IO;
 using H3MP.Messages;
 using H3MP.Models;
+using H3MP.Peers;
 using H3MP.Serialization;
 using H3MP.Timing;
 using LiteNetLib.Utils;
@@ -106,14 +108,8 @@ namespace H3MP
 			_activityManager.OnActivityJoin += OnJoin;
 		}
 
-		private void DiscordCallbackHandler(Result result)
+		private static void DiscordCallbackHandler(Result result)
 		{
-			if (result == Result.Ok)
-			{
-				return;
-			}
-
-			_logs.Manager.Common.LogError($"Discord activity update failed ({result})");
 		}
 
 		private void OnJoin(string rawSecret)
@@ -172,7 +168,7 @@ namespace H3MP
 			_activityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
 		}
 
-		public void HandleWorldDelta(DeltaWorldSnapshotMessage delta)
+		public void HandleWorldDelta(Client client, DeltaWorldSnapshotMessage delta)
 		{
 			var activity = Activity;
 			var dirty = false;
@@ -210,6 +206,22 @@ namespace H3MP
 
 				activity.Assets.LargeImage = "scene_" + asset;
 				activity.Assets.LargeText = tooltip;
+			}
+
+			if (delta.PlayerBodies.MatchSome(out var players))
+			{
+				var playerCount = players.Count(x => x.MatchSome(out var innerDelta) && innerDelta.IsSome);
+				ref var partySize = ref activity.Party.Size.CurrentSize;
+
+				if (playerCount > 0 && partySize != playerCount)
+				{
+					dirty = true;
+
+					activity.State = "In a party";
+					activity.Party.Size.MaxSize = client.MaxPlayers;
+
+					partySize = playerCount;
+				}
 			}
 
 			if (dirty)

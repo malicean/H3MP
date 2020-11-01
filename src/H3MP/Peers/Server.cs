@@ -223,7 +223,15 @@ namespace H3MP.Peers
 						husk.InputBuffer.Dequeue();
 					}
 
-					husk.Input = Option.Some(husk.InputBuffer.Dequeue());
+					var delta = husk.InputBuffer.Dequeue();
+					var snapshot = _inputDiff.ConsumeDelta(delta.Content, husk.Input.Map(x => x.Content));
+
+					husk.Input = Option.Some(new QueueTickstamped<InputSnapshotMessage>
+					{
+						ReceivedTick = delta.ReceivedTick,
+						QueuedTick = delta.QueuedTick,
+						Content = snapshot
+					});
 					husk.InputIsDuplicated = false;
 					--husk.InputBufferSize;
 				}
@@ -260,7 +268,7 @@ namespace H3MP.Peers
 				writer.Dispose();
 				husk.Peer.Send(data, DeliveryMethod.ReliableOrdered);
 
-				husk.LastSent = Option.Some(snapshot);
+				husk.LastSent = Option.Some(snapshot.Copy());
 
 				data.Reset();
 			}
@@ -281,7 +289,7 @@ namespace H3MP.Peers
 			public int InputBufferSize;
 
 			public bool InputIsDuplicated;
-			public Option<QueueTickstamped<DeltaInputSnapshotMessage>> Input;
+			public Option<QueueTickstamped<InputSnapshotMessage>> Input;
 			public Option<WorldSnapshotMessage> LastSent;
 
 			public Husk(int id, NetPeer peer, bool isAdmin)
@@ -293,7 +301,7 @@ namespace H3MP.Peers
 				InputBuffer = new Queue<QueueTickstamped<DeltaInputSnapshotMessage>>();
 				InputBufferSize = 1;
 
-				Input = Option.None<QueueTickstamped<DeltaInputSnapshotMessage>>();
+				Input = Option.None<QueueTickstamped<InputSnapshotMessage>>();
 				LastSent = Option.None<WorldSnapshotMessage>();
 			}
 		}
