@@ -52,6 +52,7 @@ namespace H3MP
 		private readonly ManualLogSource _discordLog;
 
 		private readonly ChangelogPanel _changelogPanel;
+		private readonly WristMenuButtons _wristMenuButtons;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
 
@@ -158,6 +159,7 @@ namespace H3MP
 
 			Logger.LogDebug("Hooking into sceneLoaded...");
 			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
+			_wristMenuButtons = new WristMenuButtons(Logger);
 		}
 
 		private void DiscordCallbackHandler(Result result)
