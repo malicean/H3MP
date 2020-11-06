@@ -35,10 +35,16 @@ namespace H3MP.Puppetting
 
 		private void Update()
 		{
+			if (_client.Snapshots.Count < 1)
+			{
+				return;
+			}
+
 			// TODO: remove constant interp delay, implement dynamic interp delay in Client
 			var delay = 1 * _client.TickStep;
 			var delayed = _renderFrame.Time - delay;
-			var timeSnapshots = ((IEnumerable<KeyValuePair<LocalTickstamp, WorldSnapshotMessage>>) _client.Snapshots).Reverse().Select(x => new KeyValuePair<double, WorldSnapshotMessage>(x.Key.Time, x.Value));
+			var timeSnapshots = _client.Snapshots.FastReverse().Select(x => new KeyValuePair<double, WorldSnapshotMessage>(x.Key.Time, x.Value));
+			
 			FittedWorld = _client.TimeSnapshotsDataFitter.Fit(timeSnapshots, delayed);
 
 			var players = FittedWorld.PlayerBodies;
@@ -53,7 +59,7 @@ namespace H3MP.Puppetting
 
 				if (players[i].IsSome)
 				{
-					// none -> some or some -> some
+					// create puppet: none -> some
 					if (puppet.IsNone)
 					{
 						puppet = Option.Some(new Puppet(this, i));
@@ -61,7 +67,7 @@ namespace H3MP.Puppetting
 				}
 				else
 				{
-					// some -> none or none -> none
+					// destroy puppet: some -> none
 					if (puppet.MatchSome(out var puppetValue))
 					{
 						puppetValue.Dispose();

@@ -11,5 +11,13 @@ namespace H3MP.Extensions
 				? Option.Some(@this[@this.Count - 1])
 				: Option.None<T>();
 		}
+
+		public static IEnumerable<T> FastReverse<T>(this List<T> @this)
+		{
+			for (var i = @this.Count - 1; i >= 0; --i)
+			{
+				yield return @this[i];
+			}
+		}
 	}
 }

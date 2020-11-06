@@ -36,7 +36,7 @@ namespace H3MP.Puppetting
 				GameObject.Destroy(c);
 			}
 
-			_head.localScale = _handLeft.localScale = _handRight.localScale = 0.3f * Vector3.one;
+			_head.localScale = _handLeft.localScale = _handRight.localScale = 0.1f * Vector3.one;
 		}
 
 		public void RenderUpdate()
