@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Net;
 using H3MP.Configs;
 using H3MP.Messages;
@@ -16,7 +17,10 @@ namespace H3MP
 		private readonly PeerLogs _logs;
 		private readonly PeerConfig _config;
 		private readonly Version _version;
+		private readonly Stopwatch _watch;
 		private readonly Func<IEnumerator, Coroutine> _startCoroutine;
+
+		public Option<TickFrameClock> Tick { get; private set; }
 
 		public Option<Server> Server { get; private set; }
 
@@ -28,13 +32,15 @@ namespace H3MP
 		public event Action<Server> ServerKilled;
 		public event Action<Client> ClientKilled;
 
-		public PeerManager(PeerLogs logs, PeerConfig config, Version version, Func<IEnumerator, Coroutine> startCoroutine)
+		public PeerManager(PeerLogs logs, PeerConfig config, Version version, Stopwatch watch, Func<IEnumerator, Coroutine> startCoroutine)
 		{
 			_logs = logs;
 			_config = config;
 			_version = version;
+			_watch = watch;
 			_startCoroutine = startCoroutine;
 
+			Tick = Option.None<TickFrameClock>();
 			Server = Option.None<Server>();
 			Client = Option.None<Client>();
 		}
@@ -73,6 +79,7 @@ namespace H3MP
 
 			KillServer();
 			KillClient();
+			Tick = Option.None<TickFrameClock>();
 		}
 
 		private IEnumerator _HostUnsafe()
@@ -134,8 +141,10 @@ namespace H3MP
 
 			double tickDeltaTime = 1 / tps;
 
-			var server = new Server(_logs.Server, _config.Host, tickDeltaTime, _version, publicEndPoint);
+			var tick = new TickFrameClock(_watch, tickDeltaTime);
+			var server = new Server(_logs.Server, _config.Host, tick, _version, publicEndPoint);
 			Server = Option.Some(server);
+			Tick = Option.Some(tick);
 			ServerCreated?.Invoke(server);
 
 			log.Common.LogDebug("Binding server...");
@@ -150,7 +159,7 @@ namespace H3MP
 				log.Common.LogInfo("Now hosting!");
 			}
 
-			ConnectLocal(localhost, server.LocalSnapshot.Secret, server.AdminKey);
+			ConnectLocal(localhost, server.LocalSnapshot.Secret, server.AdminKey, tick);
 		}
 
 		private IEnumerator _Host()
@@ -160,7 +169,7 @@ namespace H3MP
 			return _HostUnsafe();
 		}
 
-		private Client Connect(IPEndPoint endPoint, JoinSecret secret, ConnectionRequestMessage request)
+		private Client Connect(IPEndPoint endPoint, JoinSecret secret, ConnectionRequestMessage request, TickFrameClock tick)
 		{
 			var log = _logs.Client;
 			if (log.Sensitive.MatchSome(out var sensitiveLog))
@@ -178,17 +187,18 @@ namespace H3MP
 			log.Common.LogDebug($"Fixed update rate: {ups:.00} u/s");
 			log.Common.LogDebug($"Tick rate: {tps:.00} t/s");
 
-			var client = new Client(_logs.Client, _config.Client, secret.TickStep, secret.MaxPlayers);
+			var client = new Client(_logs.Client, _config.Client, tick, secret.MaxPlayers);
 			Client = Option.Some(client);
+			Tick = Option.Some(tick);
 			ClientCreated?.Invoke(client);
 
 			client.Connect(endPoint, request);
 			return client;
 		}
 
-		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 adminKey)
+		private void ConnectLocal(IPEndPoint endPoint, JoinSecret secret, Key32 adminKey, TickFrameClock tick)
 		{
-			var client = Connect(endPoint, secret, new ConnectionRequestMessage(true, adminKey, _version));
+			var client = Connect(endPoint, secret, new ConnectionRequestMessage(true, adminKey, _version), tick);
 
 			client.Disconnected += info =>
 			{
@@ -210,14 +220,9 @@ namespace H3MP
 
 		public void FixedUpdate()
 		{
-			if (Client.MatchSome(out var client))
+			if (Tick.MatchSome(out var tick))
 			{
-				client.FixedUpdate();
-			}
-
-			if (Server.MatchSome(out var server))
-			{
-				server.FixedUpdate();
+				tick.FixedUpdate();
 			}
 		}
 
@@ -225,7 +230,7 @@ namespace H3MP
 		{
 			KillAllPeers();
 
-			var client = Connect(secret.EndPoint, secret, new ConnectionRequestMessage(false, secret.Key, _version));
+			var client = Connect(secret.EndPoint, secret, new ConnectionRequestMessage(false, secret.Key, _version), new TickFrameClock(_watch, secret.TickStep));
 
 			client.Disconnected += info =>
 			{

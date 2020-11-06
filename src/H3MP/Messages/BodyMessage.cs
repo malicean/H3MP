@@ -9,7 +9,6 @@ namespace H3MP.Messages
 {
 	public struct BodyMessage
 	{
-		public TransformMessage Root;
 		public TransformMessage Head;
 		public TransformMessage HandLeft;
 		public TransformMessage HandRight;
@@ -17,12 +16,11 @@ namespace H3MP.Messages
 
 	public struct DeltaBodyMessage : IOptionComposite
 	{
-		public Option<TransformMessage> Root;
 		public Option<TransformMessage> Head;
 		public Option<TransformMessage> HandLeft;
 		public Option<TransformMessage> HandRight;
 
-		public bool HasSome => Root.IsSome || Head.IsSome || HandLeft.IsSome || HandRight.IsSome;
+		public bool HasSome => Head.IsSome || HandLeft.IsSome || HandRight.IsSome;
     }
 
 	public class BodyMessageFitter : IFitter<BodyMessage>
@@ -38,7 +36,6 @@ namespace H3MP.Messages
 		{
 			var fitter = new SuperFitter<BodyMessage>(a, b, t);
 
-			fitter.Include(x => x.Root, (ref BodyMessage body, TransformMessage value) => body.Root = value, _transform);
 			fitter.Include(x => x.Head, (ref BodyMessage body, TransformMessage value) => body.Head = value, _transform);
 			fitter.Include(x => x.HandLeft, (ref BodyMessage body, TransformMessage value) => body.HandLeft = value, _transform);
 			fitter.Include(x => x.HandRight, (ref BodyMessage body, TransformMessage value) => body.HandRight = value, _transform);
@@ -60,7 +57,6 @@ namespace H3MP.Messages
 		{
 			var creator = new SuperDeltaCreator<BodyMessage, DeltaBodyMessage>(now, baseline);
 
-			creator.Include(x => x.Root, (ref DeltaBodyMessage delta, Option<TransformMessage> child) => delta.Root = child, _transform);
 			creator.Include(x => x.Head, (ref DeltaBodyMessage delta, Option<TransformMessage> child) => delta.Head = child, _transform);
 			creator.Include(x => x.HandLeft, (ref DeltaBodyMessage delta, Option<TransformMessage> child) => delta.HandLeft = child, _transform);
 			creator.Include(x => x.HandRight, (ref DeltaBodyMessage delta, Option<TransformMessage> child) => delta.HandRight = child, _transform);
@@ -72,7 +68,6 @@ namespace H3MP.Messages
 		{
 			var consumer = new SuperDeltaConsumer<DeltaBodyMessage, BodyMessage>(delta, now);
 
-			consumer.Include(x => x.Root, x => x.Root, (ref BodyMessage body, TransformMessage value) => body.Root = value, _transform);
 			consumer.Include(x => x.Head, x => x.Head, (ref BodyMessage body, TransformMessage value) => body.Head = value, _transform);
 			consumer.Include(x => x.HandLeft, x => x.HandLeft, (ref BodyMessage body, TransformMessage value) => body.HandLeft = value, _transform);
 			consumer.Include(x => x.HandRight, x => x.HandRight, (ref BodyMessage body, TransformMessage value) => body.HandRight = value, _transform);
@@ -88,12 +83,15 @@ namespace H3MP.Messages
 
 		public DeltaBodyMessageSerializer()
 		{
-			var rot = new SmallestThreeQuaternionSerializer(PackedSerializers.Float(1));
+			var rot = new SmallestThreeQuaternionSerializer(PackedSerializers.Float(-1, 1));
+			//var rot = new QuaternionSerializer(PrimitiveSerializers.Float);
 
-			var rootPos = new Vector3Serializer(PackedSerializers.Float(50)); // In case of sticky jumping
+			var rootPos = new Vector3Serializer(PackedSerializers.Float(-50, 50)); // In case of sticky jumping
+			//var rootPos = new Vector3Serializer(PrimitiveSerializers.Float);
 			_root = new TransformMessageSerializer(rootPos, rot).ToOption();
 
-			var childPos = new Vector3Serializer(PackedSerializers.Float(3)); // Accounts for bald eagles and Lebron James
+			var childPos = new Vector3Serializer(PackedSerializers.Float(-3, 3)); // Accounts for bald eagles and Lebron James
+			//var childPos = new Vector3Serializer(PrimitiveSerializers.Float);
 			_child = new TransformMessageSerializer(childPos, rot).ToOption();
 		}
 
@@ -101,8 +99,7 @@ namespace H3MP.Messages
 		{
 			return new DeltaBodyMessage
 			{
-				Root = _root.Deserialize(ref reader),
-				Head = _child.Deserialize(ref reader),
+				Head = _root.Deserialize(ref reader),
 				HandLeft = _child.Deserialize(ref reader),
 				HandRight = _child.Deserialize(ref reader),
 			};
@@ -110,8 +107,7 @@ namespace H3MP.Messages
 
 		public void Serialize(ref BitPackWriter writer, DeltaBodyMessage value)
 		{
-			_root.Serialize(ref writer, value.Root);
-			_child.Serialize(ref writer, value.Head);
+			_root.Serialize(ref writer, value.Head);
 			_child.Serialize(ref writer, value.HandLeft);
 			_child.Serialize(ref writer, value.HandRight);
 		}

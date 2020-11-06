@@ -183,12 +183,14 @@
     <Compile Include="Serialization\IDeltaSerializer.cs" />
     <Compile Include="Serialization\ISerializer.cs" />
     <Compile Include="Serialization\Option.cs" />
-    <Compile Include="Timing\LocalTime.cs" />
-    <Compile Include="Timing\LoopCounter.cs" />
-    <Compile Include="Timing\LoopTimer.cs" />
+    <Compile Include="Timing\Frame Clocks\IFrameClock.cs" />
+    <Compile Include="Timing\Frame Clocks\Render.cs" />
+    <Compile Include="Timing\Frame Clocks\Tick.cs" />
     <Compile Include="Timing\IFixedUpdatable.cs" />
     <Compile Include="Timing\IRenderUpdatable.cs" />
     <Compile Include="Timing\IStartable.cs" />
+    <Compile Include="Timing\LoopCounter.cs" />
+    <Compile Include="Timing\LoopTimer.cs" />
     <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />

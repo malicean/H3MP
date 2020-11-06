@@ -19,16 +19,12 @@ namespace H3MP.Serialization
 
 		public static ISerializer<float> UFloat(float max)
 		{
-			var converter = new UShortFloatConverter(max);
-
-			return new ConverterSerializer<float, ushort>(PrimitiveSerializers.UShort, converter, converter);
+			return TruncatedSerializers.UFloatWithBounds(max, PrimitiveSerializers.UShort).ToBranching(x => x > max, PrimitiveSerializers.Float);
 		}
 
-		public static ISerializer<float> Float(float maxAbs)
+		public static ISerializer<float> Float(float min, float max)
 		{
-			var converter = new ShortFloatConverter(maxAbs);
-
-			return new ConverterSerializer<float, short>(PrimitiveSerializers.Short, converter, converter);
+			return TruncatedSerializers.FloatWithBounds(min, max, PrimitiveSerializers.Short).ToBranching(x => x < min || max < x, PrimitiveSerializers.Float);
 		}
 	}
 }

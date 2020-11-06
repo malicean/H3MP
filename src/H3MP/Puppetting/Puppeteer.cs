@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using H3MP.Extensions;
 using H3MP.Messages;
+using H3MP.Models;
 using H3MP.Peers;
 using H3MP.Timing;
 using H3MP.Utils;
@@ -8,38 +11,42 @@ using UnityEngine;
 
 namespace H3MP.Puppetting
 {
-	public class Puppeteer : IRenderUpdatable, IDisposable
+	public class Puppeteer : IDisposable
 	{
 		private readonly Client _client;
+		private readonly IFrameClock _renderFrame;
 		private readonly Option<Puppet>[] _puppets;
 
 		public readonly Transform Root;
 
 		public WorldSnapshotMessage FittedWorld { get; private set; }
 
-		public Puppeteer(Client client)
+		public Puppeteer(Client client, IFrameClock renderFrame)
 		{
 			_client = client;
+			_renderFrame = renderFrame;
 			_puppets = new Option<Puppet>[client.MaxPlayers];
 
 			Root = new GameObject("Puppeteer").transform;
 			GameObject.DontDestroyOnLoad(Root.gameObject);
+
+			renderFrame.Elapsed += Update;
 		}
 
-		public void HandleWorldDelta(DeltaWorldSnapshotMessage delta)
+		private void Update()
 		{
-			if (!delta.PlayerBodies.MatchSome(out var players))
-			{
-				return;
-			}
+			// TODO: remove constant interp delay, implement dynamic interp delay in Client
+			var delay = 1 * _client.TickStep;
+			var delayed = _renderFrame.Time - delay;
+			var timeSnapshots = ((IEnumerable<KeyValuePair<LocalTickstamp, WorldSnapshotMessage>>) _client.Snapshots).Reverse().Select(x => new KeyValuePair<double, WorldSnapshotMessage>(x.Key.Time, x.Value));
+			FittedWorld = _client.TimeSnapshotsDataFitter.Fit(timeSnapshots, delayed);
 
-			var localID = _client.TickSnapshots.LastOrNone().Unwrap().Value.PlayerID;
-
+			var players = FittedWorld.PlayerBodies;
 			for (var i = 0; i < players.Length; ++i)
 			{
-				if (i == localID)
+				if (i == FittedWorld.PlayerID)
 				{
-					continue;
+					//continue;
 				}
 
 				ref var puppet = ref _puppets[i];
@@ -62,15 +69,6 @@ namespace H3MP.Puppetting
 					}
 				}
 			}
-		}
-
-		public void RenderUpdate()
-		{
-			var now = LocalTime.Now;
-
-			// TODO: remove constant interp delay, implement dynamic interp delay in Client
-			var delay = 3 * _client.TickStep;
-			FittedWorld = _client.TimeSnapshotsDataFitter.Fit(_client.TimeSnapshots, now - delay);
 
 			foreach (var puppet in _puppets.WhereSome())
 			{
@@ -80,6 +78,13 @@ namespace H3MP.Puppetting
 
 		public void Dispose()
 		{
+			_renderFrame.Elapsed -= Update;
+
+			foreach (var puppet in _puppets.WhereSome())
+			{
+				puppet.Dispose();
+			}
+
 			GameObject.Destroy(Root.gameObject);
 		}
 	}

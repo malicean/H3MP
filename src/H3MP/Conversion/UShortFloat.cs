@@ -6,16 +6,16 @@ namespace H3MP.Conversion
 	{
 		private const ushort MAX = ushort.MaxValue;
 
-		private readonly float _maxAbs;
+		private readonly float _max;
 
-		public UShortFloatConverter(float maxAbs)
+		public UShortFloatConverter(float max)
 		{
-			_maxAbs = maxAbs;
+			_max = max;
 		}
 
 		public float Convert(ushort value)
 		{
-			return (float) value / MAX * _maxAbs;
+			return (float) value / MAX * _max;
 		}
 
 		public ushort Convert(float value)
@@ -25,13 +25,12 @@ namespace H3MP.Conversion
 				throw new ArgumentOutOfRangeException(nameof(value), value, "Value must be non-negative.");
 			}
 
-			float conv = value / MAX;
-			if (conv > MAX)
+			if (value > _max)
 			{
-				throw new ArgumentOutOfRangeException(nameof(value), value, $"Value after deflation must be less than or equal to the maximum: {MAX}. Was: {conv:N0}.");
+				throw new ArgumentOutOfRangeException(nameof(value), value, $"Value must be less than or equal to the max value ({_max}).");
 			}
 
-			return (ushort) conv;
+			return (ushort) (value / _max * MAX);
 		}
 	}
 }

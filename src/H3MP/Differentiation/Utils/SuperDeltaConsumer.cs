@@ -22,11 +22,23 @@ namespace H3MP.Differentiation
 		public void Include<TValueChild, TDeltaChild>(Func<TDelta, Option<TDeltaChild>> deltaGetter, Func<TValue, TValueChild> valueGetter, ChildSetter<TValue, TValueChild> valueSetter, IDifferentiator<TValueChild, TDeltaChild> differentiator)
 		{
 			var delta = deltaGetter(_delta);
+			var now = _now.Map(valueGetter);
 
+			TValueChild value;
 			if (delta.MatchSome(out var deltaValue))
 			{
-				valueSetter(ref _body, differentiator.ConsumeDelta(deltaValue, _now.Map(valueGetter)));
+				value = differentiator.ConsumeDelta(deltaValue, now);
 			}
+			else if (now.MatchSome(out var nowValue))
+			{
+				value = nowValue;
+			}
+			else
+			{
+				value = default;
+			}
+
+			valueSetter(ref _body, value);
 		}
 	}
 }

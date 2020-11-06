@@ -21,9 +21,9 @@ namespace H3MP.Conversion
 
 		public static ShortIntConverter ShortInt { get; } = new ShortIntConverter();
 		public static ShortLongConverter ShortLong { get; } = new ShortLongConverter();
-		public static ShortFloatConverter ShortFloat(float maxAbs)
+		public static ShortFloatConverter ShortFloat(float min, float max)
 		{
-			return new ShortFloatConverter(maxAbs);
+			return new ShortFloatConverter(min, max);
 		}
 
 		public static UIntLongConverter UIntLong { get; } = new UIntLongConverter();

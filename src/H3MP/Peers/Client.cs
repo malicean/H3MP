@@ -9,6 +9,7 @@ using H3MP.IO;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Serialization;
+using H3MP.Timing;
 using H3MP.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -18,7 +19,7 @@ namespace H3MP.Peers
 	public class Client : Peer<InputSnapshotMessage, ClientConfig>
 	{
 		public delegate void DeltaSnapshotReceivedHandler(Option<BufferTicks> bufferTicks, uint sentTick, DeltaWorldSnapshotMessage delta);
-		public delegate void SnapshotReceivedHandler(Option<BufferTicks> bufferTicks, uint sentTick, WorldSnapshotMessage snapshot);
+		public delegate void SnapshotReceivedHandler(WorldSnapshotMessage snapshot);
 
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
@@ -29,13 +30,11 @@ namespace H3MP.Peers
 
 		public readonly int MaxPlayers;
 
-		private Option<InputSnapshotMessage> _oldSnapshot;
-		private Option<long> _serverTickOffset;
-		public Option<uint> OffsetTick => _serverTickOffset.MatchSome(out var offset) ? Option.Some((uint) (Tick + offset)) : Option.None<uint>();
+		private Option<InputSnapshotMessage> _lastSent;
+		private Option<WorldSnapshotMessage> _lastReceived;
 
 		public readonly int SnapshotCount;
-		public readonly List<KeyValuePair<uint, WorldSnapshotMessage>> TickSnapshots;
-		public readonly List<KeyValuePair<double, WorldSnapshotMessage>> TimeSnapshots;
+		public readonly List<KeyValuePair<LocalTickstamp, WorldSnapshotMessage>> Snapshots;
 		public readonly IFitter<WorldSnapshotMessage> SnapshotsFitter;
 		public readonly DataSetFitter<uint, WorldSnapshotMessage> TickSnapshotsDataFitter;
 		public readonly DataSetFitter<double, WorldSnapshotMessage> TimeSnapshotsDataFitter;
@@ -44,7 +43,7 @@ namespace H3MP.Peers
 		public event SnapshotReceivedHandler SnapshotUpdated;
 		public event Action<DisconnectInfo> Disconnected;
 
-		public Client(Log log, ClientConfig config, double tickStep, int maxPlayers) : base(log, config, tickStep)
+		public Client(Log log, ClientConfig config, TickFrameClock clock, int maxPlayers) : base(log, config, clock)
 		{
 			_inputDiff = new InputSnapshotMessageDifferentiator();
 			_worldDiff = new WorldSnapshotMessageDifferentiator();
@@ -55,60 +54,18 @@ namespace H3MP.Peers
 
 			MaxPlayers = maxPlayers;
 
-			_oldSnapshot = Option.None<InputSnapshotMessage>();
+			_lastSent = Option.None<InputSnapshotMessage>();
 
-			SnapshotCount = (int) Math.Ceiling(5 / tickStep);
-			TickSnapshots = new List<KeyValuePair<uint, WorldSnapshotMessage>>(SnapshotCount);
-			TimeSnapshots = new List<KeyValuePair<double, WorldSnapshotMessage>>(SnapshotCount);
+			SnapshotCount = (int) Math.Ceiling(5 / clock.DeltaTime);
+			Snapshots = new List<KeyValuePair<LocalTickstamp, WorldSnapshotMessage>>(SnapshotCount);
 			SnapshotsFitter = new WorldSnapshotMessageFitter();
 			TickSnapshotsDataFitter = new DataSetFitter<uint, WorldSnapshotMessage>(Comparer<uint>.Default, InverseFitters.UInt, SnapshotsFitter);
 			TimeSnapshotsDataFitter = new DataSetFitter<double, WorldSnapshotMessage>(Comparer<double>.Default, InverseFitters.Double, SnapshotsFitter);
+			_lastReceived = Option.None<WorldSnapshotMessage>();
 
 			Listener.PeerDisconnectedEvent += InternalDisconnected;
 
-			DeltaSnapshotReceived += UpdateTick;
-		}
-
-		private void UpdateTick(Option<BufferTicks> bufferTicks, uint sentTick, DeltaWorldSnapshotMessage delta)
-		{
-			if (bufferTicks.MatchSome(out var bufferTicksValue))
-			{
-				// TODO: make it work
-				long sentOffset = bufferTicksValue.Queued - bufferTicksValue.Received;
-
-				if (_serverTickOffset.MatchSome(out var offset))
-				{
-					// Adjust via binary exponential decay
-
-					var adjustmentRaw = sentOffset - offset;
-					var adjustmentSoftened = adjustmentRaw > 1 ? adjustmentRaw / 2 : adjustmentRaw;
-
-					_serverTickOffset = Option.Some(offset + adjustmentSoftened);
-				}
-				else
-				{
-					// Tick should already be set at this point, but for the edge case.
-
-					_serverTickOffset = Option.Some(sentOffset);
-				}
-			}
-			else
-			{
-				// RTT: unknown
-
-				_serverTickOffset = Option.Some((long) (sentTick - Tick));
-			}
-
-			// TODO: tie these lists together
-			while (TimeSnapshots.Count > SnapshotCount)
-			{
-				TimeSnapshots.RemoveAt(0);
-			}
-
-			while (TickSnapshots.Count > SnapshotCount)
-			{
-				TickSnapshots.RemoveAt(0);
-			}
+			Simulate += RunSimulation;
 		}
 
 		private void InternalDisconnected(NetPeer peer, DisconnectInfo info)
@@ -132,25 +89,34 @@ namespace H3MP.Peers
 				return;
 			}
 
-			var baseline = TickSnapshots.LastOrNone().Map(x => x.Value);
+			var baseline = Snapshots.LastOrNone().Map(x => x.Value);
 			var snapshot = _worldDiff.ConsumeDelta(delta.Content, baseline);
 
-			TickSnapshots.Add(new KeyValuePair<uint, WorldSnapshotMessage>(delta.SentTick, snapshot));
-			TimeSnapshots.Add(new KeyValuePair<double, WorldSnapshotMessage>(Time, snapshot));
+			// TODO: use sent tick to determine time and tick
+			Snapshots.Add(new KeyValuePair<LocalTickstamp, WorldSnapshotMessage>(new LocalTickstamp(Clock.Time, Clock.Tick), snapshot));
+			_lastReceived = Option.Some(snapshot);
 
 			DeltaSnapshotReceived?.Invoke(delta.Buffer, delta.SentTick, delta.Content);
-			SnapshotUpdated?.Invoke(delta.Buffer, delta.SentTick, snapshot);
+		}
+
+		private void RunSimulation()
+		{
+			if (_lastReceived.MatchSome(out var snapshot))
+			{
+				SnapshotUpdated?.Invoke(snapshot);
+			}
+
+			_lastReceived = Option.None<WorldSnapshotMessage>();
+
+			while (Snapshots.Count > SnapshotCount)
+			{
+				Snapshots.RemoveAt(0);
+			}
 		}
 
 		protected override void SendSnapshot(InputSnapshotMessage snapshot)
 		{
-			// Nothing is sent before world info
-			if (!OffsetTick.MatchSome(out var tick))
-			{
-				return;
-			}
-
-			if (!_inputDiff.CreateDelta(snapshot, _oldSnapshot).MatchSome(out var delta))
+			if (!_inputDiff.CreateDelta(snapshot, _lastSent).MatchSome(out var delta))
 			{
 				return;
 			}
@@ -160,12 +126,13 @@ namespace H3MP.Peers
 
 			_inputSerializer.Serialize(ref writer, new Tickstamped<DeltaInputSnapshotMessage>
 			{
-				Tick = tick,
 				Content = delta
 			});
 
 			writer.Dispose();
 			Net.SendToAll(data, DeliveryMethod.ReliableOrdered);
+
+			_lastSent = Option.Some(snapshot.Copy());
 		}
 
 		public void Connect(IPEndPoint endPoint, ConnectionRequestMessage request)

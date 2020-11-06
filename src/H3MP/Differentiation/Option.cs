@@ -19,29 +19,6 @@ namespace H3MP.Differentiation
 			_differentiator = differentiator;
 		}
 
-		public Option<Option<TDelta>> CreateDelta(Option<TValue> now, Option<Option<TValue>> baseline)
-		{
-			if (baseline.MatchSome(out var baselineValue))
-			{
-				if (now.MatchSome(out var nowValue))
-				{
-					// some -> some
-					return Option.Some(_differentiator.CreateDelta(nowValue, baselineValue));
-				}
-
-				// some -> none
-				return Option.Some(Option.None<TDelta>());
-			}
-			else if (now.MatchSome(out var nowValue))
-			{
-				// none -> some
-				return Option.Some(_differentiator.CreateDelta(nowValue, Option.None<TValue>()));
-			}
-
-			// none -> none
-			return Option.None<Option<TDelta>>();
-		}
-
 		public Option<TValue> ConsumeDelta(Option<TDelta> delta, Option<Option<TValue>> now)
 		{
 			if (now.MatchSome(out var nowValue))
@@ -63,6 +40,29 @@ namespace H3MP.Differentiation
 
 			// none -> none
 			return Option.None<TValue>();
+		}
+
+		public Option<Option<TDelta>> CreateDelta(Option<TValue> now, Option<Option<TValue>> baseline)
+		{
+			if (baseline.MatchSome(out var baselineValue))
+			{
+				if (now.MatchSome(out var nowValue))
+				{
+					// some -> some
+					return Option.Some(_differentiator.CreateDelta(nowValue, baselineValue));
+				}
+
+				// some -> none
+				return Option.Some(Option.None<TDelta>());
+			}
+			else if (now.MatchSome(out var nowValue))
+			{
+				// none -> some
+				return Option.Some(_differentiator.CreateDelta(nowValue, Option.None<TValue>()));
+			}
+
+			// none -> none
+			return Option.None<Option<TDelta>>();
 		}
 	}
 }

@@ -25,9 +25,18 @@ namespace H3MP.Puppetting
 			_handLeft = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
 			_handRight = GameObject.CreatePrimitive(PrimitiveType.Cube).transform;
 
+			_root.parent = puppeteer.Root;
 			_head.parent = _root;
 			_handLeft.parent = _root;
 			_handRight.parent = _root;
+
+			// TODO: make these controllers, delete this foreach
+			foreach (var c in _root.gameObject.GetComponentsInChildren<Collider>())
+			{
+				GameObject.Destroy(c);
+			}
+
+			_head.localScale = _handLeft.localScale = _handRight.localScale = 0.3f * Vector3.one;
 		}
 
 		public void RenderUpdate()
@@ -36,13 +45,11 @@ namespace H3MP.Puppetting
 
 			void SetTransform(Transform transform, TransformMessage data)
 			{
-				transform.localPosition = data.Position;
-				transform.localRotation = data.Rotation;
+				transform.position = data.Position;
+				transform.rotation = data.Rotation;
 			}
 
-			_root.position = player.Root.Position;
-			_root.rotation = player.Root.Rotation;
-			SetTransform(_head, player.Head);
+			SetTransform(_root, player.Head);
 			SetTransform(_handLeft, player.HandLeft);
 			SetTransform(_handRight, player.HandRight);
 		}

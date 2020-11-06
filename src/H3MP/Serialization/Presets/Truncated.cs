@@ -24,14 +24,14 @@ namespace H3MP.Serialization
 
 		public static ISerializer<long> IntAsLong { get; } = new ConverterSerializer<long, int>(PrimitiveSerializers.Int, Converters.IntLong, Converters.IntLong);
 
-		public static ISerializer<float> FloatWithMax(float maxAbs, ISerializer<short> serializer)
+		public static ISerializer<float> FloatWithBounds(float min, float max, ISerializer<short> serializer)
 		{
-			var converter = new ShortFloatConverter(maxAbs);
+			var converter = new ShortFloatConverter(min, max);
 
 			return new ConverterSerializer<float, short>(serializer, converter, converter);
 		}
 
-		public static ISerializer<float> UFloatWithMax(float max, ISerializer<ushort> serializer)
+		public static ISerializer<float> UFloatWithBounds(float max, ISerializer<ushort> serializer)
 		{
 			var converter = new UShortFloatConverter(max);
 

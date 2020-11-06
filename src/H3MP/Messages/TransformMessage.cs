@@ -23,6 +23,12 @@ namespace H3MP.Messages
         {
 			return Position == other.Position && Rotation == other.Rotation;
         }
+
+		public override string ToString()
+		{
+			return Position + " " + Rotation;
+		}
+
     }
 
 	public class TransformMessageFitter : IFitter<TransformMessage>

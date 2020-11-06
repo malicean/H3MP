@@ -13,6 +13,8 @@ using H3MP.Messages;
 using FistVR;
 using UnityEngine;
 using H3MP.Puppetting;
+using System.Diagnostics;
+using H3MP.Timing;
 
 namespace H3MP
 {
@@ -32,6 +34,7 @@ namespace H3MP
 
 		private readonly RootConfig _config;
 		private readonly Logs _logs;
+		private readonly Stopwatch _watch;
 
 		public Version Version { get; }
 
@@ -40,6 +43,8 @@ namespace H3MP
 		public DiscordManager Discord { get; }
 
 		public PeerManager Peers { get; }
+
+		public RenderFrameClock RenderFrame { get; }
 
 		public Option<Puppeteer> Puppeteer { get; private set; }
 
@@ -82,13 +87,14 @@ namespace H3MP
 				}
 
 				_logs = new Logs(NAME, sensitiveLogging);
+				_watch = Stopwatch.StartNew();
 
 				Version = new Version(VERSION);
 				Random = RandomNumberGenerator.Create();
 			}
 
 			Logger.LogDebug("Initializing peer manager...");
-			Peers = new PeerManager(_logs.Peers, _config.Peers, Version, StartCoroutine);
+			Peers = new PeerManager(_logs.Peers, _config.Peers, Version, _watch, StartCoroutine);
 
 			Logger.LogDebug("Initializing Harmony...");
 			{
@@ -101,12 +107,12 @@ namespace H3MP
 			// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 			Discord = new DiscordManager(_logs.Discord, Version);
 
+			RenderFrame = new RenderFrameClock(_watch);
+
 			Puppeteer = Option.None<Puppeteer>();
 
 			Discord.Joined += Joined;
-
 			Peers.ServerCreated += ServerCreated;
-
 			Peers.ClientCreated += ClientCreated;
 			Peers.ClientKilled += ClientKilled;
 		}
@@ -118,7 +124,7 @@ namespace H3MP
 
 		private void ServerCreated(Server server)
 		{
-			server.Ticked += ServerTick;
+			server.Simulate += ServerTick;
 		}
 
 		private void ServerTick()
@@ -138,38 +144,33 @@ namespace H3MP
 
 		private void ClientCreated(Client client)
 		{
-			client.Ticked += ClientTick;
+			client.Simulate += ClientTick;
 			client.DeltaSnapshotReceived += (buffer, serverTick, delta) => Discord.HandleWorldDelta(client, delta);
 
-			Puppeteer = Option.Some(new Puppeteer(client));
+			var puppeteer = new Puppeteer(client, RenderFrame);
+			Puppeteer = Option.Some(puppeteer);
 		}
 
 		private void ClientTick()
 		{
 			var client = Peers.Client.Unwrap();
 
-			var root = GM.CurrentPlayerRoot;
 			var body = GM.CurrentPlayerBody;
 
-			TransformMessage LocalTransform(Transform transform)
+			TransformMessage GetTransform(Transform transform)
 			{
 				return new TransformMessage
 				{
-					Position = transform.localPosition,
-					Rotation = transform.localRotation
+					Position = transform.position,
+					Rotation = transform.rotation
 				};
 			}
 
 			client.LocalSnapshot.Body = new BodyMessage
 			{
-				Root = new TransformMessage
-				{
-					Position = root.position,
-					Rotation = root.rotation
-				},
-				Head = LocalTransform(body.Head),
-				HandLeft = LocalTransform(body.LeftHand),
-				HandRight = LocalTransform(body.RightHand)
+				Head = GetTransform(body.Head),
+				HandLeft = GetTransform(body.LeftHand),
+				HandRight = GetTransform(body.RightHand)
 			};
 		}
 
@@ -179,6 +180,12 @@ namespace H3MP
 
 			activity.Party = default;
 			activity.Secrets = default;
+
+			if (Puppeteer.MatchSome(out var puppeteer))
+			{
+				puppeteer.Dispose();
+				Puppeteer = Option.None<Puppeteer>();
+			}
 		}
 
 		private void Start()
@@ -194,10 +201,7 @@ namespace H3MP
 
 		private void Update()
 		{
-			if (Puppeteer.MatchSome(out var puppeteer))
-			{
-				puppeteer.RenderUpdate();
-			}
+			RenderFrame.Update();
 		}
 
 		private void OnDestroy()

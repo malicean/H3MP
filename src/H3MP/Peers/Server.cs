@@ -12,6 +12,7 @@ using H3MP.IO;
 using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Serialization;
+using H3MP.Timing;
 using H3MP.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -21,7 +22,7 @@ namespace H3MP.Peers
 	public class Server : Peer<WorldSnapshotMessage, HostConfig>
 	{
 		public delegate void DeltaSnapshotReceivedHandler(Husk client, uint clientTick, DeltaInputSnapshotMessage delta);
-		public delegate void SnapshotReceivedHandler(Husk client, uint clientTick, InputSnapshotMessage delta);
+		public delegate void SnapshotReceivedHandler(Husk client, InputSnapshotMessage snapshot);
 
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
@@ -42,7 +43,7 @@ namespace H3MP.Peers
 		public event DeltaSnapshotReceivedHandler DeltaSnapshotProcessed;
 		public event SnapshotReceivedHandler SnapshotUpdated;
 
-		public Server(Log log, HostConfig config, double tickStep, Version version, IPEndPoint publicEndPoint) : base(log, config, tickStep)
+		public Server(Log log, HostConfig config, TickFrameClock clock, Version version, IPEndPoint publicEndPoint) : base(log, config, clock)
 		{
 			var maxPlayers = config.PlayerLimit.Value;
 			var rng = Plugin.Instance.Random;
@@ -55,7 +56,7 @@ namespace H3MP.Peers
 			_worldSerializer = new ResponseTickstampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
 
 			LocalSnapshot.PartyID = Key32.FromRandom(rng);
-			LocalSnapshot.Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng), tickStep, maxPlayers);
+			LocalSnapshot.Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng), Clock.DeltaTime, maxPlayers);
 			LocalSnapshot.Level = HarmonyState.CurrentLevel;
 			LocalSnapshot.PlayerBodies = new Option<BodyMessage>[maxPlayers];
 
@@ -69,7 +70,7 @@ namespace H3MP.Peers
 			Listener.ConnectionRequestEvent += ConnectionRequested;
 			Listener.PeerDisconnectedEvent += PeerDisconnected;
 
-			Ticked += Update;
+			Simulate += UpdateInputs;
 		}
 
 		private void ConnectionRequested(ConnectionRequest request)
@@ -94,9 +95,7 @@ namespace H3MP.Peers
 			catch (Exception e)
 			{
 				Log.Common.LogInfo(rejectionPrefix + "data malformation");
-#if DEBUG
-				Log.Common.LogError("Malformation error: " + e);
-#endif
+				Log.Common.LogDebug("Malformation error: " + e);
 
 				request.Reject();
 				return;
@@ -194,40 +193,44 @@ namespace H3MP.Peers
 			husk.InputBuffer.Enqueue(new QueueTickstamped<DeltaInputSnapshotMessage>
 			{
 				ReceivedTick = delta.Tick,
-				QueuedTick = Tick,
+				//QueuedTick = Clock.Tick,
 				Content = delta.Content
 			});
 		}
 
-		private void Update()
+		private void UpdateInputs()
 		{
 			foreach (var husk in ConnectedHusks)
 			{
-				if (husk.InputBuffer.Count > 0)
+				if (husk.InputBuffer.Count > 1)
 				{
-					husk.InputIsDuplicated = false;
-					husk.InputBufferSize = Math.Min(1, husk.InputBufferSize - 1);
-
-					var delta = husk.InputBuffer.Dequeue();
-					var snapshot = _inputDiff.ConsumeDelta(delta.Content, husk.Input.Map(x => x.Content));
-					var input = new QueueTickstamped<InputSnapshotMessage>
+					InputSnapshotMessage finalInput;
+					do
 					{
-						ReceivedTick = delta.ReceivedTick,
-						QueuedTick = delta.QueuedTick,
-						Content = snapshot
-					};
+						var delta = husk.InputBuffer.Dequeue();
+						var snapshot = _inputDiff.ConsumeDelta(delta.Content, husk.Input.Map(x => x.Content));
+						var input = new QueueTickstamped<InputSnapshotMessage>
+						{
+							ReceivedTick = delta.ReceivedTick,
+							QueuedTick = delta.QueuedTick,
+							Content = snapshot
+						};
 
-					husk.Input = Option.Some(input);
+						husk.Input = Option.Some(input);
+						finalInput = input.Content;
+						husk.InputIsDuplicated = false;
 
-					DeltaSnapshotProcessed?.Invoke(husk, delta.ReceivedTick, delta.Content);
-					SnapshotUpdated?.Invoke(husk, input.ReceivedTick, input.Content);
+						DeltaSnapshotProcessed?.Invoke(husk, delta.ReceivedTick, delta.Content);
+					} while (husk.InputBuffer.Count > 1);
+
+					SnapshotUpdated?.Invoke(husk, finalInput);
 				}
 				else if (husk.Input.MatchSome(out var input))
 				{
 					husk.InputIsDuplicated = true;
-					++husk.InputBufferSize;
 
-					SnapshotUpdated?.Invoke(husk, input.ReceivedTick, input.Content);
+
+					SnapshotUpdated?.Invoke(husk, input.Content);
 				}
 			}
 		}
@@ -252,7 +255,7 @@ namespace H3MP.Peers
 						Received = x.ReceivedTick,
 						Queued = x.QueuedTick
 					}),
-					SentTick = Tick,
+					//SentTick = Tick,
 					Content = delta
 				});
 
@@ -277,7 +280,6 @@ namespace H3MP.Peers
 			public readonly bool IsAdmin;
 
 			public readonly Queue<QueueTickstamped<DeltaInputSnapshotMessage>> InputBuffer;
-			public int InputBufferSize;
 
 			public bool InputIsDuplicated;
 			public Option<QueueTickstamped<InputSnapshotMessage>> Input;
@@ -290,8 +292,8 @@ namespace H3MP.Peers
 				IsAdmin = isAdmin;
 
 				InputBuffer = new Queue<QueueTickstamped<DeltaInputSnapshotMessage>>();
-				InputBufferSize = 1;
 
+				InputIsDuplicated = false;
 				Input = Option.None<QueueTickstamped<InputSnapshotMessage>>();
 				LastSent = Option.None<WorldSnapshotMessage>();
 			}

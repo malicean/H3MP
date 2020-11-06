@@ -7,36 +7,61 @@ namespace H3MP.Conversion
 		private const short MAX = short.MaxValue;
 		private const short MIN = short.MinValue;
 
-		private readonly float _maxAbs;
+		private readonly float _min;
+		private readonly float _max;
 
-		public ShortFloatConverter(float maxAbs)
+		public ShortFloatConverter(float min, float max)
 		{
-			_maxAbs = maxAbs;
+			_min = min;
+			_max = max;
 		}
 
 		public float Convert(short value)
 		{
-			return value < 0
-				? (float) value / MIN * _maxAbs
-				: (float) value / MAX * _maxAbs;
+			short conversion;
+			float deflation;
+
+			if (value < 0)
+			{
+				conversion = MIN;
+				deflation = _min;
+			}
+			else
+			{
+				conversion = MAX;
+				deflation = _max;
+			}
+
+			return (float) value / conversion * deflation;
 		}
 
 		public short Convert(float value)
 		{
-			float conv = value / _maxAbs;
-			if (conv < 0)
-			{
-				if (conv < MIN)
-				{
-					throw new ArgumentOutOfRangeException(nameof(value), value, $"Value after deflation must be greater than or equal to the minimum: {MIN}. Was: {conv:N0}.");
-				}
-			}
-			else if (conv > MAX)
-			{
-				throw new ArgumentOutOfRangeException(nameof(value), value, $"Value after deflation must be less than or equal to the maximum: {MAX}. Was: {conv:N0}.");
-			}
+			float deflation;
+			short conversion;
 
-			return (short) conv;
+			if (value < 0)
+			{
+				if (value < _min)
+				{
+					throw new ArgumentOutOfRangeException(nameof(value), value, $"Value must be greater than or equal to the min value ({_min}).");
+				}
+
+				deflation = _min;
+				conversion = MIN;
+			}
+			else
+			{
+				if (value > _max)
+				{
+					throw new ArgumentOutOfRangeException(nameof(value), value, $"Value must be less than or equal to the max value ({_max}).");
+				}
+
+				deflation = _max;
+				conversion = MAX;
+			}
+			
+			return (short) (value / deflation * conversion);
 		}
 	}
 }

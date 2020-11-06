@@ -1,6 +1,4 @@
 using System;
-using BepInEx.Logging;
-using H3MP.Differentiation;
 using H3MP.IO;
 using H3MP.Timing;
 using H3MP.Utils;
@@ -8,59 +6,43 @@ using LiteNetLib;
 
 namespace H3MP.Peers
 {
-	public abstract class Peer<TSnapshot, TConfig> : IFixedUpdatable, IDisposable where TSnapshot : ICopyable<TSnapshot>, new()
+	public abstract class Peer<TSnapshot, TConfig> : IDisposable where TSnapshot : ICopyable<TSnapshot>, new()
     {
-		private readonly LoopTimer _tickTimer;
-#if DEBUG
-		private readonly LoopTimer _statsTimer;
-#endif
-
 		private bool _disposed;
 
+		protected readonly TickFrameClock Clock;
 		protected readonly Log Log;
 		protected readonly TConfig Config;
 
 		protected readonly EventBasedNetListener Listener;
 		protected readonly NetManager Net;
 
-		public readonly double TickStep;
-		public uint Tick { get; private set; }
-		public double Time { get; private set; }
-
 		public TSnapshot LocalSnapshot;
 
-		public event Action Ticked;
+		public double TickStep => Clock.DeltaTime;
+
+		public event Action Simulate;
 		public event Action DataUnread;
 
-		public Peer(Log log, TConfig config, double tickStep)
+		public Peer(Log log, TConfig config, TickFrameClock clock)
 		{
-			var startTime = LocalTime.Now;
-			_tickTimer = new LoopTimer(tickStep, startTime);
-#if DEBUG
-			_statsTimer = new LoopTimer(60, startTime);
-#endif
-
 			Log = log;
 			Config = config;
+			Clock = clock;
 
 			Listener = new EventBasedNetListener();
 			Net = new NetManager(Listener)
 			{
-				AutoRecycle = true,
-#if DEBUG
-				EnableStatistics = true
-#endif
+				AutoRecycle = true
 			};
-
-			TickStep = tickStep;
-			Tick = 0;
-			Time = startTime;
 
 			LocalSnapshot = new TSnapshot();
 
-			Listener.NetworkReceiveEvent += NetworkReceived;
 			Listener.PeerConnectedEvent += Connected;
 			Listener.PeerDisconnectedEvent += Disconnected;
+			Listener.NetworkReceiveEvent += NetworkReceived;
+
+			Clock.Elapsed += RunTick;
 		}
 
 		private void Connected(NetPeer peer)
@@ -87,36 +69,6 @@ namespace H3MP.Peers
 			}
 		}
 
-		private void NetUpdate()
-		{
-			var time = LocalTime.Now;
-			if (!_tickTimer.TryCycle(time))
-			{
-				return;
-			}
-
-			Time = time;
-
-			Net.PollEvents();
-			Ticked?.Invoke();
-			SendSnapshot(LocalSnapshot);
-
-			++Tick;
-		}
-
-#if DEBUG
-		private void StatsUpdate()
-		{
-			if (!_statsTimer.TryCycle(LocalTime.Now))
-			{
-				return;
-			}
-
-			Log.Common.LogDebug("\n" + Net.Statistics.ToString());
-			Net.Statistics.Reset();
-		}
-#endif
-
 		private void NetworkReceived(NetPeer peer, NetPacketReader data, DeliveryMethod deliveryMethod)
 		{
 			var reader = new BitPackReader(data);
@@ -133,16 +85,17 @@ namespace H3MP.Peers
 
 		protected abstract void SendSnapshot(TSnapshot snapshot);
 
-        public virtual void FixedUpdate()
-        {
-			NetUpdate();
-#if DEBUG
-			StatsUpdate();
-#endif
-        }
+		public void RunTick()
+		{
+			Net.PollEvents();
+			Simulate?.Invoke();
+			SendSnapshot(LocalSnapshot);
+		}
 
 		protected virtual void DisposeSafe()
 		{
+			Clock.Elapsed -= RunTick;
+
 			Net.DisconnectAll();
 			Net.Stop();
 		}

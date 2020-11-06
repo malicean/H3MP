@@ -53,7 +53,7 @@ namespace H3MP.Differentiation
 			{
 				if (now.Length != baselineArray.Length)
 				{
-					throw new FormatException("Now array and baseline array have mismatching lengths.");
+					throw new FormatException("Now array and baseline array must have mismatching lengths.");
 				}
 
 				for (var i = 0; i < deltas.Length; ++i)

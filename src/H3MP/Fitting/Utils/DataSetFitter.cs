@@ -22,83 +22,80 @@ namespace H3MP.Fitting
 			return _valueFitter.Fit(a.Value, b.Value, t);
 		}
 
-		private TValue FitAsHead(List<KeyValuePair<TTime, TValue>> dataSet, int head, TTime time)
+		public TValue Fit(IEnumerable<KeyValuePair<TTime, TValue>> dataSet, TTime time)
 		{
-			var first = dataSet[head - 1];
-			var second = dataSet[head];
-
-			return Fit(first, second, time);
-		}
-
-		public TValue Fit(List<KeyValuePair<TTime, TValue>> dataSet, TTime time)
-		{
-			if (dataSet.Count == 0)
+			using (var enumerator = dataSet.GetEnumerator())
 			{
-				throw new InvalidOperationException("No data exists to fit.");
-			}
+				if (!enumerator.MoveNext())
+				{
+					throw new InvalidOperationException("No data exists to fit.");
+				}
 
-			var i = dataSet.Count - 1;
-			var last = dataSet[i];
+				var latest = enumerator.Current;
 
-			// only 1 data point
-			if (i == 0)
-			{
-				return last.Value;
-			}
+				// only 1 data point
+				if (!enumerator.MoveNext())
+				{
+					return latest.Value;
+				}
 
-			// [last, infinity]
-			switch (_timeComparer.Compare(time, last.Key))
-			{
-				case -1:
-					break;
-				case 0:
-					return last.Value;
-				case 1:
-					return FitAsHead(dataSet, i, time);
+				var a = enumerator.Current;
 
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
-
-			// (first, last)
-			for (; i > 0; --i)
-			{
-				var a = dataSet[i - 1];
-				var b = dataSet[i];
-
+				// [latest, infinity)
 				switch (_timeComparer.Compare(time, a.Key))
 				{
 					case -1:
-						continue;
-					case 0:
-						return a.Value;
-					case 1:
-						// ahead
 						break;
+					case 0:
+						return latest.Value;
+					case 1:
+						return Fit(a, latest, time);
 
 					default:
 						throw new ArgumentOutOfRangeException();
 				}
 
-				switch (_timeComparer.Compare(time, b.Key))
+				// (oldest, latest)
+				var b = latest;
+				while (enumerator.MoveNext())
 				{
-					case -1:
-						// before
-						break;
-					case 0:
-						throw new NotImplementedException("This should never occur; the previous iteration should handle a time that is equal to the current head (then tail).");
-					case 1:
-						throw new NotImplementedException("This should never occur; the previous iterations should handle any time that is ahead of the current iteration.");
+					b = a;
+					a = enumerator.Current;
 
-					default:
-						throw new ArgumentOutOfRangeException();
+					switch (_timeComparer.Compare(time, a.Key))
+					{
+						case -1:
+							continue;
+						case 0:
+							return a.Value;
+						case 1:
+							// ahead
+							break;
+
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
+
+					switch (_timeComparer.Compare(time, b.Key))
+					{
+						case -1:
+							// before
+							break;
+						case 0:
+							throw new NotImplementedException("This should never occur; the previous iteration should handle a time that is equal to the current head (then tail).");
+						case 1:
+							throw new NotImplementedException("This should never occur; the previous iterations should handle any time that is ahead of the current iteration.");
+
+						default:
+							throw new ArgumentOutOfRangeException();
+					}
+
+					return Fit(a, b, time);
 				}
 
+				// (negative infinity, oldest]
 				return Fit(a, b, time);
 			}
-
-			// [negative infinity, first]
-			return FitAsHead(dataSet, 1, time);
 		}
 	}
 }

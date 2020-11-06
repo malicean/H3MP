@@ -51,14 +51,17 @@ namespace H3MP.Serialization
 		{
 			QuaternionComponent component = QuaternionComponent.X;
 			value = rotation.x;
+			var valueAbs = Math.Abs(value);
 
 			for (var i = 1; i < 4; ++i)
 			{
 				var iValue = rotation[i];
-				if (iValue > value)
+				var iValueAbs = Math.Abs(iValue);
+				if (iValueAbs > valueAbs)
 				{
 					component = (QuaternionComponent) i;
 					value = iValue;
+					valueAbs = iValueAbs;
 				}
 			}
 

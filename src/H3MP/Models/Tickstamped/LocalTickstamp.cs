@@ -3,12 +3,17 @@ namespace H3MP.Models
 	public readonly struct LocalTickstamp
 	{
 		public readonly double Time;
-		public readonly uint Tick;
+		public readonly long Tick;
 
-		public LocalTickstamp(double time, uint tick)
+		public LocalTickstamp(double time, long tick)
 		{
 			Time = time;
 			Tick = tick;
+		}
+
+		public override string ToString()
+		{
+			return "(" + Tick + "@" + Time + ")";
 		}
 	}
 }
