@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using H3MP.Models;
 
 namespace H3MP.Fitting
 {
-	public class DataSetFitter<TTime, TValue>
+	public class DataSetFitter<TStamped, TTime, TValue> where TStamped : IStamped<TTime, TValue>
 	{
 		private readonly IComparer<TTime> _timeComparer;
 		private readonly IInverseFitter<TTime> _timeInverseFitter;
@@ -16,13 +17,13 @@ namespace H3MP.Fitting
 			_valueFitter = valueFitter;
 		}
 
-		private TValue Fit(KeyValuePair<TTime, TValue> a, KeyValuePair<TTime, TValue> b, TTime time)
+		private TValue Fit(TStamped a, TStamped b, TTime time)
 		{
-			var t = _timeInverseFitter.InverseFit(a.Key, b.Key, time);
-			return _valueFitter.Fit(a.Value, b.Value, t);
+			var t = _timeInverseFitter.InverseFit(a.Stamp, b.Stamp, time);
+			return _valueFitter.Fit(a.Content, b.Content, t);
 		}
 
-		public TValue Fit(IEnumerable<KeyValuePair<TTime, TValue>> dataSet, TTime time)
+		public TValue Fit(IEnumerable<TStamped> dataSet, TTime time)
 		{
 			using (var enumerator = dataSet.GetEnumerator())
 			{
@@ -36,18 +37,18 @@ namespace H3MP.Fitting
 				// only 1 data point
 				if (!enumerator.MoveNext())
 				{
-					return latest.Value;
+					return latest.Content;
 				}
 
 				var a = enumerator.Current;
 
 				// [latest, infinity)
-				switch (_timeComparer.Compare(time, a.Key))
+				switch (_timeComparer.Compare(time, a.Stamp))
 				{
 					case -1:
 						break;
 					case 0:
-						return latest.Value;
+						return latest.Content;
 					case 1:
 						return Fit(a, latest, time);
 
@@ -62,12 +63,12 @@ namespace H3MP.Fitting
 					b = a;
 					a = enumerator.Current;
 
-					switch (_timeComparer.Compare(time, a.Key))
+					switch (_timeComparer.Compare(time, a.Stamp))
 					{
 						case -1:
 							continue;
 						case 0:
-							return a.Value;
+							return a.Content;
 						case 1:
 							// ahead
 							break;
@@ -76,7 +77,7 @@ namespace H3MP.Fitting
 							throw new ArgumentOutOfRangeException();
 					}
 
-					switch (_timeComparer.Compare(time, b.Key))
+					switch (_timeComparer.Compare(time, b.Stamp))
 					{
 						case -1:
 							// before

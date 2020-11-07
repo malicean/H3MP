@@ -105,6 +105,7 @@
     <Compile Include="Fitting\Binary\Threshold.cs" />
     <Compile Include="Fitting\Binary\Oldest.cs" />
     <Compile Include="Fitting\Primitives\Double.cs" />
+    <Compile Include="Fitting\Primitives\Long.cs" />
     <Compile Include="Fitting\Primitives\UInt.cs" />
     <Compile Include="Fitting\Unity\Vector3.cs" />
     <Compile Include="Fitting\Unity\Quaternion.cs" />
@@ -129,11 +130,11 @@
     <Compile Include="Messages\BodyMessage.cs" />
     <Compile Include="Messages\ConnectionRequestMessage.cs" />
     <Compile Include="Messages\TransformMessage.cs" />
-    <Compile Include="Models\Tickstamped\BufferTicks.cs" />
-    <Compile Include="Models\Tickstamped\LocalTickstamp.cs" />
-    <Compile Include="Models\Tickstamped\QueueTickstamped.cs" />
-    <Compile Include="Models\Tickstamped\ResponseTickstamped.cs" />
-    <Compile Include="Models\Tickstamped\Tickstamped.cs" />
+    <Compile Include="Models\Stamped\IStamped.cs" />
+    <Compile Include="Models\Stamped\TickStamped.cs" />
+    <Compile Include="Models\Stamped\TickTimeStamp.cs" />
+    <Compile Include="Models\Stamped\TickTimeStamped.cs" />
+    <Compile Include="Models\Stamped\TimeStamped.cs" />
     <Compile Include="Models\DoubleRange.cs" />
     <Compile Include="Models\JoinSecret.cs" />
     <Compile Include="Models\Key32.cs" />
@@ -146,11 +147,9 @@
     <Compile Include="Puppetting\Puppeteer.cs" />
     <Compile Include="Serialization\Array\Dynamic.cs" />
     <Compile Include="Serialization\Array\Fixed.cs" />
-    <Compile Include="Serialization\Models\Tickstamped\BufferTicks.cs" />
-    <Compile Include="Serialization\Models\Tickstamped\ResponseTickstamped.cs" />
-    <Compile Include="Serialization\Models\Tickstamped\Tickstamped.cs" />
     <Compile Include="Serialization\Models\JoinSecret.cs" />
     <Compile Include="Serialization\Models\Key32.cs" />
+    <Compile Include="Serialization\Models\TickStamped.cs" />
     <Compile Include="Serialization\Presets\Array.cs" />
     <Compile Include="Serialization\Presets\Custom.cs" />
     <Compile Include="Serialization\Presets\Packed.cs" />

@@ -18,26 +18,26 @@ namespace H3MP.Peers
 {
 	public class Client : Peer<InputSnapshotMessage, ClientConfig>
 	{
-		public delegate void DeltaSnapshotReceivedHandler(Option<BufferTicks> bufferTicks, uint sentTick, DeltaWorldSnapshotMessage delta);
-		public delegate void SnapshotReceivedHandler(WorldSnapshotMessage snapshot);
+		public delegate void DeltaSnapshotReceivedHandler(TickTimeStamped<DeltaWorldSnapshotMessage> delta);
+		public delegate void SnapshotReceivedHandler(TickTimeStamped<WorldSnapshotMessage> snapshot);
 
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
 
 		private readonly ISerializer<ConnectionRequestMessage> _requestSerializer;
-		private readonly ISerializer<Tickstamped<DeltaInputSnapshotMessage>> _inputSerializer;
-		private readonly ISerializer<ResponseTickstamped<DeltaWorldSnapshotMessage>> _worldSerializer;
+		private readonly ISerializer<TickStamped<DeltaInputSnapshotMessage>> _inputSerializer;
+		private readonly ISerializer<TickStamped<DeltaWorldSnapshotMessage>> _worldSerializer;
 
 		public readonly int MaxPlayers;
 
 		private Option<InputSnapshotMessage> _lastSent;
-		private Option<WorldSnapshotMessage> _lastReceived;
+		private Option<TickTimeStamped<WorldSnapshotMessage>> _lastReceived;
 
 		public readonly int SnapshotCount;
-		public readonly List<KeyValuePair<LocalTickstamp, WorldSnapshotMessage>> Snapshots;
+		public readonly List<TickTimeStamped<WorldSnapshotMessage>> Snapshots;
 		public readonly IFitter<WorldSnapshotMessage> SnapshotsFitter;
-		public readonly DataSetFitter<uint, WorldSnapshotMessage> TickSnapshotsDataFitter;
-		public readonly DataSetFitter<double, WorldSnapshotMessage> TimeSnapshotsDataFitter;
+		public readonly DataSetFitter<TickStamped<WorldSnapshotMessage>, long, WorldSnapshotMessage> TickSnapshotsDataFitter;
+		public readonly DataSetFitter<TimeStamped<WorldSnapshotMessage>, double, WorldSnapshotMessage> TimeSnapshotsDataFitter;
 
 		public event DeltaSnapshotReceivedHandler DeltaSnapshotReceived;
 		public event SnapshotReceivedHandler SnapshotUpdated;
@@ -49,19 +49,19 @@ namespace H3MP.Peers
 			_worldDiff = new WorldSnapshotMessageDifferentiator();
 
 			_requestSerializer = new ConnectionRequestSerializer();
-			_inputSerializer = new TickstampedSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
-			_worldSerializer = new ResponseTickstampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
+			_inputSerializer = new TickStampedSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
+			_worldSerializer = new TickStampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
 
 			MaxPlayers = maxPlayers;
 
 			_lastSent = Option.None<InputSnapshotMessage>();
+			_lastReceived = Option.None<TickTimeStamped<WorldSnapshotMessage>>();
 
 			SnapshotCount = (int) Math.Ceiling(5 / clock.DeltaTime);
-			Snapshots = new List<KeyValuePair<LocalTickstamp, WorldSnapshotMessage>>(SnapshotCount);
+			Snapshots = new List<TickTimeStamped<WorldSnapshotMessage>>(SnapshotCount);
 			SnapshotsFitter = new WorldSnapshotMessageFitter();
-			TickSnapshotsDataFitter = new DataSetFitter<uint, WorldSnapshotMessage>(Comparer<uint>.Default, InverseFitters.UInt, SnapshotsFitter);
-			TimeSnapshotsDataFitter = new DataSetFitter<double, WorldSnapshotMessage>(Comparer<double>.Default, InverseFitters.Double, SnapshotsFitter);
-			_lastReceived = Option.None<WorldSnapshotMessage>();
+			TickSnapshotsDataFitter = new DataSetFitter<TickStamped<WorldSnapshotMessage>, long, WorldSnapshotMessage>(Comparer<long>.Default, InverseFitters.Long, SnapshotsFitter);
+			TimeSnapshotsDataFitter = new DataSetFitter<TimeStamped<WorldSnapshotMessage>, double, WorldSnapshotMessage>(Comparer<double>.Default, InverseFitters.Double, SnapshotsFitter);
 
 			Listener.PeerDisconnectedEvent += InternalDisconnected;
 
@@ -75,7 +75,7 @@ namespace H3MP.Peers
 
 		protected override void ReceiveDelta(NetPeer peer, ref BitPackReader reader)
 		{
-			ResponseTickstamped<DeltaWorldSnapshotMessage> delta;
+			TickStamped<DeltaWorldSnapshotMessage> delta;
 			try
 			{
 				delta = _worldSerializer.Deserialize(ref reader);
@@ -89,14 +89,18 @@ namespace H3MP.Peers
 				return;
 			}
 
-			var baseline = Snapshots.LastOrNone().Map(x => x.Value);
+			var baseline = Snapshots.LastOrNone().Map(x => x.Content);
 			var snapshot = _worldDiff.ConsumeDelta(delta.Content, baseline);
 
-			// TODO: use sent tick to determine time and tick
-			Snapshots.Add(new KeyValuePair<LocalTickstamp, WorldSnapshotMessage>(new LocalTickstamp(Clock.Time, Clock.Tick), snapshot));
-			_lastReceived = Option.Some(snapshot);
+			// TODO: use sent tick to determine time
+			var stamp = new TickTimeStamp(delta.Stamp, Clock.Time);
+			var deltaStamped = new TickTimeStamped<DeltaWorldSnapshotMessage>(stamp, delta.Content);
+			var snapshotStamped = new TickTimeStamped<WorldSnapshotMessage>(stamp, snapshot);
+			
+			Snapshots.Add(snapshotStamped);
+			_lastReceived = Option.Some(snapshotStamped);
 
-			DeltaSnapshotReceived?.Invoke(delta.Buffer, delta.SentTick, delta.Content);
+			DeltaSnapshotReceived?.Invoke(deltaStamped);
 		}
 
 		private void RunSimulation()
@@ -106,7 +110,7 @@ namespace H3MP.Peers
 				SnapshotUpdated?.Invoke(snapshot);
 			}
 
-			_lastReceived = Option.None<WorldSnapshotMessage>();
+			_lastReceived = Option.None<TickTimeStamped<WorldSnapshotMessage>>();
 
 			while (Snapshots.Count > SnapshotCount)
 			{
@@ -124,10 +128,8 @@ namespace H3MP.Peers
 			var data = new NetDataWriter();
 			var writer = new BitPackWriter(data);
 
-			_inputSerializer.Serialize(ref writer, new Tickstamped<DeltaInputSnapshotMessage>
-			{
-				Content = delta
-			});
+			var stamped = new TickStamped<DeltaInputSnapshotMessage>(Clock.Tick, delta);
+			_inputSerializer.Serialize(ref writer, stamped);
 
 			writer.Dispose();
 			Net.SendToAll(data, DeliveryMethod.ReliableOrdered);

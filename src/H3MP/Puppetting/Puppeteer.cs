@@ -43,8 +43,8 @@ namespace H3MP.Puppetting
 			// TODO: remove constant interp delay, implement dynamic interp delay in Client
 			var delay = 1 * _client.TickStep;
 			var delayed = _renderFrame.Time - delay;
-			var timeSnapshots = _client.Snapshots.FastReverse().Select(x => new KeyValuePair<double, WorldSnapshotMessage>(x.Key.Time, x.Value));
-			
+			var timeSnapshots = _client.Snapshots.FastReverse().Select(x => x.ToTime());
+
 			FittedWorld = _client.TimeSnapshotsDataFitter.Fit(timeSnapshots, delayed);
 
 			var players = FittedWorld.PlayerBodies;

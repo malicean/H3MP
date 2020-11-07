@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Security.Cryptography;
-using BepInEx.Logging;
 using H3MP.Configs;
 using H3MP.Differentiation;
 using H3MP.Extensions;
-using H3MP.Fitting;
 using H3MP.HarmonyPatches;
 using H3MP.IO;
 using H3MP.Messages;
@@ -21,15 +18,15 @@ namespace H3MP.Peers
 {
 	public class Server : Peer<WorldSnapshotMessage, HostConfig>
 	{
-		public delegate void DeltaSnapshotReceivedHandler(Husk client, uint clientTick, DeltaInputSnapshotMessage delta);
-		public delegate void SnapshotReceivedHandler(Husk client, InputSnapshotMessage snapshot);
+		public delegate void DeltaSnapshotReceivedHandler(Husk client, long clientTick, DeltaInputSnapshotMessage delta);
+		public delegate void SnapshotReceivedHandler(Husk client, long clientTick, InputSnapshotMessage snapshot);
 
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 
 		private readonly ISerializer<ConnectionRequestMessage> _requestSerializer;
-		private readonly ISerializer<Tickstamped<DeltaInputSnapshotMessage>> _inputSerializer;
-		private readonly ISerializer<ResponseTickstamped<DeltaWorldSnapshotMessage>> _worldSerializer;
+		private readonly ISerializer<TickStamped<DeltaInputSnapshotMessage>> _inputSerializer;
+		private readonly ISerializer<TickStamped<DeltaWorldSnapshotMessage>> _worldSerializer;
 
 		private readonly Version _version;
 		public readonly Key32 AdminKey;
@@ -52,8 +49,8 @@ namespace H3MP.Peers
 			_inputDiff = new InputSnapshotMessageDifferentiator();
 
 			_requestSerializer = new ConnectionRequestSerializer();
-			_inputSerializer = new TickstampedSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
-			_worldSerializer = new ResponseTickstampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
+			_inputSerializer = new TickStampedSerializer<DeltaInputSnapshotMessage>(new DeltaInputSnapshotSerializer());
+			_worldSerializer = new TickStampedSerializer<DeltaWorldSnapshotMessage>(new DeltaWorldSnapshotSerializer(maxPlayers));
 
 			LocalSnapshot.PartyID = Key32.FromRandom(rng);
 			LocalSnapshot.Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng), Clock.DeltaTime, maxPlayers);
@@ -168,7 +165,7 @@ namespace H3MP.Peers
 		{
 			var husk = Husks[_peerIDs[peer]].Unwrap();
 
-			Tickstamped<DeltaInputSnapshotMessage> delta;
+			TickStamped<DeltaInputSnapshotMessage> delta;
 			try
 			{
 				delta = _inputSerializer.Deserialize(ref reader);
@@ -190,12 +187,7 @@ namespace H3MP.Peers
 				return;
 			}
 
-			husk.InputBuffer.Enqueue(new QueueTickstamped<DeltaInputSnapshotMessage>
-			{
-				ReceivedTick = delta.Tick,
-				//QueuedTick = Clock.Tick,
-				Content = delta.Content
-			});
+			husk.InputBuffer.Enqueue(delta);
 		}
 
 		private void UpdateInputs()
@@ -204,33 +196,24 @@ namespace H3MP.Peers
 			{
 				if (husk.InputBuffer.Count > 1)
 				{
-					InputSnapshotMessage finalInput;
+					TickStamped<InputSnapshotMessage> finalInput;
 					do
 					{
 						var delta = husk.InputBuffer.Dequeue();
 						var snapshot = _inputDiff.ConsumeDelta(delta.Content, husk.Input.Map(x => x.Content));
-						var input = new QueueTickstamped<InputSnapshotMessage>
-						{
-							ReceivedTick = delta.ReceivedTick,
-							QueuedTick = delta.QueuedTick,
-							Content = snapshot
-						};
+						var stamped = delta.WithContent(snapshot);
 
-						husk.Input = Option.Some(input);
-						finalInput = input.Content;
-						husk.InputIsDuplicated = false;
+						husk.Input = Option.Some(stamped);
+						finalInput = stamped;
 
-						DeltaSnapshotProcessed?.Invoke(husk, delta.ReceivedTick, delta.Content);
+						DeltaSnapshotProcessed?.Invoke(husk, delta.Stamp, delta.Content);
 					} while (husk.InputBuffer.Count > 1);
 
-					SnapshotUpdated?.Invoke(husk, finalInput);
+					SnapshotUpdated?.Invoke(husk, finalInput.Stamp, finalInput.Content);
 				}
 				else if (husk.Input.MatchSome(out var input))
 				{
-					husk.InputIsDuplicated = true;
-
-
-					SnapshotUpdated?.Invoke(husk, input.Content);
+					SnapshotUpdated?.Invoke(husk, input.Stamp, input.Content);
 				}
 			}
 		}
@@ -246,18 +229,10 @@ namespace H3MP.Peers
 					continue;
 				}
 
+				var stamped = new TickStamped<DeltaWorldSnapshotMessage>(Clock.Tick, delta);
+
 				var writer = new BitPackWriter(data);
-				_worldSerializer.Serialize(ref writer, new ResponseTickstamped<DeltaWorldSnapshotMessage>
-				{
-					DuplicatedInput = husk.InputIsDuplicated,
-					Buffer = husk.Input.Map(x => new BufferTicks
-					{
-						Received = x.ReceivedTick,
-						Queued = x.QueuedTick
-					}),
-					//SentTick = Tick,
-					Content = delta
-				});
+				_worldSerializer.Serialize(ref writer, stamped);
 
 				writer.Dispose();
 				husk.Peer.Send(data, DeliveryMethod.ReliableOrdered);
@@ -279,10 +254,9 @@ namespace H3MP.Peers
 			public readonly NetPeer Peer;
 			public readonly bool IsAdmin;
 
-			public readonly Queue<QueueTickstamped<DeltaInputSnapshotMessage>> InputBuffer;
+			public readonly Queue<TickStamped<DeltaInputSnapshotMessage>> InputBuffer;
 
-			public bool InputIsDuplicated;
-			public Option<QueueTickstamped<InputSnapshotMessage>> Input;
+			public Option<TickStamped<InputSnapshotMessage>> Input;
 			public Option<WorldSnapshotMessage> LastSent;
 
 			public Husk(int id, NetPeer peer, bool isAdmin)
@@ -291,10 +265,9 @@ namespace H3MP.Peers
 				Peer = peer;
 				IsAdmin = isAdmin;
 
-				InputBuffer = new Queue<QueueTickstamped<DeltaInputSnapshotMessage>>();
+				InputBuffer = new Queue<TickStamped<DeltaInputSnapshotMessage>>();
 
-				InputIsDuplicated = false;
-				Input = Option.None<QueueTickstamped<InputSnapshotMessage>>();
+				Input = Option.None<TickStamped<InputSnapshotMessage>>();
 				LastSent = Option.None<WorldSnapshotMessage>();
 			}
 		}

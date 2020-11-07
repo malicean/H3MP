@@ -145,7 +145,7 @@ namespace H3MP
 		private void ClientCreated(Client client)
 		{
 			client.Simulate += ClientTick;
-			client.DeltaSnapshotReceived += (buffer, serverTick, delta) => Discord.HandleWorldDelta(client, delta);
+			client.DeltaSnapshotReceived += delta => Discord.HandleWorldDelta(client, delta.Content);
 
 			var puppeteer = new Puppeteer(client, RenderFrame);
 			Puppeteer = Option.Some(puppeteer);

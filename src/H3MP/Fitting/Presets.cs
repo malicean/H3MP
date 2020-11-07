@@ -20,6 +20,7 @@ namespace H3MP.Fitting
 
 	public static class InverseFitters
 	{
+		public static IInverseFitter<long> Long { get; } = new LongInverseFitter();
 		public static IInverseFitter<uint> UInt { get; } = new UIntInverseFitter();
 		public static IInverseFitter<double> Double { get; } = new DoubleInverseFitter();
 	}
