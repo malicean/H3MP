@@ -4,6 +4,14 @@ using UnityEngine;
 
 namespace H3MP.Serialization
 {
+	public static class QuaternionSerializerExtensions
+	{
+		public static ISerializer<Quaternion> ToQuaternion(this ISerializer<float> @this)
+		{
+			return new QuaternionSerializer(@this);
+		}
+	}
+
 	public class QuaternionSerializer : ISerializer<Quaternion>
 	{
 		private readonly ISerializer<float> _float;
@@ -29,6 +37,14 @@ namespace H3MP.Serialization
 			_float.Serialize(ref writer, value.y);
 			_float.Serialize(ref writer, value.z);
 			_float.Serialize(ref writer, value.w);
+		}
+	}
+
+	public static class SmallestThreeQuaternionSerializerExtensions
+	{
+		public static ISerializer<Quaternion> ToSmallestThreeQuaternion(this ISerializer<float> @this)
+		{
+			return new SmallestThreeQuaternionSerializer(@this);
 		}
 	}
 
@@ -68,7 +84,7 @@ namespace H3MP.Serialization
 			return component;
 		}
 
-		private readonly ISerializer<float> _float;
+		private readonly ISerializer<float> _float; // [-1/sqrt(2), 1/sqrt(2)]
 
 		public SmallestThreeQuaternionSerializer(ISerializer<float> @float)
 		{

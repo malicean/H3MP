@@ -37,7 +37,7 @@ namespace H3MP.Messages
 
 		public InputSnapshotMessageFitter()
 		{
-			_level = BinaryFitter<string>.Instance.ToOption();
+			_level = Fitters.Oldest<string>().ToOption();
 			_bodyVelocity = new BodyMessageFitter();
 		}
 
@@ -59,8 +59,8 @@ namespace H3MP.Messages
 
 		public InputSnapshotMessageDifferentiator()
 		{
-			_level = EqualityDifferentiator<string>.Instance.ToOption();
-			_bodyVelocity = new BodyMessageDifferentiator();
+			_level = Differentiators.Equality<string>().ToOption();
+			_bodyVelocity = new BodyMessageDifferentiator(Differentiators.Equality<TransformMessage>());
 		}
 
 		public InputSnapshotMessage ConsumeDelta(DeltaInputSnapshotMessage delta, Option<InputSnapshotMessage> now)

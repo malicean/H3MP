@@ -28,7 +28,6 @@ namespace H3MP.Messages
 		{
 			return Position + " " + Rotation;
 		}
-
     }
 
 	public class TransformMessageFitter : IFitter<TransformMessage>

@@ -62,11 +62,11 @@ namespace H3MP.Messages
 
 		public WorldSnapshotMessageFitter()
 		{
-			_playerID = BinaryFitter<byte>.Instance;
-			_partyID = BinaryFitter<Key32>.Instance;
-			_secret = BinaryFitter<JoinSecret>.Instance;
+			_playerID = Fitters.Oldest<byte>();
+			_partyID = Fitters.Oldest<Key32>();
+			_secret = Fitters.Oldest<JoinSecret>();
 
-			_level = BinaryFitter<string>.Instance;
+			_level = Fitters.Oldest<string>();
 
 			_playerBodies = new BodyMessageFitter().ToOption().ToFixedArray();
 		}
@@ -99,13 +99,13 @@ namespace H3MP.Messages
 
 		public WorldSnapshotMessageDifferentiator()
 		{
-			_playerID = EqualityDifferentiator<byte>.Instance;
-			_partyID = EqualityDifferentiator<Key32>.Instance;
-			_secret = EqualityDifferentiator<JoinSecret>.Instance;
+			_playerID = Differentiators.Equality<byte>();
+			_partyID = Differentiators.Equality<Key32>();
+			_secret = Differentiators.Equality<JoinSecret>();
 
-			_level = EqualityDifferentiator<string>.Instance;
+			_level = Differentiators.Equality<string>();
 
-			_playerBodies = new BodyMessageDifferentiator().ToOption().ToArray();
+			_playerBodies = new BodyMessageDifferentiator(Differentiators.Equality<TransformMessage>()).ToOption().ToArray();
 		}
 
 		public WorldSnapshotMessage ConsumeDelta(DeltaWorldSnapshotMessage delta, Option<WorldSnapshotMessage> now)

@@ -1,4 +1,3 @@
-using System;
 using H3MP.Differentiation;
 using H3MP.Fitting;
 using H3MP.IO;
@@ -46,11 +45,11 @@ namespace H3MP.Messages
 
 	public class BodyMessageDifferentiator : IDifferentiator<BodyMessage, DeltaBodyMessage>
 	{
-		private readonly TransformMessageDifferentiator _transform;
+		private readonly IDifferentiator<TransformMessage, TransformMessage> _transform;
 
-		public BodyMessageDifferentiator()
+		public BodyMessageDifferentiator(IDifferentiator<TransformMessage, TransformMessage> transform)
 		{
-			_transform = new TransformMessageDifferentiator();
+			_transform = transform;
 		}
 
 		public Option<DeltaBodyMessage> CreateDelta(BodyMessage now, Option<BodyMessage> baseline)
@@ -78,38 +77,32 @@ namespace H3MP.Messages
 
 	public class DeltaBodyMessageSerializer : ISerializer<DeltaBodyMessage>
 	{
-		private ISerializer<Option<TransformMessage>> _root;
-		private ISerializer<Option<TransformMessage>> _child;
+		private ISerializer<Option<TransformMessage>> _transform;
 
 		public DeltaBodyMessageSerializer()
 		{
-			var rot = new SmallestThreeQuaternionSerializer(PackedSerializers.Float(-1, 1));
-			//var rot = new QuaternionSerializer(PrimitiveSerializers.Float);
+			// TODO: optimize this (1.0.0 milestone)
+			var vec = PrimitiveSerializers.Float.ToVector3();
+			var quat = PrimitiveSerializers.Float.ToQuaternion();
 
-			var rootPos = new Vector3Serializer(PackedSerializers.Float(-50, 50)); // In case of sticky jumping
-			//var rootPos = new Vector3Serializer(PrimitiveSerializers.Float);
-			_root = new TransformMessageSerializer(rootPos, rot).ToOption();
-
-			var childPos = new Vector3Serializer(PackedSerializers.Float(-3, 3)); // Accounts for bald eagles and Lebron James
-			//var childPos = new Vector3Serializer(PrimitiveSerializers.Float);
-			_child = new TransformMessageSerializer(childPos, rot).ToOption();
+			_transform = new TransformMessageSerializer(vec, quat).ToOption();
 		}
 
 		public DeltaBodyMessage Deserialize(ref BitPackReader reader)
 		{
 			return new DeltaBodyMessage
 			{
-				Head = _root.Deserialize(ref reader),
-				HandLeft = _child.Deserialize(ref reader),
-				HandRight = _child.Deserialize(ref reader),
+				Head = _transform.Deserialize(ref reader),
+				HandLeft = _transform.Deserialize(ref reader),
+				HandRight = _transform.Deserialize(ref reader),
 			};
 		}
 
 		public void Serialize(ref BitPackWriter writer, DeltaBodyMessage value)
 		{
-			_root.Serialize(ref writer, value.Head);
-			_child.Serialize(ref writer, value.HandLeft);
-			_child.Serialize(ref writer, value.HandRight);
+			_transform.Serialize(ref writer, value.Head);
+			_transform.Serialize(ref writer, value.HandLeft);
+			_transform.Serialize(ref writer, value.HandRight);
 		}
 	}
 }

@@ -3,6 +3,14 @@ using UnityEngine;
 
 namespace H3MP.Serialization
 {
+	public static class Vector3SerializerExtensions
+	{
+		public static ISerializer<Vector3> ToVector3(this ISerializer<float> @this)
+		{
+			return new Vector3Serializer(@this);
+		}
+	}
+
 	public class Vector3Serializer : ISerializer<Vector3>
 	{
 		private readonly ISerializer<float> _float;
