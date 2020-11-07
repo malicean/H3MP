@@ -136,7 +136,7 @@ namespace H3MP
 				return;
 			}
 
-			var netData = new NetDataReader();
+			var netData = new NetDataReader(data);
 			var reader = new BitPackReader(netData);
 			var serializer = CustomSerializers.JoinSecret;
 
