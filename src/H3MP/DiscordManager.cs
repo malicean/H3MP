@@ -168,6 +168,17 @@ namespace H3MP
 			_activityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
 		}
 
+		private static string ToBase64<TValue>(TValue value, ISerializer<TValue> serializer)
+		{
+			var writer = new NetDataWriter();
+			var bits = new BitPackWriter(writer);
+
+			serializer.Serialize(ref bits, value);
+			bits.Dispose();
+
+			return Convert.ToBase64String(writer.Data, 0, writer.Length);
+		}
+
 		public void HandleWorldDelta(Client client, DeltaWorldSnapshotMessage delta)
 		{
 			var activity = Activity;
@@ -177,14 +188,14 @@ namespace H3MP
 			{
 				dirty = true;
 
-				activity.Party.Id = partyID.ToString();
+				activity.Party.Id = ToBase64(partyID, CustomSerializers.Key32);
 			}
 
 			if (delta.Secret.MatchSome(out var secret))
 			{
 				dirty = true;
 
-				activity.Secrets.Join = secret.ToString();
+				activity.Secrets.Join = ToBase64(secret, CustomSerializers.JoinSecret);
 			}
 
 			if (delta.Level.MatchSome(out var level))
