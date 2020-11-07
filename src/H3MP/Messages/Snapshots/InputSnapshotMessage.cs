@@ -16,7 +16,6 @@ namespace H3MP.Messages
 		public InputSnapshotMessage Copy()
 		{
 			var copy = this;
-			copy.Level = Option.None<string>();
 
 			return copy;
 		}

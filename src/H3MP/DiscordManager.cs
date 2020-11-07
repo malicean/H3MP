@@ -18,6 +18,8 @@ namespace H3MP
 		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
 		private const uint STEAM_APP_ID = 450540; // H3VR
 
+		public delegate void JoinHandler(JoinSecret secret);
+
 		// ONLY add scenes if they have a Discord rich presence asset ("scene_" + scene name).
 		private static readonly Dictionary<string, string> _sceneNames = new Dictionary<string, string>
 		{
@@ -70,7 +72,7 @@ namespace H3MP
 			}
 		}
 
-		public event Action<JoinSecret> Joined;
+		public event JoinHandler Joined;
 
 		public DiscordManager(DiscordLogs logs, Version version)
 		{
@@ -179,26 +181,27 @@ namespace H3MP
 			return Convert.ToBase64String(writer.Data, 0, writer.Length);
 		}
 
-		public void HandleWorldDelta(Client client, DeltaWorldSnapshotMessage delta)
+		private void ClientDelta(Client client, TickTimeStamped<DeltaWorldSnapshotMessage> delta)
 		{
+			var content = delta.Content;
 			var activity = Activity;
 			var dirty = false;
 
-			if (delta.PartyID.MatchSome(out var partyID))
+			if (content.PartyID.MatchSome(out var partyID))
 			{
 				dirty = true;
 
 				activity.Party.Id = ToBase64(partyID, CustomSerializers.Key32);
 			}
 
-			if (delta.Secret.MatchSome(out var secret))
+			if (content.Secret.MatchSome(out var secret))
 			{
 				dirty = true;
 
 				activity.Secrets.Join = ToBase64(secret, CustomSerializers.JoinSecret);
 			}
 
-			if (delta.Level.MatchSome(out var level))
+			if (content.Level.Map(x => x.Name).MatchSome(out var level))
 			{
 				dirty = true;
 
@@ -219,7 +222,7 @@ namespace H3MP
 				activity.Assets.LargeText = tooltip;
 			}
 
-			if (delta.PlayerBodies.MatchSome(out var players))
+			if (content.PlayerBodies.MatchSome(out var players))
 			{
 				var playerCount = players.Count(x => x.MatchSome(out var innerDelta) && innerDelta.IsSome);
 				ref var partySize = ref activity.Party.Size.CurrentSize;
@@ -239,6 +242,11 @@ namespace H3MP
 			{
 				Activity = activity;
 			}
+		}
+
+		public void HandleClientCreated(Client client)
+		{
+			client.DeltaSnapshotReceived += ClientDelta;
 		}
 
 		public void FixedUpdate()

@@ -17,10 +17,8 @@ namespace H3MP.HarmonyPatches
 
 				return false;
 			}
-			else
-			{
-				log.LogDebug($"Level load triggered: {levelName}");
-			}
+
+			log.LogDebug($"Level load triggered: {levelName}");
 
 			HarmonyState.CurrentLevel = levelName;
 			return true;

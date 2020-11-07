@@ -16,10 +16,10 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Peers
 {
-	public class Client : Peer<InputSnapshotMessage, ClientConfig>
+	public class Client : Peer<Client, InputSnapshotMessage, ClientConfig>
 	{
-		public delegate void DeltaSnapshotReceivedHandler(TickTimeStamped<DeltaWorldSnapshotMessage> delta);
-		public delegate void SnapshotReceivedHandler(TickTimeStamped<WorldSnapshotMessage> snapshot);
+		public delegate void DeltaSnapshotReceivedHandler(Client client, TickTimeStamped<DeltaWorldSnapshotMessage> delta);
+		public delegate void SnapshotReceivedHandler(Client client, TickTimeStamped<WorldSnapshotMessage> snapshot);
 
 		private readonly IDifferentiator<InputSnapshotMessage, DeltaInputSnapshotMessage> _inputDiff;
 		private readonly IDifferentiator<WorldSnapshotMessage, DeltaWorldSnapshotMessage> _worldDiff;
@@ -38,6 +38,8 @@ namespace H3MP.Peers
 		public readonly IFitter<WorldSnapshotMessage> SnapshotsFitter;
 		public readonly DataSetFitter<TickStamped<WorldSnapshotMessage>, long, WorldSnapshotMessage> TickSnapshotsDataFitter;
 		public readonly DataSetFitter<TimeStamped<WorldSnapshotMessage>, double, WorldSnapshotMessage> TimeSnapshotsDataFitter;
+
+		protected override Client Self => this;
 
 		public event DeltaSnapshotReceivedHandler DeltaSnapshotReceived;
 		public event SnapshotReceivedHandler SnapshotUpdated;
@@ -96,18 +98,18 @@ namespace H3MP.Peers
 			var stamp = new TickTimeStamp(delta.Stamp, Clock.Time);
 			var deltaStamped = new TickTimeStamped<DeltaWorldSnapshotMessage>(stamp, delta.Content);
 			var snapshotStamped = new TickTimeStamped<WorldSnapshotMessage>(stamp, snapshot);
-			
+
 			Snapshots.Add(snapshotStamped);
 			_lastReceived = Option.Some(snapshotStamped);
 
-			DeltaSnapshotReceived?.Invoke(deltaStamped);
+			DeltaSnapshotReceived?.Invoke(this, deltaStamped);
 		}
 
-		private void RunSimulation()
+		private void RunSimulation(Client _)
 		{
 			if (_lastReceived.MatchSome(out var snapshot))
 			{
-				SnapshotUpdated?.Invoke(snapshot);
+				SnapshotUpdated?.Invoke(this, snapshot);
 			}
 
 			_lastReceived = Option.None<TickTimeStamped<WorldSnapshotMessage>>();

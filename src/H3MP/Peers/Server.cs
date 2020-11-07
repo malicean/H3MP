@@ -16,7 +16,7 @@ using LiteNetLib.Utils;
 
 namespace H3MP.Peers
 {
-	public class Server : Peer<WorldSnapshotMessage, HostConfig>
+	public class Server : Peer<Server, WorldSnapshotMessage, HostConfig>
 	{
 		public delegate void DeltaSnapshotReceivedHandler(Husk client, long clientTick, DeltaInputSnapshotMessage delta);
 		public delegate void SnapshotReceivedHandler(Husk client, long clientTick, InputSnapshotMessage snapshot);
@@ -37,6 +37,8 @@ namespace H3MP.Peers
 
 		public IEnumerable<Husk> ConnectedHusks => Husks.WhereSome();
 
+		protected override Server Self => this;
+
 		public event DeltaSnapshotReceivedHandler DeltaSnapshotProcessed;
 		public event SnapshotReceivedHandler SnapshotUpdated;
 
@@ -54,7 +56,7 @@ namespace H3MP.Peers
 
 			LocalSnapshot.PartyID = Key32.FromRandom(rng);
 			LocalSnapshot.Secret = new JoinSecret(version, publicEndPoint, Key32.FromRandom(rng), Clock.DeltaTime, maxPlayers);
-			LocalSnapshot.Level = HarmonyState.CurrentLevel;
+			LocalSnapshot.Level = new LevelInstance(0, HarmonyState.CurrentLevel);
 			LocalSnapshot.PlayerBodies = new Option<BodyMessage>[maxPlayers];
 
 			_version = version;
@@ -68,6 +70,24 @@ namespace H3MP.Peers
 			Listener.PeerDisconnectedEvent += PeerDisconnected;
 
 			Simulate += UpdateInputs;
+			DataUnread += ExcessData;
+		}
+
+		private void ExcessData(NetPeer peer)
+		{
+			if (Log.Sensitive.MatchSome(out var sensitiveLog))
+			{
+				sensitiveLog.LogInfo($"Received excess data from peer ({peer.Id}; {peer.EndPoint})");
+			}
+			else
+			{
+				Log.Common.LogInfo($"Received excess data from peer ({peer.Id})");
+			}
+
+			var id = _peerIDs[peer];
+			var husk = Husks[id].Unwrap();
+
+			Disconnect(husk);
 		}
 
 		private void ConnectionRequested(ConnectionRequest request)
@@ -183,14 +203,14 @@ namespace H3MP.Peers
 
 				Log.Common.LogDebug("Malformation error: " + e);
 
-				Net.DisconnectPeer(peer);
+				Disconnect(husk);
 				return;
 			}
 
 			husk.InputBuffer.Enqueue(delta);
 		}
 
-		private void UpdateInputs()
+		private void UpdateInputs(Server _)
 		{
 			foreach (var husk in ConnectedHusks)
 			{
@@ -246,6 +266,14 @@ namespace H3MP.Peers
 		public void Start(ListenBinding binding)
 		{
 			Net.Start(binding.IPv4, binding.IPv6, binding.Port);
+		}
+
+		public void Disconnect(Husk husk)
+		{
+			_peerIDs.Remove(husk.Peer);
+			Husks[husk.ID] = Option.None<Husk>();
+
+			husk.Peer.Disconnect();
 		}
 
 		public class Husk

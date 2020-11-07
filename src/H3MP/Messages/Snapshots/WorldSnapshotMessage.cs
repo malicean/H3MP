@@ -15,7 +15,7 @@ namespace H3MP.Messages
 		public Key32 PartyID;
 		public JoinSecret Secret;
 
-		public string Level;
+		public LevelInstance Level;
 
 		public Option<BodyMessage>[] PlayerBodies;
 
@@ -43,7 +43,7 @@ namespace H3MP.Messages
 		public Option<Key32> PartyID;
 		public Option<JoinSecret> Secret;
 
-		public Option<string> Level;
+		public Option<LevelInstance> Level;
 
 		public Option<Option<Option<DeltaBodyMessage>>[]> PlayerBodies;
 
@@ -56,7 +56,7 @@ namespace H3MP.Messages
 		private readonly IFitter<Key32> _partyID;
 		private readonly IFitter<JoinSecret> _secret;
 
-		private readonly IFitter<string> _level;
+		private readonly IFitter<LevelInstance> _level;
 
 		private readonly IFitter<Option<BodyMessage>[]> _playerBodies;
 
@@ -66,7 +66,7 @@ namespace H3MP.Messages
 			_partyID = Fitters.Oldest<Key32>();
 			_secret = Fitters.Oldest<JoinSecret>();
 
-			_level = Fitters.Oldest<string>();
+			_level = Fitters.Oldest<LevelInstance>();
 
 			_playerBodies = new BodyMessageFitter().ToOption().ToFixedArray();
 		}
@@ -79,7 +79,7 @@ namespace H3MP.Messages
 			fitter.Include(x => x.PartyID, (ref WorldSnapshotMessage body, Key32 value) => body.PartyID = value, _partyID);
 			fitter.Include(x => x.Secret, (ref WorldSnapshotMessage body, JoinSecret value) => body.Secret = value, _secret);
 
-			fitter.Include(x => x.Level, (ref WorldSnapshotMessage body, string value) => body.Level = value, _level);
+			fitter.Include(x => x.Level, (ref WorldSnapshotMessage body, LevelInstance value) => body.Level = value, _level);
 
 			fitter.Include(x => x.PlayerBodies, (ref WorldSnapshotMessage body, Option<BodyMessage>[] value) => body.PlayerBodies = value, _playerBodies);
 
@@ -93,7 +93,7 @@ namespace H3MP.Messages
 		private readonly IDifferentiator<Key32, Key32> _partyID;
 		private readonly IDifferentiator<JoinSecret, JoinSecret> _secret;
 
-		private readonly IDifferentiator<string, string> _level;
+		private readonly IDifferentiator<LevelInstance, LevelInstance> _level;
 
 		private readonly IDifferentiator<Option<BodyMessage>[], Option<Option<DeltaBodyMessage>>[]> _playerBodies;
 
@@ -103,7 +103,7 @@ namespace H3MP.Messages
 			_partyID = Differentiators.Equality<Key32>();
 			_secret = Differentiators.Equality<JoinSecret>();
 
-			_level = Differentiators.Equality<string>();
+			_level = Differentiators.Equality<LevelInstance>();
 
 			_playerBodies = new BodyMessageDifferentiator(Differentiators.Equality<TransformMessage>()).ToOption().ToArray();
 		}
@@ -116,7 +116,7 @@ namespace H3MP.Messages
 			consumer.Include(x => x.PartyID, x => x.PartyID, (ref WorldSnapshotMessage body, Key32 value) => body.PartyID = value, _partyID);
 			consumer.Include(x => x.Secret, x => x.Secret, (ref WorldSnapshotMessage body, JoinSecret value) => body.Secret = value, _secret);
 
-			consumer.Include(x => x.Level, x => x.Level, (ref WorldSnapshotMessage body, string value) => body.Level = value, _level);
+			consumer.Include(x => x.Level, x => x.Level, (ref WorldSnapshotMessage body, LevelInstance value) => body.Level = value, _level);
 
 			consumer.Include(x => x.PlayerBodies, x => x.PlayerBodies, (ref WorldSnapshotMessage body, Option<BodyMessage>[] value) => body.PlayerBodies = value, _playerBodies);
 
@@ -131,7 +131,7 @@ namespace H3MP.Messages
 			creator.Include(x => x.PartyID, (ref DeltaWorldSnapshotMessage body, Option<Key32> value) => body.PartyID = value, _partyID);
 			creator.Include(x => x.Secret, (ref DeltaWorldSnapshotMessage body, Option<JoinSecret> value) => body.Secret = value, _secret);
 
-			creator.Include(x => x.Level, (ref DeltaWorldSnapshotMessage body, Option<string> value) => body.Level = value, _level);
+			creator.Include(x => x.Level, (ref DeltaWorldSnapshotMessage body, Option<LevelInstance> value) => body.Level = value, _level);
 
 			creator.Include(x => x.PlayerBodies, (ref DeltaWorldSnapshotMessage body, Option<Option<Option<DeltaBodyMessage>>[]> value) => body.PlayerBodies = value, _playerBodies);
 
@@ -145,7 +145,7 @@ namespace H3MP.Messages
 		private readonly ISerializer<Option<Key32>> _partyID;
 		private readonly ISerializer<Option<JoinSecret>> _secret;
 
-		private readonly ISerializer<Option<string>> _level;
+		private readonly ISerializer<Option<LevelInstance>> _level;
 
 		private readonly ISerializer<Option<Option<Option<DeltaBodyMessage>>[]>> _playerBodies;
 
@@ -155,7 +155,7 @@ namespace H3MP.Messages
 			_partyID = CustomSerializers.Key32.ToOption();
 			_secret = CustomSerializers.JoinSecret.ToOption();
 
-			_level = PrimitiveSerializers.Char.ToString(TruncatedSerializers.ByteAsInt).ToOption();
+			_level = CustomSerializers.LevelInstance.ToOption();
 
 			_playerBodies = new DeltaBodyMessageSerializer().ToOption().ToOption().ToArrayFixed(maxPlayers).ToOption();
         }

@@ -114,6 +114,7 @@ namespace H3MP
 			Discord.Joined += Joined;
 			Peers.ServerCreated += ServerCreated;
 			Peers.ClientCreated += ClientCreated;
+			Peers.ClientCreated += Discord.HandleClientCreated;
 			Peers.ClientKilled += ClientKilled;
 		}
 
@@ -127,9 +128,10 @@ namespace H3MP
 			server.Simulate += ServerTick;
 		}
 
-		private void ServerTick()
+		private void ServerTick(Server server)
 		{
-			var server = Peers.Server.Unwrap();
+			var level = Option.None<TickStamped<string>>();
+			var perms = _config.Peers.Host.Permissions;
 
 			foreach (var husk in server.ConnectedHusks)
 			{
@@ -138,23 +140,70 @@ namespace H3MP
 					return;
 				}
 
-				server.LocalSnapshot.PlayerBodies[husk.ID] = Option.Some(inputValue.Content.Body);
+				var tick = inputValue.Stamp;
+				var content = inputValue.Content;
+
+				server.LocalSnapshot.PlayerBodies[husk.ID] = Option.Some(content.Body);
+
+				if (content.Level.MatchSome(out var contentLevel))
+				{
+					if (!level.MatchSome(out var nextLevel) || tick > nextLevel.Stamp)
+					{
+						bool hasPerm = husk.IsAdmin;
+
+						if (!hasPerm)
+						{
+							var perm = contentLevel == server.LocalSnapshot.Level.Name
+								? perms.SceneReloading
+								: perms.SceneChanging;
+							hasPerm = perm.Value;
+						}
+
+						if (hasPerm)
+						{
+							var stamped = new TickStamped<string>(tick, contentLevel);
+							level = Option.Some(stamped);
+						}
+					}
+				}
+			}
+
+			if (level.Map(x => x.Content).MatchSome(out var levelValue))
+			{
+				ref var snapshotLevel = ref server.LocalSnapshot.Level;
+				snapshotLevel = snapshotLevel.Next(levelValue);
 			}
 		}
 
 		private void ClientCreated(Client client)
 		{
-			client.Simulate += ClientTick;
-			client.DeltaSnapshotReceived += delta => Discord.HandleWorldDelta(client, delta.Content);
+			client.DeltaSnapshotReceived += ClientDelta;
+			client.Simulate += ClientSimulate;
+			client.Cleanup += ClientCleanup;
 
 			var puppeteer = new Puppeteer(client, RenderFrame);
 			Puppeteer = Option.Some(puppeteer);
 		}
 
-		private void ClientTick()
+		private void ClientDelta(Client client, TickTimeStamped<DeltaWorldSnapshotMessage> delta)
 		{
-			var client = Peers.Client.Unwrap();
+			if (delta.Content.Level.MatchSome(out var level))
+			{
+				HarmonyState.LockLoadLevel = false;
 
+				try
+				{
+					SteamVR_LoadLevel.Begin(level.Name);
+				}
+				finally
+				{
+					HarmonyState.LockLoadLevel = true;
+				}
+			}
+		}
+
+		private void ClientSimulate(Client client)
+		{
 			var body = GM.CurrentPlayerBody;
 
 			TransformMessage GetTransform(Transform transform)
@@ -172,6 +221,11 @@ namespace H3MP
 				HandLeft = GetTransform(body.LeftHand),
 				HandRight = GetTransform(body.RightHand)
 			};
+		}
+
+		private void ClientCleanup(Client client)
+		{
+			client.LocalSnapshot.Level = Option.None<string>();
 		}
 
 		private void ClientKilled(Client obj)

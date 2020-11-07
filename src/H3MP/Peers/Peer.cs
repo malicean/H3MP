@@ -6,8 +6,12 @@ using LiteNetLib;
 
 namespace H3MP.Peers
 {
-	public abstract class Peer<TSnapshot, TConfig> : IDisposable where TSnapshot : ICopyable<TSnapshot>, new()
+	public abstract class Peer<TSelf, TSnapshot, TConfig> : IDisposable where TSnapshot : ICopyable<TSnapshot>, new()
     {
+		public delegate void SimulateHandler(TSelf self);
+		public delegate void CleanupHandler(TSelf self);
+		public delegate void DataUnreadHandler(NetPeer peer);
+
 		private bool _disposed;
 
 		protected readonly TickFrameClock Clock;
@@ -17,12 +21,15 @@ namespace H3MP.Peers
 		protected readonly EventBasedNetListener Listener;
 		protected readonly NetManager Net;
 
+		protected abstract TSelf Self { get; }
+
 		public TSnapshot LocalSnapshot;
 
 		public double TickStep => Clock.DeltaTime;
 
-		public event Action Simulate;
-		public event Action DataUnread;
+		public event SimulateHandler Simulate;
+		public event CleanupHandler Cleanup;
+		public event DataUnreadHandler DataUnread;
 
 		public Peer(Log log, TConfig config, TickFrameClock clock)
 		{
@@ -77,7 +84,7 @@ namespace H3MP.Peers
 
 			if (!reader.Bits.Done || !reader.Bytes.Done)
 			{
-				DataUnread?.Invoke();
+				DataUnread?.Invoke(peer);
 			}
 		}
 
@@ -88,8 +95,9 @@ namespace H3MP.Peers
 		public void RunTick()
 		{
 			Net.PollEvents();
-			Simulate?.Invoke();
+			Simulate?.Invoke(Self);
 			SendSnapshot(LocalSnapshot);
+			Cleanup?.Invoke(Self);
 		}
 
 		protected virtual void DisposeSafe()

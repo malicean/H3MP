@@ -138,6 +138,7 @@
     <Compile Include="Models\DoubleRange.cs" />
     <Compile Include="Models\JoinSecret.cs" />
     <Compile Include="Models\Key32.cs" />
+    <Compile Include="Models\LevelInstance.cs" />
     <Compile Include="Models\ListenBinding.cs" />
     <Compile Include="Peers\Client.cs" />
     <Compile Include="Peers\Peer.cs" />
@@ -149,6 +150,7 @@
     <Compile Include="Serialization\Array\Fixed.cs" />
     <Compile Include="Serialization\Models\JoinSecret.cs" />
     <Compile Include="Serialization\Models\Key32.cs" />
+    <Compile Include="Serialization\Models\LevelInstance.cs" />
     <Compile Include="Serialization\Models\TickStamped.cs" />
     <Compile Include="Serialization\Presets\Array.cs" />
     <Compile Include="Serialization\Presets\Custom.cs" />
