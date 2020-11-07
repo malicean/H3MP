@@ -23,7 +23,10 @@ namespace H3MP.Serialization
 
 		public void Serialize(ref BitPackWriter writer, double value)
 		{
-			DoubleToULong conv = default;
+			DoubleToULong conv = new DoubleToULong
+			{
+				Floating = value
+			};
 
 			writer.Bytes.Push((byte) conv.Integral);
 			writer.Bytes.Push((byte) (conv.Integral >> 8));
