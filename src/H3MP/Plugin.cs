@@ -90,8 +90,7 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing Discord game SDK...");
 			{
-				// TODO: when BepInEx next releases (>5.3), uncomment this line and move discord_game_sdk.dll to the plugin folder
-				// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
+				LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
