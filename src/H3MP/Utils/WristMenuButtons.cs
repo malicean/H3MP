@@ -42,11 +42,12 @@ namespace H3MP.Utils
 			var canvasRT = canvasTF.GetComponent<RectTransform>();
 			canvasRT.sizeDelta = new Vector2(canvasRT.sizeDelta.x, canvasRT.sizeDelta.y + (BUTTON_SIZE*2));
 			var canvasBS = canvasTF.GetComponent<OptionsPanel_ButtonSet>();
-			var originalButtonsLength = canvasBS.ButtonImagesInSet.Length;
+			ref var images = ref canvasBS.ButtonImagesInSet;
+			var originalButtonsLength = images.Length;
 
 			// Create butons, resize array, and fill in our new buttons to the array
 			var buttons = CreateButtons(canvasTF).ToList();
-			Array.Resize(ref canvasBS.ButtonImagesInSet, originalButtonsLength + buttons.Count);
+			Array.Resize(ref images, originalButtonsLength + buttons.Count);
 			for (var i = 0; i < buttons.Count; ++i)
 			{
 				var button = buttons[i];
@@ -57,7 +58,7 @@ namespace H3MP.Utils
 				var index = originalButtonsLength+i;
 				
 				pointable.ButtonIndex = index;
-				canvasBS.ButtonImagesInSet[index] = image;
+				images[index] = image;
 			}
 		}
 
