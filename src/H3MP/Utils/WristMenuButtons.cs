@@ -77,7 +77,8 @@ namespace H3MP.Utils
 
 				var button = dest.GetComponent<Button>();
 
-				if (delete) {
+				if (delete)
+				{
 					Component.DestroyImmediate(button);
 					button = dest.AddComponent<Button>();
 				}
