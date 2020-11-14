@@ -79,6 +79,7 @@
     <Compile Include="Discord\LobbyManager.cs" />
     <Compile Include="Discord\StorageManager.cs" />
     <Compile Include="Discord\StoreManager.cs" />
+    <Compile Include="HarmonyPatches\WristMenuResetConfirmPatch.cs" />
     <Compile Include="HarmonyPatches\HarmonyState.cs" />
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
     <Compile Include="Utils\WristMenuButtons.cs" />
