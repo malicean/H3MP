@@ -162,7 +162,7 @@ namespace H3MP
 			_wristMenuButtons = new WristMenuButtons(Logger);
 
 			Logger.LogDebug("Initializing party privacy...");
-			_privacyManager = new PrivacyManager(Logger, _config.Host);
+			_privacyManager = new PrivacyManager(_config.Host);
 		}
 
 		private void DiscordCallbackHandler(Result result)

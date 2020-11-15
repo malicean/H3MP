@@ -10,9 +10,6 @@ namespace H3MP.Utils
 {
 	public class PrivacyManager
 	{
-		private readonly ManualLogSource _log;
-		private readonly Configs.HostConfig _config;
-
 		public enum PartyPrivacy
 		{
 			Open,
@@ -38,11 +35,8 @@ namespace H3MP.Utils
 
 		public static string PrivacyText { get; set; }
 
-		public PrivacyManager(ManualLogSource log, HostConfig config)
+		public PrivacyManager(HostConfig config)
 		{
-			_log = log;
-			_config = config;
-
 			Privacy = config.PartyPrivacy.Value;
 			PrivacyText = PrivacyLocale(Privacy);
 		}

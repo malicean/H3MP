@@ -155,7 +155,7 @@ namespace H3MP.Utils
 				PrivacyManager.CyclePrivacy();
 
 				var buttonText = button.GetComponentInChildren<Text>().text = PrivacyManager.PrivacyText;
-				_log.LogDebug($"Changed party privacy to {PrivacyManager.PrivacyText}");
+				_log.LogDebug("Changed party privacy");
 			};
 		}
 
