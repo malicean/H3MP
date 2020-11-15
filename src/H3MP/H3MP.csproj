@@ -68,6 +68,7 @@
     <Compile Include="Configs\HostPermissionConfig.cs" />
     <Compile Include="Configs\HostPublicBindingConfig.cs" />
     <Compile Include="Configs\RootConfig.cs" />
+    <Compile Include="Utils\PrivacyManager.cs" />
     <Compile Include="Enums\JoinError.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />

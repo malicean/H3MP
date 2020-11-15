@@ -15,13 +15,11 @@ namespace H3MP.HarmonyPatches
 	{
 		private static void Postfix()
 		{
-			var log = HarmonyState.Log;
-
 			// Get the wristmenu & canvas
-			var wristMenu = WristMenuButtons._wristMenu;
+			var wristMenu = WristMenuButtons.WristMenu;
 			var canvasTF = wristMenu.transform.Find("MenuGo/Canvas");
 
-			// Get H3MP Disconnect button
+			// Get H3MP buttons that need text to reset when wristmenu deactivates
 			var button = canvasTF.Find("H3MP_Disconnect").gameObject.GetComponent<Button>();
 
 			// Reset button states

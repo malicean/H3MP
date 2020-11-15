@@ -1,4 +1,5 @@
 using BepInEx.Configuration;
+using H3MP.Utils;
 
 namespace H3MP.Configs
 {
@@ -7,6 +8,8 @@ namespace H3MP.Configs
 		public ConfigEntry<byte> PlayerLimit { get; }
 
 		public ConfigEntry<double> TickRate { get; }
+
+		public ConfigEntry<PrivacyManager.PartyPrivacy> PartyPrivacy { get; }
 
 		public HostBindingConfig Binding { get; }
 
@@ -18,6 +21,7 @@ namespace H3MP.Configs
 		{
 			PlayerLimit = config.Bind(section, nameof(PlayerLimit), (byte) 16, "The amount of players (including yourself) allowed in a party. The **theoretical** limit is 255.");
 			TickRate = config.Bind(section, nameof(TickRate), 20.0, "The rate (per second) that the network updates. This should be less than or equal to your HMD's refresh rate.");
+			PartyPrivacy = config.Bind(section, nameof(PartyPrivacy), PrivacyManager.PartyPrivacy.Open, "Initial party privacy when launching the game.");
 
 			Binding = new HostBindingConfig(config, section + "." + nameof(Binding));
 			PublicBinding = new HostPublicBindingConfig(config, section + "." + nameof(PublicBinding));

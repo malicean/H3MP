@@ -53,6 +53,7 @@ namespace H3MP
 
 		private readonly ChangelogPanel _changelogPanel;
 		private readonly WristMenuButtons _wristMenuButtons;
+		private readonly PrivacyManager _privacyManager;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
 
@@ -93,7 +94,6 @@ namespace H3MP
 			{
 				// TODO: when BepInEx next releases (>5.3), uncomment this line and move discord_game_sdk.dll to the plugin folder
 				// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
-
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
 				{
@@ -160,6 +160,9 @@ namespace H3MP
 			Logger.LogDebug("Hooking into sceneLoaded...");
 			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
 			_wristMenuButtons = new WristMenuButtons(Logger);
+
+			Logger.LogDebug("Initializing party privacy...");
+			_privacyManager = new PrivacyManager(Logger, _config.Host);
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -207,9 +210,33 @@ namespace H3MP
 
 		private void OnJoinRequested(ref User user)
 		{
-			// All friends can join
-			// TODO: Change this.
-			ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+			// Get Friends
+			var relationshipManager = DiscordClient.GetRelationshipManager();
+			relationshipManager.OnRefresh += () =>
+			{
+				relationshipManager.Filter((ref Discord.Relationship relationship) =>
+				{
+					return relationship.Type == Discord.RelationshipType.Friend;
+				});
+			};
+
+			// Return join requests depending on privacy setting & relation
+			switch (PrivacyManager.Privacy)
+			{
+				case PrivacyManager.PartyPrivacy.Open:
+					ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+					break;
+				case PrivacyManager.PartyPrivacy.Friends:
+					if (relationshipManager.Get(user.Id).Type == RelationshipType.Friend)
+					{
+						ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+					}
+					break;
+				case PrivacyManager.PartyPrivacy.InviteOnly:
+					ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Ignore, DiscordCallbackHandler);
+					break;
+				default: throw new ArgumentOutOfRangeException();
+			}			
 		}
 
 		private IEnumerator _HostUnsafe()

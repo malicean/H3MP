@@ -1,6 +1,7 @@
 using Discord;
 using H3MP.Extensions;
 using H3MP.Messages;
+using H3MP.Utils;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -21,7 +22,7 @@ namespace H3MP.HarmonyPatches
 			["BreachAndClear_TestScene1"] = "Breaching Proto",
 			["Cappocolosseum"] = "Cappocolosseum",
 			["GrenadeSkeeball"] = "Boomskee",
-			["HickockRange"] = "Friendly 45",
+			["HickockRange"] = "Friendly 45 Range",
 			["IndoorRange"] = "Indoor Range",
 			["MeatGrinder"] = "Meat Grinder",
 			["MeatGrinder_StartingScene"] = "Starting Meat Grinder",
@@ -29,8 +30,7 @@ namespace H3MP.HarmonyPatches
 			["ObstacleCourseScene1"] = "The Gunnasium",
 			["ObstacleCourseScene2"] = "Arena Proto",
 			["OmnisequencerTesting3"] = "M.E.A.T.S.",
-
-		["ProvingGround"] = "Proving Grounds",
+			["ProvingGround"] = "Proving Grounds",
 			["SniperRange"] = "Sniper Range",
 			["ReturnOfTheRotwieners"] = "Return of the Rotwieners",
 			["RotWienersStagingScene"] = "Starting Return of the Rotwieners",
@@ -62,6 +62,7 @@ namespace H3MP.HarmonyPatches
 
 			HarmonyState.DiscordActivity.Update(x =>
 			{
+				x.State = PrivacyManager.PrivacyText;
 				x.Assets = new ActivityAssets
 				{
 					LargeImage = "scene_" + asset,
