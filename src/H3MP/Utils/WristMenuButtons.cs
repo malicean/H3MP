@@ -208,7 +208,7 @@ namespace H3MP.Utils
 			{
 				// TODO: Probs move this to own class when we start to populate it with buttons
 				// Clone from Spectator Panel
-				GameObject currentH3MPPanel = UnityEngine.Object.Instantiate<GameObject>(WristMenu.SpectatorPanelPrefab, Vector3.zero, Quaternion.identity);
+				GameObject currentH3MPPanel = GameObject.Instantiate(WristMenu.SpectatorPanelPrefab, Vector3.zero, Quaternion.identity);
 				H3MPOptionsPanel = currentH3MPPanel;
 
 				GameObject.DestroyImmediate(H3MPOptionsPanel.GetComponent<SpectatorPanel>());
@@ -240,6 +240,7 @@ namespace H3MP.Utils
 					switch (canvas.transform.GetChild(i).name)
 					{
 						case "PanelLabel":
+						case "Backing (2)":
 							break;
 
 						default:
@@ -248,9 +249,24 @@ namespace H3MP.Utils
 					}
 				}
 
+				var background = canvas.transform.Find("Backing (2)");
+				var backgroundRT = background.GetComponent<RectTransform>();
+				backgroundRT.anchoredPosition = new Vector2(0, 5);
+				backgroundRT.localScale = new Vector3(1, 1, 1);
+				backgroundRT.sizeDelta = new Vector2(550, 350);
+
 				var panelLabel = canvas.transform.Find("PanelLabel");
-				panelLabel.GetComponent<Text>().text = "H3MP OPTIONS PANEL";
-				panelLabel.GetComponent<Text>().fontSize = 19;
+				var headerText = panelLabel.GetComponent<Text>();
+				headerText.text = "H3MP OPTIONS PANEL";
+				headerText.fontSize = 19;
+
+				// Temp warning so people don't expect a functional panel
+				var warning = GameObject.Instantiate(panelLabel.gameObject, background);
+				warning.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -100);
+
+				var warningText = warning.GetComponent<Text>();
+				warningText.text = "This panel is a WIP - options to be added later";
+				warningText.fontSize = 40;
 
 				return H3MPOptionsPanel.GetComponent<FVRPhysicalObject>();
 			}
