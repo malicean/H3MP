@@ -1,0 +1,18 @@
+A WIP multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
+
+Features
+- Configs  
+  - [x] Player limit
+  - [x] Scene loading/reloading permissions
+  - [x] Tick rate
+  - *refer to `BepInEx\config\Ash.H3MP.cfg` for additional config options*
+- Player  
+  - [x] Movement
+  - [ ] Held items
+  - [ ] Avatar
+    - [x] Basic primitive
+    - [ ] Advanced model
+- Miscellaneous
+  - [x] Discord Rich Presence
+  - [x] Scene loading
+  - [ ] Items

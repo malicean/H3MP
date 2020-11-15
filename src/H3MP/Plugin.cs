@@ -18,8 +18,10 @@ using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 
 namespace H3MP
 {
@@ -48,6 +50,8 @@ namespace H3MP
 		private readonly ManualLogSource _clientLog;
 		private readonly ManualLogSource _serverLog;
 		private readonly ManualLogSource _discordLog;
+
+		private readonly ChangelogPanel _changelogPanel;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
 
@@ -86,8 +90,7 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing Discord game SDK...");
 			{
-				// TODO: when BepInEx next releases (>5.3), uncomment this line and move discord_game_sdk.dll to the plugin folder
-				// LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
+				LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
@@ -151,6 +154,9 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing shared Harmony state...");
 			HarmonyState.Init(Activity);
+
+			Logger.LogDebug("Hooking into sceneLoaded...");
+			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -334,7 +340,7 @@ namespace H3MP
 				Logger.LogDebug("Autostarting host from game launch...");
 
 				StartCoroutine(_Host());
-			}
+			}					
 		}
 
 		private void Update()
@@ -353,6 +359,7 @@ namespace H3MP
 		private void OnDestroy()
 		{
 			DiscordClient.Dispose();
+			_changelogPanel.Dispose();
 
 			Server?.Dispose();
 			Client?.Dispose();
