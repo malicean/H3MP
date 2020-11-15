@@ -53,7 +53,9 @@ namespace H3MP.Peers
 		{
 			root.gameObject.layer = layer;
 			foreach (Transform child in root)
+			{
 				MoveToLayer(child, layer);
+			}			
 		}
 
 		private static GameObject CreateRoot(ClientPuppetConfig config)
@@ -233,6 +235,8 @@ namespace H3MP.Peers
 
 		private class ReplacementPlayerSosigBody : MonoBehaviour
 		{
+			private List<GameObject> _currentClothes = new List<GameObject>();
+
 			public Transform Sosig_Head;
 			public Transform Sosig_Torso;
 			public Transform Sosig_Abdomen;
@@ -248,29 +252,29 @@ namespace H3MP.Peers
 				Sosig_Legs = transform.GetChild(2).GetChild(1).GetChild(0);
 			}
 
-			public void ApplyOutfit(SosigOutfitConfig o)
+			public void ApplyOutfit(SosigOutfitConfig outfit)
 			{
-				if (this.m_curClothes.Count > 0)
+				if (_currentClothes.Count > 0)
 				{
-					for (int i = this.m_curClothes.Count - 1; i >= 0; i--)
+					for (var i = _currentClothes.Count - 1; i >= 0; i--)
 					{
-						if (this.m_curClothes[i] != null)
+						if (_currentClothes[i] != null)
 						{
-							UnityEngine.Object.Destroy(this.m_curClothes[i]);
+							GameObject.Destroy(_currentClothes[i]);
 						}
 					}
 				}
-				this.m_curClothes.Clear();
-				this.SpawnAccesoryToLink(o.Headwear, this.Sosig_Head, o.Chance_Headwear);
-				this.SpawnAccesoryToLink(o.Facewear, this.Sosig_Head, o.Chance_Facewear);
-				this.SpawnAccesoryToLink(o.Eyewear, this.Sosig_Head, o.Chance_Eyewear);
-				this.SpawnAccesoryToLink(o.Torsowear, this.Sosig_Torso, o.Chance_Torsowear);
-				this.SpawnAccesoryToLink(o.Pantswear, this.Sosig_Abdomen, o.Chance_Pantswear);
-				this.SpawnAccesoryToLink(o.Pantswear_Lower, this.Sosig_Legs, o.Chance_Pantswear_Lower);
-				this.SpawnAccesoryToLink(o.Backpacks, this.Sosig_Torso, o.Chance_Backpacks);
+				_currentClothes.Clear();
+				SpawnAccesoryToLink(outfit.Headwear, Sosig_Head, outfit.Chance_Headwear);
+				SpawnAccesoryToLink(outfit.Facewear, Sosig_Head, outfit.Chance_Facewear);
+				SpawnAccesoryToLink(outfit.Eyewear, Sosig_Head, outfit.Chance_Eyewear);
+				SpawnAccesoryToLink(outfit.Torsowear, Sosig_Torso, outfit.Chance_Torsowear);
+				SpawnAccesoryToLink(outfit.Pantswear, Sosig_Abdomen, outfit.Chance_Pantswear);
+				SpawnAccesoryToLink(outfit.Pantswear_Lower, Sosig_Legs, outfit.Chance_Pantswear_Lower);
+				SpawnAccesoryToLink(outfit.Backpacks, Sosig_Torso, outfit.Chance_Backpacks);
 			}
 
-			private void SpawnAccesoryToLink(List<FVRObject> gs, Transform l, float chance)
+			private void SpawnAccesoryToLink(List<FVRObject> gs, Transform link, float chance)
 			{
 				if (UnityEngine.Random.Range(0f, 1f) > chance)
 				{
@@ -280,24 +284,22 @@ namespace H3MP.Peers
 				{
 					return;
 				}
-				GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(gs[UnityEngine.Random.Range(0, gs.Count)].GetGameObject());
-				this.m_curClothes.Add(gameObject);
+				var gameObject = GameObject.Instantiate(gs[UnityEngine.Random.Range(0, gs.Count)].GetGameObject());
+				_currentClothes.Add(gameObject);
                 UnityEngine.Component[] componentsInChildren = gameObject.GetComponentsInChildren<UnityEngine.Component>(true);
-				for (int i = componentsInChildren.Length - 1; i >= 0; i--)
+				for (var i = componentsInChildren.Length - 1; i >= 0; i--)
 				{
 					if (componentsInChildren[i] is Transform || componentsInChildren[i] is MeshFilter || componentsInChildren[i] is MeshRenderer)
 					{
 						continue;
 					}
 
-					UnityEngine.Object.Destroy(componentsInChildren[i]);
+					GameObject.Destroy(componentsInChildren[i]);
 				}
-				gameObject.transform.parent = l;
+				gameObject.transform.parent = link;
 				gameObject.transform.localPosition = Vector3.zero;
 				gameObject.transform.localRotation = Quaternion.identity;
 			}
-
-			private List<GameObject> m_curClothes = new List<GameObject>();
 		}
 	}
 }
