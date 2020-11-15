@@ -19,17 +19,15 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
   - [ ] Items  
 
 ## Installation
-1. Have [Discord](https://discord.com/download) installed and running. Discord Rich Presence is the only way to join or invite other players.  
-2. Download the [most recent x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract it to your H3VR directory.
-3. Download the [most recent release of H3MP](https://github.com/ash-hat/H3MP/releases/latest) and extract it to your H3VR directory.  
+1. Have [Discord](https://discord.com/download) installed and running. Discord Rich Presence is the only way to join or invite other players.
+2. Download the [most recent x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract it to your **H3VR** directory.
+3. Download the [most recent release of H3MP](https://github.com/ash-hat/H3MP/releases/latest) and extract it to your **H3VR** directory.
 4. Start the game  
     - Join a party by clicking the "Join" button on a Discord invite. In the future, you can join off of invites and the game will start automatically.
     - Invite players to your party by clicking the plus button in a Discord text channel, and select "Invite ... to Play H3MP".
 
-If you are on BepInEx 5.3 or prior, not all of the DLL files can be put in the plugins directory. This is because of a plugin loading bug that [has been fixed](https://github.com/BepInEx/BepInEx/commit/4d7e5cac2bff602c5af6a5af5adfc0e8fbe41fd9) for BepInEx 5.4 (not released yet) and further.
-
 ## Uninstallation
-To uninstall, you only need to delete the `BepInEx\plugins\H3MP` directory. `discord_game_sdk.dll` will not be loaded if H3MP is not present, just like how BepInEx is not loaded if `winhttp.dll` is not present.
+To uninstall, you only need to delete the `BepInEx\plugins\H3MP` directory.
 
 ## Documentation
 Installation and uninstallation have been listed here for convenience, but further documentation is included in the [docs](docs/) directory.
