@@ -210,17 +210,7 @@ namespace H3MP
 		}
 
 		private void OnJoinRequested(ref User user)
-		{
-			// Get Friends
-			var relationshipManager = DiscordClient.GetRelationshipManager();
-			relationshipManager.OnRefresh += () =>
-			{
-				relationshipManager.Filter((ref Discord.Relationship relationship) =>
-				{
-					return relationship.Type == Discord.RelationshipType.Friend;
-				});
-			};
-
+		{		
 			// Return join requests depending on privacy setting & relation
 			switch (PrivacyManager.Privacy)
 			{
