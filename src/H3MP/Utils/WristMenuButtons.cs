@@ -167,12 +167,11 @@ namespace H3MP.Utils
 				WristMenu.Aud.PlayOneShot(WristMenu.AudClip_Engage, 1f);
 				if (!AskConfirmDisconnect)
 				{
-					ResetDisconnect(button.GetComponentInChildren<Text>());
 					AskDisonnect_Confirm(button.GetComponentInChildren<Text>());
 					return;
 				}
 
-				ResetDisconnect(button);
+				ResetDisconnect(button.GetComponentInChildren<Text>());
 				for (var i = 0; i < GM.CurrentSceneSettings.QuitReceivers.Count; i++)
 				{
 					GM.CurrentSceneSettings.QuitReceivers[i].BroadcastMessage("QUIT", SendMessageOptions.DontRequireReceiver);
@@ -204,73 +203,72 @@ namespace H3MP.Utils
 			{
 				return H3MPOptionsPanel.GetComponent<FVRPhysicalObject>();
 			}
-			else
+	
+			// TODO: Probs move this to own class when we start to populate it with buttons
+			// Clone from Spectator Panel
+			GameObject currentH3MPPanel = GameObject.Instantiate(WristMenu.SpectatorPanelPrefab, Vector3.zero, Quaternion.identity);
+			H3MPOptionsPanel = currentH3MPPanel;
+
+			GameObject.DestroyImmediate(H3MPOptionsPanel.GetComponent<SpectatorPanel>());
+			H3MPOptionsPanel.name = "H3MPPanel";
+
+			// Delete all unneeded children
+			var childs = H3MPOptionsPanel.transform.childCount;
+			for (var i = childs - 1; i >= 0; i--)
 			{
-				// TODO: Probs move this to own class when we start to populate it with buttons
-				// Clone from Spectator Panel
-				GameObject currentH3MPPanel = GameObject.Instantiate(WristMenu.SpectatorPanelPrefab, Vector3.zero, Quaternion.identity);
-				H3MPOptionsPanel = currentH3MPPanel;
-
-				GameObject.DestroyImmediate(H3MPOptionsPanel.GetComponent<SpectatorPanel>());
-				H3MPOptionsPanel.name = "H3MPPanel";
-
-				// Delete all unneeded children
-				var childs = H3MPOptionsPanel.transform.childCount;
-				for (var i = childs - 1; i >= 0; i--)
+				switch (H3MPOptionsPanel.transform.GetChild(i).name)
 				{
-					switch (H3MPOptionsPanel.transform.GetChild(i).name)
-					{
-						case "Tablet":
-						case "Canvas":
-						case "Cube":
-						case "_pose":
-							break;
+					case "Tablet":
+					case "Canvas":
+					case "Cube":
+					case "_pose":
+						break;
 
-						default:
-							GameObject.DestroyImmediate(H3MPOptionsPanel.transform.GetChild(i).gameObject);
-							break;
-					}
+					default:
+						GameObject.DestroyImmediate(H3MPOptionsPanel.transform.GetChild(i).gameObject);
+						break;
 				}
-
-				// Get canvas & delete all unneeded children
-				var canvas = H3MPOptionsPanel.transform.Find("Canvas");
-				childs = canvas.transform.childCount;
-				for (var i = childs - 1; i >= 0; i--)
-				{
-					switch (canvas.transform.GetChild(i).name)
-					{
-						case "PanelLabel":
-						case "Backing (2)":
-							break;
-
-						default:
-							GameObject.DestroyImmediate(canvas.transform.GetChild(i).gameObject);
-							break;
-					}
-				}
-
-				var background = canvas.transform.Find("Backing (2)");
-				var backgroundRT = background.GetComponent<RectTransform>();
-				backgroundRT.anchoredPosition = new Vector2(0, 5);
-				backgroundRT.localScale = new Vector3(1, 1, 1);
-				backgroundRT.sizeDelta = new Vector2(550, 350);
-
-				var panelLabel = canvas.transform.Find("PanelLabel");
-				var headerText = panelLabel.GetComponent<Text>();
-				headerText.text = "H3MP OPTIONS PANEL";
-				headerText.fontSize = 19;
-
-				// Temp warning so people don't expect a functional panel
-				var warning = GameObject.Instantiate(panelLabel.gameObject, background);
-				warning.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -100);
-
-				var warningText = warning.GetComponent<Text>();
-				warningText.text = "This panel is a WIP - options to be added later";
-				warningText.fontSize = 40;
-
-				return H3MPOptionsPanel.GetComponent<FVRPhysicalObject>();
 			}
+
+			// Get canvas & delete all unneeded children
+			var canvas = H3MPOptionsPanel.transform.Find("Canvas");
+			childs = canvas.transform.childCount;
+			for (var i = childs - 1; i >= 0; i--)
+			{
+				switch (canvas.transform.GetChild(i).name)
+				{
+					case "PanelLabel":
+					case "Backing (2)":
+						break;
+
+					default:
+						GameObject.DestroyImmediate(canvas.transform.GetChild(i).gameObject);
+						break;
+				}
+			}
+
+			var background = canvas.transform.Find("Backing (2)");
+			var backgroundRT = background.GetComponent<RectTransform>();
+			backgroundRT.anchoredPosition = new Vector2(0, 5);
+			backgroundRT.localScale = new Vector3(1, 1, 1);
+			backgroundRT.sizeDelta = new Vector2(550, 350);
+
+			var panelLabel = canvas.transform.Find("PanelLabel");
+			var headerText = panelLabel.GetComponent<Text>();
+			headerText.text = "H3MP OPTIONS PANEL";
+			headerText.fontSize = 19;
+
+			// Temp warning so people don't expect a functional panel
+			var warning = GameObject.Instantiate(panelLabel.gameObject, background);
+			warning.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -100);
+
+			var warningText = warning.GetComponent<Text>();
+			warningText.text = "This panel is a WIP - options to be added later";
+			warningText.fontSize = 40;
+
+			return H3MPOptionsPanel.GetComponent<FVRPhysicalObject>();
 		}
+
 
 		public void Dispose()
 		{
