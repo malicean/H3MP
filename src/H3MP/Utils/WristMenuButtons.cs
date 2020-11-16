@@ -167,8 +167,8 @@ namespace H3MP.Utils
 				WristMenu.Aud.PlayOneShot(WristMenu.AudClip_Engage, 1f);
 				if (!AskConfirmDisconnect)
 				{
-					ResetDisconnect(button);
-					AskDisonnect_Confirm(button);
+					ResetDisconnect(button.GetComponentInChildren<Text>());
+					AskDisonnect_Confirm(button.GetComponentInChildren<Text>());
 					return;
 				}
 
@@ -186,16 +186,16 @@ namespace H3MP.Utils
 			};
 		}
 
-		public static void ResetDisconnect(Button button)
+		public static void ResetDisconnect(Text btnText)
 		{
 			AskConfirmDisconnect = false;
-			button.GetComponentInChildren<Text>().text = DISCONNECT_TEXT;
+			btnText.text = DISCONNECT_TEXT;
 		}
 
-		private void AskDisonnect_Confirm(Button button)
+		private void AskDisonnect_Confirm(Text btnText)
 		{
 			AskConfirmDisconnect = true;
-			button.GetComponentInChildren<Text>().text = "Confirm ???";
+			btnText.text = "Confirm ???";
 		}		
 		
 		private FVRPhysicalObject GetPanel()
