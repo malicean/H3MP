@@ -1,5 +1,7 @@
 using BepInEx.Logging;
+using FistVR;
 using H3MP.Messages;
+using H3MP.Utils;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
@@ -14,6 +16,8 @@ namespace H3MP.HarmonyPatches
 
 		public static StatefulActivity DiscordActivity { get; private set; }
 
+		public static WristMenuButtons WristMenuButtons { get; private set; }
+
 		private static string _currentLevel;
 		public static string CurrentLevel
 		{
@@ -23,9 +27,10 @@ namespace H3MP.HarmonyPatches
 
 		public static bool LockLoadLevel { get; set; } = true;
 
-		public static void Init(StatefulActivity discordActivity)
+		public static void Init(StatefulActivity discordActivity, WristMenuButtons wristmenubuttons)
 		{
 			DiscordActivity = discordActivity;
+			WristMenuButtons = wristmenubuttons;
 		}
 	}
 }

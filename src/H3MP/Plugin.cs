@@ -94,7 +94,6 @@ namespace H3MP
 			{
 				LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 
-
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
 				{
@@ -155,15 +154,18 @@ namespace H3MP
 				;
 			}
 
+			Logger.LogDebug("Initializing party privacy...");
+			_privacyManager = new PrivacyManager(Activity, _config.Host);
+
+			Logger.LogDebug("Initializing wrist menu and options panel...");
+			_wristMenuButtons = new WristMenuButtons(Logger, _privacyManager);
+
 			Logger.LogDebug("Initializing shared Harmony state...");
-			HarmonyState.Init(Activity);
+			HarmonyState.Init(Activity, _wristMenuButtons);
 
 			Logger.LogDebug("Hooking into sceneLoaded...");
 			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
-			_wristMenuButtons = new WristMenuButtons(Logger);
 
-			Logger.LogDebug("Initializing party privacy...");
-			_privacyManager = new PrivacyManager(_config.Host);
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -210,9 +212,11 @@ namespace H3MP
 		}
 
 		private void OnJoinRequested(ref User user)
-		{		
+		{
+			var relationshipManager = DiscordClient.GetRelationshipManager();
+
 			// Return join requests depending on privacy setting & relation
-			switch (PrivacyManager.Privacy)
+			switch (_privacyManager.Privacy)
 			{
 				case PrivacyManager.PartyPrivacy.Open:
 					ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);

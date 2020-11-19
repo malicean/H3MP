@@ -62,7 +62,6 @@ namespace H3MP.HarmonyPatches
 
 			HarmonyState.DiscordActivity.Update(x =>
 			{
-				x.State = PrivacyManager.PrivacyText;
 				x.Assets = new ActivityAssets
 				{
 					LargeImage = "scene_" + asset,

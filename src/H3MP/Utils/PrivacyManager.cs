@@ -31,28 +31,32 @@ namespace H3MP.Utils
 		private const PartyPrivacy PARTYPRIVACY_FIRST = PartyPrivacy.Open;
 		private const PartyPrivacy PARTYPRIVACY_LAST = PartyPrivacy.InviteOnly;
 
-		public static PartyPrivacy Privacy = default;
+		private readonly StatefulActivity _discordActivity;
 
-		public static string PrivacyText { get; set; }
+		public PartyPrivacy Privacy { get; private set; }
 
-		public PrivacyManager(HostConfig config)
+		public string Text => PrivacyLocale(Privacy);
+
+		public PrivacyManager(StatefulActivity activity, HostConfig config)
 		{
+			_discordActivity = activity;
+
 			Privacy = config.PartyPrivacy.Value;
-			PrivacyText = PrivacyLocale(Privacy);
 		}
 
-		public static void CyclePrivacy()
+		public void CyclePrivacy()
 		{
 			if (++Privacy > PARTYPRIVACY_LAST)
 			{
 				Privacy = PARTYPRIVACY_FIRST;
 			}
-			HarmonyState.DiscordActivity.Update(x =>
+
+			_discordActivity.Update(x =>
 			{
-				x.State = PrivacyLocale(Privacy);
+				x.State = Text;
+
 				return x;
 			});
-			PrivacyText = PrivacyLocale(Privacy);
 		}
 	}
 }
