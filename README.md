@@ -11,8 +11,8 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
   - [x] Movement  
   - [ ] Held items  
   - [ ] Avatar  
-    - [x] Basic primitive  
-    - [ ] Advanced model
+    - [x] Basic sosig body
+    - [ ] Advanced sosig body
 - Miscellaneous
   - [x] Discord Rich Presence  
   - [x] Scene loading  
