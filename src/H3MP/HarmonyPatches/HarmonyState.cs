@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 
 namespace H3MP.HarmonyPatches
 {
-	internal class HarmonyState
+	internal static class HarmonyState
 	{
 		public static ManualLogSource Log { get; } = BepInEx.Logging.Logger.CreateLogSource(Plugin.NAME + "-HM");
 
@@ -26,11 +26,18 @@ namespace H3MP.HarmonyPatches
 		}
 
 		public static bool LockLoadLevel { get; set; } = true;
+    
+		public static event Action<SosigOutfitConfig> OnSpectatorOutfitRandomized;
 
 		public static void Init(StatefulActivity discordActivity, WristMenuButtons wristmenubuttons)
 		{
 			DiscordActivity = discordActivity;
 			WristMenuButtons = wristmenubuttons;
+		}
+
+		public static void InvokeOnSpectatorOutfitRandomized(SosigOutfitConfig outfit)
+		{
+			OnSpectatorOutfitRandomized?.Invoke(outfit);
 		}
 	}
 }

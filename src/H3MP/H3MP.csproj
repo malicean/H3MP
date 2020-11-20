@@ -60,6 +60,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configs\ClientPuppetLimbColorConfig.cs" />
     <Compile Include="Configs\ClientConfig.cs" />
     <Compile Include="Configs\ClientPuppetConfig.cs" />
     <Compile Include="Configs\ClientPuppetLimbConfig.cs" />
@@ -83,6 +84,7 @@
     <Compile Include="HarmonyPatches\WristMenuResetConfirmPatch.cs" />
     <Compile Include="HarmonyPatches\HarmonyState.cs" />
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
+    <Compile Include="HarmonyPatches\SetLinkAccessoryPatch.cs" />
     <Compile Include="Utils\WristMenuButtons.cs" />
     <Compile Include="Utils\ChangelogPanel.cs" />
     <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
