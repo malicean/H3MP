@@ -52,6 +52,8 @@ namespace H3MP
 		private readonly ManualLogSource _discordLog;
 
 		private readonly ChangelogPanel _changelogPanel;
+		private readonly WristMenuButtons _wristMenuButtons;
+		private readonly PrivacyManager _privacyManager;
 
 		private readonly UniversalMessageList<H3Client, H3Server> _messages;
 
@@ -152,11 +154,18 @@ namespace H3MP
 				;
 			}
 
+			Logger.LogDebug("Initializing party privacy...");
+			_privacyManager = new PrivacyManager(Activity, _config.Host);
+
+			Logger.LogDebug("Initializing wrist menu and options panel...");
+			_wristMenuButtons = new WristMenuButtons(Logger, _privacyManager);
+
 			Logger.LogDebug("Initializing shared Harmony state...");
-			HarmonyState.Init(Activity);
+			HarmonyState.Init(Activity, _wristMenuButtons);
 
 			Logger.LogDebug("Hooking into sceneLoaded...");
 			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
+
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -204,9 +213,25 @@ namespace H3MP
 
 		private void OnJoinRequested(ref User user)
 		{
-			// All friends can join
-			// TODO: Change this.
-			ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+			var relationshipManager = DiscordClient.GetRelationshipManager();
+
+			// Return join requests depending on privacy setting & relation
+			switch (_privacyManager.Privacy)
+			{
+				case PrivacyManager.PartyPrivacy.Open:
+					ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+					break;
+				case PrivacyManager.PartyPrivacy.Friends:
+					if (relationshipManager.Get(user.Id).Type == RelationshipType.Friend)
+					{
+						ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Yes, DiscordCallbackHandler);
+					}
+					break;
+				case PrivacyManager.PartyPrivacy.InviteOnly:
+					ActivityManager.SendRequestReply(user.Id, ActivityJoinRequestReply.Ignore, DiscordCallbackHandler);
+					break;
+				default: throw new ArgumentOutOfRangeException();
+			}			
 		}
 
 		private IEnumerator _HostUnsafe()
