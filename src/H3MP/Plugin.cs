@@ -31,7 +31,7 @@ namespace H3MP
 	{
 		public const string GUID = "Ash.H3MP";
 		public const string NAME = "H3MP";
-		public const string VERSION = "0.1.1";
+		public const string VERSION = "0.1.2";
 
 		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
 		private const uint STEAM_APP_ID = 450540; // H3VR
