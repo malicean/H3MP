@@ -69,6 +69,7 @@
     <Compile Include="Configs\HostPermissionConfig.cs" />
     <Compile Include="Configs\HostPublicBindingConfig.cs" />
     <Compile Include="Configs\RootConfig.cs" />
+    <Compile Include="Utils\PrivacyManager.cs" />
     <Compile Include="Enums\JoinError.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />
@@ -80,9 +81,11 @@
     <Compile Include="Discord\LobbyManager.cs" />
     <Compile Include="Discord\StorageManager.cs" />
     <Compile Include="Discord\StoreManager.cs" />
+    <Compile Include="HarmonyPatches\WristMenuResetConfirmPatch.cs" />
     <Compile Include="HarmonyPatches\HarmonyState.cs" />
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
     <Compile Include="HarmonyPatches\SetLinkAccessoryPatch.cs" />
+    <Compile Include="Utils\WristMenuButtons.cs" />
     <Compile Include="Utils\ChangelogPanel.cs" />
     <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
