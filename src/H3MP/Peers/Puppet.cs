@@ -63,8 +63,6 @@ namespace H3MP.Peers
 			var root = new GameObject("Puppet Root");
 			GameObject.DontDestroyOnLoad(root);
 
-			root.transform.localScale = config.RootScale.Value;
-
 			return root;
 		}
 
@@ -93,7 +91,7 @@ namespace H3MP.Peers
 
 		private ServerTime Time => _timeGetter();
 
-		private Transform CreateBody(GameObject prefab, ClientPuppetLimbConfig config, out ReplacementPlayerSosigBody sosig)
+		private Transform CreateBody(GameObject prefab, out ReplacementPlayerSosigBody sosig)
 		{
 			var body = GameObject.Instantiate(prefab);
 			GameObject.Destroy(body.GetComponent<PlayerSosigBody>());
@@ -108,7 +106,6 @@ namespace H3MP.Peers
 
 			// Parent before scale (don't parent after)
 			transform.parent = _root.transform;
-			transform.localScale = config.Scale.Value;
 
 			// No collision
 			GameObject.Destroy(collider);
@@ -126,7 +123,6 @@ namespace H3MP.Peers
 
 			// Parent before scale (don't parent after)
 			controllerTransform.parent = _root.transform;
-			controllerTransform.localScale = config.Scale.Value;
 
 			// Colors?
 			float? hueDelta = null;
@@ -171,7 +167,7 @@ namespace H3MP.Peers
 
 			// Unity objects
 			_root = CreateRoot(config);
-			_body = CreateBody(GetBodyPrefabFrom(GM.CurrentPlayerBody),config.Head, out _sosig).GetChild(1).gameObject;
+			_body = CreateBody(GetBodyPrefabFrom(GM.CurrentPlayerBody), out _sosig).GetChild(1).gameObject;
 
 			_handLeft = CreateController(GetControllerFrom(GM.CurrentPlayerBody.LeftHand), config.HandLeft);
 			_handRight = CreateController(GetControllerFrom(GM.CurrentPlayerBody.RightHand), config.HandRight);
