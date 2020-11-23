@@ -1,14 +1,11 @@
 using BepInEx.Logging;
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Valve.Newtonsoft.Json;
 using Valve.Newtonsoft.Json.Linq;
 
 namespace H3MP.Utils

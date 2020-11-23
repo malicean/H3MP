@@ -73,7 +73,8 @@ namespace H3MP.Configs
 				var request = UnityWebRequest.Get(url);
 				yield return request.Send();
 
-				if (request.isError) {
+				if (request.isError)
+				{
 					Result = new KeyValuePair<bool, string>(false, "automatic; " + request.error);
 					yield break;
 				}

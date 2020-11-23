@@ -18,7 +18,7 @@ namespace H3MP.Utils
 		private const float BUTTON_PLACEMENT_DIFF = 0.01565f;
 
 		private const string DISCONNECT_TEXT = "Leave Party";
-		
+
 		private static readonly List<string> _baseButtons = new List<string>
 		{
 			"Button_1_OptionsPanel",
@@ -73,7 +73,7 @@ namespace H3MP.Utils
 				}
 
 				_log.LogDebug("Creating options panel...");
-		
+
 				// TODO: Probs move this to own class when we start to populate it with buttons
 				// Clone from Spectator Panel
 				var panelObject = GameObject.Instantiate(WristMenu.SpectatorPanelPrefab, Vector3.zero, Quaternion.identity);
@@ -121,7 +121,7 @@ namespace H3MP.Utils
 			_log = log;
 			_privacy = privacy;
 			_askConfirmDisconnect = false;
-			
+
 			SceneManager.sceneLoaded += OnSceneLoaded;
 		}
 
@@ -181,7 +181,7 @@ namespace H3MP.Utils
 
 				// Destroy base button to remove persistent onClick listener & add our own
 				var button = dest.GetComponent<Button>();
-				Component.DestroyImmediate(button);			
+				Component.DestroyImmediate(button);
 				button = dest.AddComponent<Button>();
 
 				button.onClick.AddListener(callbackFactory(button));
@@ -201,7 +201,7 @@ namespace H3MP.Utils
 				var posTransform = canvas.Find(posName);
 				posTransform.position += BUTTON_PLACEMENT_DIFF * Vector3.down;
 			}
-		
+
 			// Add new buttons from top to bottom
 			yield return CreateButton("Button_1_OptionsPanel", "H3MP_Panel", "Spawn H3MP Panel", SpawnPanel);
 			yield return CreateButton("Button_3_ReloadScene", "H3MP_Privacy", _privacy.Text, PrivacySelector);
@@ -264,7 +264,7 @@ namespace H3MP.Utils
 				{
 					SteamVR_LoadLevel.Begin(SceneManager.GetActiveScene().name, false, 0.5f, 0f, 0f, 0f, 1f);
 				}
-		
+
 				_log.LogDebug("Left party");
 			};
 		}

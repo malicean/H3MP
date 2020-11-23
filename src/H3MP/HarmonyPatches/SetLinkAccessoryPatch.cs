@@ -1,11 +1,7 @@
 using FistVR;
-using H3MP.Peers;
 using HarmonyLib;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
-using System.Text;
 
 namespace H3MP.HarmonyPatches
 {

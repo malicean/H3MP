@@ -1,6 +1,4 @@
 using BepInEx.Configuration;
-using System;
-using UnityEngine;
 
 namespace H3MP.Configs
 {

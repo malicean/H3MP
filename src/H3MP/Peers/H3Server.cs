@@ -1,5 +1,4 @@
 using BepInEx.Logging;
-using Discord;
 using H3MP.Configs;
 using H3MP.Extensions;
 using H3MP.HarmonyPatches;
@@ -10,7 +9,6 @@ using H3MP.Networking.Extensions;
 using H3MP.Utils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using LiteNetLib;

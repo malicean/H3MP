@@ -6,10 +6,7 @@ using H3MP.Messages;
 using H3MP.Models;
 using H3MP.Utils;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using UnityEngine;
 
 namespace H3MP.Peers
@@ -55,10 +52,10 @@ namespace H3MP.Peers
 			foreach (Transform child in root)
 			{
 				MoveToLayer(child, layer);
-			}			
+			}
 		}
 
-		private static GameObject CreateRoot(ClientPuppetConfig config)
+		private static GameObject CreateRoot()
 		{
 			var root = new GameObject("Puppet Root");
 			GameObject.DontDestroyOnLoad(root);
@@ -166,7 +163,7 @@ namespace H3MP.Peers
 			_minInterpDelay = 3 * tickDeltaTime;
 
 			// Unity objects
-			_root = CreateRoot(config);
+			_root = CreateRoot();
 			_body = CreateBody(GetBodyPrefabFrom(GM.CurrentPlayerBody), out _sosig).GetChild(1).gameObject;
 
 			_handLeft = CreateController(GetControllerFrom(GM.CurrentPlayerBody.LeftHand), config.HandLeft);
@@ -282,7 +279,7 @@ namespace H3MP.Peers
 				}
 				var gameObject = GameObject.Instantiate(gs[UnityEngine.Random.Range(0, gs.Count)].GetGameObject());
 				_currentClothes.Add(gameObject);
-                UnityEngine.Component[] componentsInChildren = gameObject.GetComponentsInChildren<UnityEngine.Component>(true);
+				UnityEngine.Component[] componentsInChildren = gameObject.GetComponentsInChildren<UnityEngine.Component>(true);
 				for (var i = componentsInChildren.Length - 1; i >= 0; i--)
 				{
 					if (componentsInChildren[i] is Transform || componentsInChildren[i] is MeshFilter || componentsInChildren[i] is MeshRenderer)

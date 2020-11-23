@@ -1,12 +1,9 @@
 using Discord;
 using H3MP.Extensions;
 using H3MP.Messages;
-using H3MP.Utils;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace H3MP.HarmonyPatches
 {

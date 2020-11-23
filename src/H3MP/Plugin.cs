@@ -14,14 +14,10 @@ using H3MP.Utils;
 using LiteNetLib;
 using System;
 using System.Collections;
-using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text;
 using UnityEngine;
-using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
 
 namespace H3MP
 {

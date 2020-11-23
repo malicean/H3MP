@@ -1,10 +1,5 @@
-using BepInEx.Logging;
 using H3MP.Configs;
-using H3MP.HarmonyPatches;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace H3MP.Utils
 {
