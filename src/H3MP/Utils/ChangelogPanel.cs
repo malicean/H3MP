@@ -45,7 +45,7 @@ namespace H3MP.Utils
 
 		private IEnumerator _UpdatePanel(Text panel)
 		{
-			var changelogText = _resources.Get<string>("resources/changelog-panel.txt").Unwrap();
+			var changelogText = _resources.Get<string>("resources/changelog.txt").Unwrap();
 			var currentTag = "v" + _version.ToString();
 
 			// Get the main body text from GitHub
