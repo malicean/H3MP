@@ -20,10 +20,11 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
 ## Installation
 1. Have [Discord](https://discord.com/download) installed and running. Discord Rich Presence is the only way to join or invite other players.
-2. Download the [most recent x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract it to your **H3VR** directory.
-3. Download the [most recent release of H3MP](https://github.com/ash-hat/H3MP/releases/latest) and extract it to your **H3VR** directory.
-4. If you are hosting, you must have port **7777 UDP** open and forwarded to your computer. The desired port number can also be changed in the config.
-5. Start the game  
+2. Download the [latest x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract it to your H3VR directory.
+3. Download the [latest release of Deli](https://github.com/nrgill28/Deli/releases/latest) and extract it to your H3VR directory.
+4. Download the [latest release of H3MP](https://github.com/ash-hat/H3MP/releases/latest) and extract it to your H3VR directory.
+5. If you are hosting, you must have port **7777 UDP** open and forwarded to your computer. The desired port number can also be changed in the config.
+6. Start the game  
     - Join a party by clicking the "Join" button on a Discord invite. In the future, you can join off of invites and the game will start automatically.
     - Invite players to your party by clicking the plus button in a Discord text channel, and select "Invite ... to Play H3MP".
 
