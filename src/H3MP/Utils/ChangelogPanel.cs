@@ -1,3 +1,4 @@
+using Deli;
 using BepInEx.Logging;
 using System;
 using System.Collections;
@@ -15,12 +16,14 @@ namespace H3MP.Utils
 		private const string REPO_PATH = "ash-hat/H3MP";
 
 		private readonly ManualLogSource _log;
+		private readonly IResourceIO _resources;
 		private readonly Func<IEnumerator, Coroutine> _coroutine;
 		private readonly Version _version;
 
-		public ChangelogPanel(ManualLogSource log, Func<IEnumerator, Coroutine> coroutine, Version version)
+		public ChangelogPanel(Mod mod, Func<IEnumerator, Coroutine> coroutine, Version version)
 		{
-			_log = log;
+			_log = mod.Log;
+			_resources = mod.Resources;
 			_coroutine = coroutine;
 			_version = version;
 
@@ -42,41 +45,21 @@ namespace H3MP.Utils
 
 		private IEnumerator _UpdatePanel(Text panel)
 		{
+			var changelogText = _resources.Get<string>("resources/changelog-panel.txt").Unwrap();
 			var currentTag = "v" + _version.ToString();
 
 			// Get the main body text from GitHub
-			using (UnityWebRequest wwwPanel = UnityWebRequest.Get("https://raw.githubusercontent.com/" + REPO_PATH + $"/{currentTag}/ui/mainmenu3-panel.txt"))
+			string latestTag;
+			bool needsUpdate;
+
+			// Get the latest release from GitHub
+			using (UnityWebRequest wwwVersion = UnityWebRequest.Get("https://api.github.com/repos/" + REPO_PATH + "/releases/latest"))
 			{
-				var awaitPanel = wwwPanel.Send();
+				yield return wwwVersion.Send();
 
-				string latestTag;
-				bool needsUpdate;
-
-				// Get the latest release from GitHub
-				using (UnityWebRequest wwwVersion = UnityWebRequest.Get("https://api.github.com/repos/" + REPO_PATH + "/releases/latest"))
+				if (wwwVersion.isError)
 				{
-					yield return wwwVersion.Send();
-
-					if (wwwVersion.isError)
-					{
-						var error = "Failed to get latest release: " + wwwVersion.error;
-
-						_log.LogError(error);
-						panel.text = error;
-
-						yield break;
-					}
-
-					// Check if this matches the installed version
-					latestTag = JObject.Parse(wwwVersion.downloadHandler.text)["tag_name"].ToString();
-					needsUpdate = currentTag != latestTag;
-				}
-
-				yield return awaitPanel;
-
-				if (wwwPanel.isError)
-				{
-					var error = "Failed to get main menu panel text: " + wwwPanel.error;
+					var error = "Failed to get latest release: " + wwwVersion.error;
 
 					_log.LogError(error);
 					panel.text = error;
@@ -84,24 +67,29 @@ namespace H3MP.Utils
 					yield break;
 				}
 
-				// Build the body text with version info & highlighting
-				StringBuilder body = new StringBuilder();
-				var versionTemplate = $"<color=#{{0}}>{currentTag}  ({{1}})</color></b>";
-
-				body.Append("<b>Installed version: ");
-				if (needsUpdate)
-				{
-					body.AppendLine(string.Format(versionTemplate, "ff0000", $"update available: {latestTag}"));
-				}
-				else
-				{
-					body.AppendLine(string.Format(versionTemplate, "00b300", "latest"));
-				}
-				body.AppendLine();
-				body.Append(wwwPanel.downloadHandler.text);
-
-				panel.text = body.ToString();
+				// Check if this matches the installed version
+				latestTag = JObject.Parse(wwwVersion.downloadHandler.text)["tag_name"].ToString();
+				needsUpdate = currentTag != latestTag;
 			}
+				
+			// Build the body text with version info & highlighting
+			StringBuilder body = new StringBuilder();
+			var versionTemplate = $"<color=#{{0}}>{currentTag}  ({{1}})</color></b>";
+
+			body.Append("<b>Installed version: ");
+			if (needsUpdate)
+			{
+				body.AppendLine(string.Format(versionTemplate, "ff0000", $"update available: {latestTag}"));
+			}
+			else
+			{
+				body.AppendLine(string.Format(versionTemplate, "00b300", "latest"));
+			}
+
+			body.AppendLine();
+			body.Append(changelogText);
+
+			panel.text = body.ToString();
 		}
 
 		private Text CreatePanel()

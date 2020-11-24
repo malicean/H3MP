@@ -1,6 +1,6 @@
-using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using Deli;
 using Discord;
 using HarmonyLib;
 using H3MP.Configs;
@@ -21,13 +21,11 @@ using UnityEngine;
 
 namespace H3MP
 {
-	[BepInPlugin(Plugin.GUID, Plugin.NAME, Plugin.VERSION)]
-	[BepInProcess("h3vr.exe")]
-	public class Plugin : BaseUnityPlugin
+	public class Plugin : DeliMod
 	{
 		public const string GUID = "Ash.H3MP";
 		public const string NAME = "H3MP";
-		public const string VERSION = "0.1.2";
+		public const string VERSION = "0.1.3";
 
 		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
 		private const uint STEAM_APP_ID = 450540; // H3VR
@@ -65,7 +63,7 @@ namespace H3MP
 
 		public Plugin()
 		{
-			Logger.LogDebug("Binding configs...");
+			BaseMod.Log.LogDebug("Binding configs...");
 			{
 				TomlTypeConverter.AddConverter(typeof(IPAddress), new TypeConverter
 				{
@@ -73,10 +71,10 @@ namespace H3MP
 					ConvertToString = (value, type) => ((IPAddress) value).ToString()
 				});
 
-				_config = new RootConfig(Config);
+				_config = new RootConfig(BaseMod.Config);
 			}
 
-			Logger.LogDebug("Initializing utilities...");
+			BaseMod.Log.LogDebug("Initializing utilities...");
 			{
 				_version = new Version(VERSION);
 				_rng = RandomNumberGenerator.Create();
@@ -86,9 +84,9 @@ namespace H3MP
 				_discordLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-DC");
 			}
 
-			Logger.LogDebug("Initializing Discord game SDK...");
+			BaseMod.Log.LogDebug("Initializing Discord game SDK...");
 			{
-				LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
+				//LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
 
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
@@ -122,7 +120,7 @@ namespace H3MP
 				ActivityManager.OnActivityJoin += OnJoin;
 			}
 
-			Logger.LogDebug("Creating message table...");
+			BaseMod.Log.LogDebug("Creating message table...");
 			{
 				_messages = new UniversalMessageList<H3Client, H3Server>(_clientLog, _serverLog)
 					// =======
@@ -150,17 +148,17 @@ namespace H3MP
 				;
 			}
 
-			Logger.LogDebug("Initializing party privacy...");
+			BaseMod.Log.LogDebug("Initializing party privacy...");
 			_privacyManager = new PrivacyManager(Activity, _config.Host);
 
-			Logger.LogDebug("Initializing wrist menu and options panel...");
-			_wristMenuButtons = new WristMenuButtons(Logger, _privacyManager);
+			BaseMod.Log.LogDebug("Initializing wrist menu and options panel...");
+			_wristMenuButtons = new WristMenuButtons(BaseMod.Log, _privacyManager);
 
-			Logger.LogDebug("Initializing shared Harmony state...");
+			BaseMod.Log.LogDebug("Initializing shared Harmony state...");
 			HarmonyState.Init(Activity, _wristMenuButtons);
 
-			Logger.LogDebug("Hooking into sceneLoaded...");
-			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
+			BaseMod.Log.LogDebug("Hooking into sceneLoaded...");
+			_changelogPanel = new ChangelogPanel(BaseMod, StartCoroutine, _version);
 
 		}
 
@@ -270,7 +268,6 @@ namespace H3MP
 				publicEndPoint = new IPEndPoint(publicAddress, publicPort);
 			}
 
-
 			float ups = 1 / Time.fixedDeltaTime; // 90
 			double tps = config.TickRate.Value;
 			if (tps <= 0)
@@ -295,7 +292,7 @@ namespace H3MP
 
 		private IEnumerator _Host()
 		{
-			Logger.LogDebug("Killing peers...");
+			BaseMod.Log.LogDebug("Killing peers...");
 
 			Client?.Dispose();
 			Client = null;
@@ -340,7 +337,7 @@ namespace H3MP
 
 				if (_config.AutoHost.Value)
 				{
-					Logger.LogDebug("Autostarting host from client disconnection...");
+					BaseMod.Log.LogDebug("Autostarting host from client disconnection...");
 
 					StartCoroutine(_Host());
 				}
@@ -351,14 +348,14 @@ namespace H3MP
 		{
 			Instance = this;
 
-			new Harmony(Info.Metadata.GUID).PatchAll();
+			new Harmony(BaseMod.Info.Guid).PatchAll();
 		}
 
 		private void Start()
 		{
 			if (_config.AutoHost.Value)
 			{
-				Logger.LogDebug("Autostarting host from game launch...");
+				BaseMod.Log.LogDebug("Autostarting host from game launch...");
 
 				StartCoroutine(_Host());
 			}					
