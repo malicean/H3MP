@@ -86,8 +86,6 @@ namespace H3MP
 
 			BaseMod.Log.LogDebug("Initializing Discord game SDK...");
 			{
-				//LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
-
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
 				{
