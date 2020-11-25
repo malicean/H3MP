@@ -1,4 +1,6 @@
-# H3MP ![functions: barely](https://img.shields.io/badge/functions-barely-c28411?style=for-the-badge) ![made with: pain](https://img.shields.io/badge/made%20with-pain-red?style=for-the-badge)
+# H3MP 
+[![version](https://img.shields.io/github/v/release/ash-hat/H3MP?&label=version&style=flat-square)](https://github.com/ash-hat/H3MP/releases/latest) [![discord](https://img.shields.io/discord/777351065950879744?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square)](https://discord.gg/ZSXUVxxWeD)
+
 A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
 ## Features
@@ -27,8 +29,6 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 6. Start the game
     - Join a party by clicking the "Join" button on a Discord invite. In the future, you can join off of invites and the game will start automatically.
     - Invite players to your party by clicking the plus button in a Discord text channel, and select "Invite ... to Play H3MP".
-
-
 
 ## Uninstallation
 To uninstall, you only need to delete the `mods\H3MP.zip` file.
