@@ -38,8 +38,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\game\BepInEx\core\0Harmony20.dll</HintPath>
     </Reference>
-    <Reference Include="ADepIn, Version=20.11.19.2309, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="ADepIn">
       <HintPath>..\..\game\BepInEx\plugins\Deli\ADepIn.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
