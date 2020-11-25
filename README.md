@@ -12,7 +12,7 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
   - [x] Player limit
   - [x] Scene loading/reloading permissions
   - [x] Tick rate
-  - *refer to `Mods\configs\Ash.H3MP.cfg` for additional config options*
+  - *refer to `mods\configs\Ash.H3MP.cfg` for additional config options*
 - Miscellaneous
   - [x] Discord Rich Presence
   - [x] Scene loading
@@ -22,7 +22,7 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 1. Have [Discord](https://discord.com/download) installed and running. Discord Rich Presence is the only way to join or invite other players.
 2. Download the [latest x64 release of BepInEx](https://github.com/BepInEx/BepInEx/releases/latest) and extract it to your H3VR directory.
 3. Download the [latest release of Deli](https://github.com/nrgill28/Deli/releases/latest) and extract it to your H3VR directory.
-4. Download the [latest release of H3MP](https://github.com/ash-hat/H3MP/releases/latest) and place it in your `H3VR\Mods` directory. Do **not** extract the zip.
+4. Download the [latest release of H3MP](https://github.com/ash-hat/H3MP/releases/latest) and place it in your `H3VR\mods` directory. Do **not** extract the zip.
 5. If you are hosting, you must have port **7777 UDP** open and forwarded to your computer. The desired port number can also be changed in the config.
 6. Start the game
     - Join a party by clicking the "Join" button on a Discord invite. In the future, you can join off of invites and the game will start automatically.
@@ -31,7 +31,7 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
 
 ## Uninstallation
-To uninstall, you only need to delete the `Mods\H3MP.zip` file.
+To uninstall, you only need to delete the `mods\H3MP.zip` file.
 
 ## Documentation
 Installation and uninstallation have been listed here for convenience, but further documentation is included in the [docs](docs/) directory.
