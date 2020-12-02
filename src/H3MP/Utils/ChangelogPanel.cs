@@ -22,7 +22,7 @@ namespace H3MP.Utils
 
 		public ChangelogPanel(Mod mod, Func<IEnumerator, Coroutine> coroutine, Version version)
 		{
-			_log = mod.Log;
+			_log = mod.Logger;
 			_resources = mod.Resources;
 			_coroutine = coroutine;
 			_version = version;
