@@ -23,9 +23,9 @@ namespace H3MP
 {
 	public class Plugin : DeliBehaviour
 	{
-		public const string GUID = "Ash.H3MP";
-		public const string NAME = "H3MP";
-		public const string VERSION = "0.1.3";
+		public string GUID => Info.Guid;
+		public string NAME => Info.Name.Unwrap();
+		public string VERSION => Info.Version.ToString();
 
 		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
 		private const uint STEAM_APP_ID = 450540; // H3VR
@@ -63,7 +63,7 @@ namespace H3MP
 
 		public Plugin()
 		{
-			Source.Logger.LogDebug("Binding configs...");
+			Logger.LogDebug("Binding configs...");
 			{
 				TomlTypeConverter.AddConverter(typeof(IPAddress), new TypeConverter
 				{
@@ -71,10 +71,10 @@ namespace H3MP
 					ConvertToString = (value, type) => ((IPAddress) value).ToString()
 				});
 
-				_config = new RootConfig(Source.Config);
+				_config = new RootConfig(Config);
 			}
 
-			Source.Logger.LogDebug("Initializing utilities...");
+			Logger.LogDebug("Initializing utilities...");
 			{
 				_version = new Version(VERSION);
 				_rng = RandomNumberGenerator.Create();
@@ -84,7 +84,7 @@ namespace H3MP
 				_discordLog = BepInEx.Logging.Logger.CreateLogSource(NAME + "-DC");
 			}
 
-			Source.Logger.LogDebug("Initializing Discord game SDK...");
+			Logger.LogDebug("Initializing Discord game SDK...");
 			{
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
@@ -118,7 +118,7 @@ namespace H3MP
 				ActivityManager.OnActivityJoin += OnJoin;
 			}
 
-			Source.Logger.LogDebug("Creating message table...");
+			Logger.LogDebug("Creating message table...");
 			{
 				_messages = new UniversalMessageList<H3Client, H3Server>(_clientLog, _serverLog)
 					// =======
@@ -146,18 +146,17 @@ namespace H3MP
 				;
 			}
 
-			Source.Logger.LogDebug("Initializing party privacy...");
+			Logger.LogDebug("Initializing party privacy...");
 			_privacyManager = new PrivacyManager(Activity, _config.Host);
 
-			Source.Logger.LogDebug("Initializing wrist menu and options panel...");
-			_wristMenuButtons = new WristMenuButtons(Source.Logger, _privacyManager);
+			Logger.LogDebug("Initializing wrist menu and options panel...");
+			_wristMenuButtons = new WristMenuButtons(Logger, _privacyManager);
 
-			Source.Logger.LogDebug("Initializing shared Harmony state...");
+			Logger.LogDebug("Initializing shared Harmony state...");
 			HarmonyState.Init(Activity, _wristMenuButtons);
 
-			Source.Logger.LogDebug("Hooking into sceneLoaded...");
+			Logger.LogDebug("Hooking into sceneLoaded...");
 			_changelogPanel = new ChangelogPanel(Source, StartCoroutine, _version);
-
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -290,7 +289,7 @@ namespace H3MP
 
 		private IEnumerator _Host()
 		{
-			Source.Logger.LogDebug("Killing peers...");
+			Logger.LogDebug("Killing peers...");
 
 			Client?.Dispose();
 			Client = null;
@@ -335,7 +334,7 @@ namespace H3MP
 
 				if (_config.AutoHost.Value)
 				{
-					Source.Logger.LogDebug("Autostarting host from client disconnection...");
+					Logger.LogDebug("Autostarting host from client disconnection...");
 
 					StartCoroutine(_Host());
 				}
@@ -346,14 +345,14 @@ namespace H3MP
 		{
 			Instance = this;
 
-			new Harmony(Source.Info.Guid).PatchAll();
+			new Harmony(GUID).PatchAll();
 		}
 
 		private void Start()
 		{
 			if (_config.AutoHost.Value)
 			{
-				Source.Logger.LogDebug("Autostarting host from game launch...");
+				Logger.LogDebug("Autostarting host from game launch...");
 
 				StartCoroutine(_Host());
 			}					

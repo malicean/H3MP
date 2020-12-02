@@ -100,11 +100,11 @@ namespace H3MP.Utils
 
 			panel.transform.position = new Vector3(-1.376f, 1.046f, -3.621f);
 			panel.transform.localEulerAngles = new Vector3(0, -71.437f, 0);
-			panel.name = "H3MP";
+			panel.name = Plugin.Instance.NAME;
 			panel.layer = LayerMask.NameToLayer("Environment");
 
 			var panelTexts = panel.GetComponentsInChildren<Text>();
-			panelTexts[0].text = "H3MP"; // Title
+			panelTexts[0].text = Plugin.Instance.NAME; // Title
 
 			return panelTexts[1];
 		}

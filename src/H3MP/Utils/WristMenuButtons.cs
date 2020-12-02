@@ -79,7 +79,7 @@ namespace H3MP.Utils
 				var panelObject = GameObject.Instantiate(WristMenu.SpectatorPanelPrefab, Vector3.zero, Quaternion.identity);
 
 				GameObject.DestroyImmediate(panelObject.GetComponent<SpectatorPanel>());
-				panelObject.name = Plugin.NAME + "Panel";
+				panelObject.name = Plugin.Instance.NAME + "Panel";
 
 				// Delete all unneeded children
 				var panelTransform = panelObject.transform;
@@ -97,7 +97,7 @@ namespace H3MP.Utils
 
 				var panelLabel = canvasTransform.Find("PanelLabel");
 				var headerText = panelLabel.GetComponent<Text>();
-				headerText.text = Plugin.NAME + " OPTIONS PANEL";
+				headerText.text = Plugin.Instance.NAME + " OPTIONS PANEL";
 				headerText.fontSize = 19;
 
 				// Temp warning so people don't expect a functional panel
@@ -203,7 +203,7 @@ namespace H3MP.Utils
 			}
 
 			// Add new buttons from top to bottom
-			yield return CreateButton("Button_1_OptionsPanel", "H3MP_Panel", "Spawn H3MP Panel", SpawnPanel);
+			yield return CreateButton("Button_1_OptionsPanel", "H3MP_Panel", $"Spawn {Plugin.Instance.NAME} Panel", SpawnPanel);
 			yield return CreateButton("Button_3_ReloadScene", "H3MP_Privacy", _privacy.Text, PrivacySelector);
 			yield return CreateButton("Button_9_BackToMainMenu", "H3MP_Disconnect", DISCONNECT_TEXT, LeaveLobby);
 		}
