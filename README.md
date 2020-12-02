@@ -1,5 +1,5 @@
 # H3MP 
-[![version](https://img.shields.io/github/v/release/ash-hat/H3MP?&label=version&style=flat-square)](https://github.com/ash-hat/H3MP/releases/latest) [![discord](https://img.shields.io/discord/777351065950879744?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square)](https://discord.gg/ZSXUVxxWeD)
+[![version](https://img.shields.io/github/v/release/ash-hat/H3MP?&label=version&style=flat-square)](https://github.com/ash-hat/H3MP/releases/latest) [![discord](https://img.shields.io/discord/777351065950879744?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square)](https://discord.gg/g8xeFyt42j)
 
 A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
 
