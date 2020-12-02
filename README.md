@@ -14,7 +14,7 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
   - [x] Player limit
   - [x] Scene loading/reloading permissions
   - [x] Tick rate
-  - *refer to `mods\configs\Ash.H3MP.cfg` for additional config options*
+  - *refer to `mods\configs\ash.h3mp.cfg` for additional config options*
 - Miscellaneous
   - [x] Discord Rich Presence
   - [x] Scene loading
