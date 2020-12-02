@@ -31,7 +31,7 @@ A **WIP** multiplayer mod for Hot Dogs, Horseshoes, and Hand Grenades.
     - Invite players to your party by clicking the plus button in a Discord text channel, and select "Invite ... to Play H3MP".
 
 ## Uninstallation
-To uninstall, you only need to delete the `mods\H3MP.zip` file.
+To uninstall, you only need to delete the `mods\H3MP.deli` file.
 
 ## Documentation
 Installation and uninstallation have been listed here for convenience, but further documentation is included in the [docs](docs/) directory.
