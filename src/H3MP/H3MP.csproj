@@ -36,10 +36,10 @@
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.0" />
     <PackageReference Include="Deli">
-      <Version>0.2.1</Version>
+      <Version>0.2.4</Version>
     </PackageReference>
     <PackageReference Include="Deli.Runtime">
-      <Version>0.2.1</Version>
+      <Version>0.2.4</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
@@ -86,7 +86,6 @@
     <Compile Include="HarmonyPatches\LoadLevelPatch.cs" />
     <Compile Include="HarmonyPatches\SetLinkAccessoryPatch.cs" />
     <Compile Include="Utils\WristMenuButtons.cs" />
-    <Compile Include="Utils\ChangelogPanel.cs" />
     <Compile Include="Utils\MovingAverages\ExponentialMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\IMovingAverage.cs" />
     <Compile Include="Utils\MovingAverages\SimpleMovingAverage.cs" />

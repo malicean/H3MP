@@ -45,7 +45,6 @@ namespace H3MP
 		private readonly ManualLogSource _serverLog;
 		private readonly ManualLogSource _discordLog;
 
-		private readonly ChangelogPanel _changelogPanel;
 		private readonly WristMenuButtons _wristMenuButtons;
 		private readonly PrivacyManager _privacyManager;
 
@@ -154,9 +153,6 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing shared Harmony state...");
 			HarmonyState.Init(Activity, _wristMenuButtons);
-
-			Logger.LogDebug("Hooking into sceneLoaded...");
-			_changelogPanel = new ChangelogPanel(Source, StartCoroutine, _version);
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -374,7 +370,7 @@ namespace H3MP
 		private void OnDestroy()
 		{
 			DiscordClient.Dispose();
-			_changelogPanel.Dispose();
+			_wristMenuButtons.Dispose();
 
 			Server?.Dispose();
 			Client?.Dispose();

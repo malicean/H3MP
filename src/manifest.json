@@ -6,9 +6,9 @@
   "authors": [
     "Ash",
     "M'aiq"
-  ], 
+  ],
   "dependencies": {
-    "deli.core": "0.2.0"
+    "deli.core": "0.2.2"
   },
   "runtime": {
     "libraries/natives/discord_game_sdk.dll" : "assembly.native",

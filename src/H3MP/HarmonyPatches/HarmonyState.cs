@@ -8,7 +8,7 @@ namespace H3MP.HarmonyPatches
 {
 	internal static class HarmonyState
 	{
-		public static ManualLogSource Log { get; } = BepInEx.Logging.Logger.CreateLogSource(Plugin.Instance.NAME + "-HM");
+		public static ManualLogSource Log { get; } = BepInEx.Logging.Logger.CreateLogSource("H3MP-HM");
 
 		public static StatefulActivity DiscordActivity { get; private set; }
 
