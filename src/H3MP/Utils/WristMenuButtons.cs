@@ -32,6 +32,14 @@ namespace H3MP.Utils
 			"Button_10_QuitToDesktop"
 		};
 
+		// TODO: possibly make these buttons into json file Deli loads
+		private static readonly List<string> _ourButtons = new List<string>
+		{
+			"H3MP_Panel",
+			"H3MP_Privacy",
+			"H3MP_Disconnect"
+		};
+
 		private static readonly HashSet<string> _rootKeep = new HashSet<string>
 		{
 			"Tablet",
@@ -127,7 +135,7 @@ namespace H3MP.Utils
 
 		private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
 		{
-			CreateWristMenuButtons();
+			CreateWristMenuButtons();		
 		}
 
 		private void CreateWristMenuButtons()
@@ -146,22 +154,26 @@ namespace H3MP.Utils
 			ref var images = ref canvasBS.ButtonImagesInSet;
 			var originalButtonsLength = images.Length;
 
-			// Create buttons, resize array & canvas, and fill in our new buttons to the array
-			var buttons = CreateButtons(canvasTF).ToList();
-			canvasRT.sizeDelta = new Vector2(canvasRT.sizeDelta.x, canvasRT.sizeDelta.y + (BUTTON_SIZE * buttons.Count));
-			Array.Resize(ref images, originalButtonsLength + buttons.Count);
-			for (var i = 0; i < buttons.Count; ++i)
+			// Check if our buttons have already been made (WurstMod compat)
+			if (canvasTF.Find(_ourButtons[0]) == null)
 			{
-				var button = buttons[i];
-				WristMenu.Buttons.Add(button);
+				// Create buttons, resize array & canvas, and fill in our new buttons to the array
+				var buttons = CreateButtons(canvasTF).ToList();
+				canvasRT.sizeDelta = new Vector2(canvasRT.sizeDelta.x, canvasRT.sizeDelta.y + (BUTTON_SIZE * buttons.Count));
+				Array.Resize(ref images, originalButtonsLength + buttons.Count);
+				for (var i = 0; i < buttons.Count; ++i)
+				{
+					var button = buttons[i];
+					WristMenu.Buttons.Add(button);
 
-				var image = button.GetComponent<Image>();
-				var pointable = button.GetComponent<FVRWristMenuPointableButton>();
-				var index = originalButtonsLength + i;
+					var image = button.GetComponent<Image>();
+					var pointable = button.GetComponent<FVRWristMenuPointableButton>();
+					var index = originalButtonsLength + i;
 
-				pointable.ButtonIndex = index;
-				images[index] = image;
-			}
+					pointable.ButtonIndex = index;
+					images[index] = image;
+				}
+			}	
 		}
 
 		private IEnumerable<Button> CreateButtons(Transform canvas)
@@ -203,9 +215,9 @@ namespace H3MP.Utils
 			}
 
 			// Add new buttons from top to bottom
-			yield return CreateButton("Button_1_OptionsPanel", "H3MP_Panel", $"Spawn {Plugin.Instance.NAME} Panel", SpawnPanel);
-			yield return CreateButton("Button_3_ReloadScene", "H3MP_Privacy", _privacy.Text, PrivacySelector);
-			yield return CreateButton("Button_9_BackToMainMenu", "H3MP_Disconnect", DISCONNECT_TEXT, LeaveLobby);
+			yield return CreateButton("Button_1_OptionsPanel", _ourButtons[0], $"Spawn {Plugin.Instance.NAME} Panel", SpawnPanel);
+			yield return CreateButton("Button_3_ReloadScene", _ourButtons[1], _privacy.Text, PrivacySelector);
+			yield return CreateButton("Button_9_BackToMainMenu", _ourButtons[2], DISCONNECT_TEXT, LeaveLobby);
 		}
 
 		// H3MP_Panel onClick
