@@ -40,6 +40,7 @@ namespace H3MP.HarmonyPatches
 			["TileSetTest1"] = "Mini-Arena",
 			["TileSetTest_BigHallPerfTest"] = "Take & Hold (Legacy)",
 			["WarehouseRange_Rebuilt"] = "Warehouse Range",
+			["WinterWasteland"] = "Winter Wasteland",
 			["Wurstwurld1"] = "Wurstwurld",
 			["Xmas"] = "Meatmas Snowglobe"
 		};

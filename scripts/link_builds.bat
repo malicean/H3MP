@@ -58,7 +58,7 @@ if not exist "%H3MP_H3VR_PATH%\BepInEx\plugins" (
     exit /b 2
 )
 
-set "H3MP_PLUGIN=%H3MP_H3VR_PATH%\BepInEx\plugins\H3MP"
+set "H3MP_PLUGIN=%H3MP_H3VR_PATH%\mods\H3MP"
 if not exist "%H3MP_PLUGIN%" (
     mkdir "%H3MP_PLUGIN%"
 )

@@ -1,0 +1,19 @@
+﻿{
+  "guid": "ash.h3mp",
+  "version": "0.1.3",
+  "name": "H3MP",
+  "sourceUrl": "https://github.com/ash-hat/H3MP/",
+  "authors": [
+    "Ash",
+    "M'aiq"
+  ],
+  "dependencies": {
+    "deli.core": "0.2.5"
+  },
+  "runtime": {
+    "libraries/natives/discord_game_sdk.dll" : "assembly.native",
+    "libraries/LiteNetLib.dll" : "assembly",
+    "H3MP.Networking.dll" : "assembly",
+    "H3MP.dll" : "assembly"
+  }
+}

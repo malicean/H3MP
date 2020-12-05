@@ -1,6 +1,6 @@
-using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
+using Deli;
 using Discord;
 using HarmonyLib;
 using H3MP.Configs;
@@ -21,13 +21,11 @@ using UnityEngine;
 
 namespace H3MP
 {
-	[BepInPlugin(Plugin.GUID, Plugin.NAME, Plugin.VERSION)]
-	[BepInProcess("h3vr.exe")]
-	public class Plugin : BaseUnityPlugin
+	public class Plugin : DeliBehaviour
 	{
-		public const string GUID = "Ash.H3MP";
-		public const string NAME = "H3MP";
-		public const string VERSION = "0.1.2";
+		public string GUID => Info.Guid;
+		public string NAME => Info.Name.Unwrap();
+		public string VERSION => Info.Version.ToString();
 
 		private const long DISCORD_APP_ID = 762557783768956929; // 3rd party RPC application
 		private const uint STEAM_APP_ID = 450540; // H3VR
@@ -47,7 +45,6 @@ namespace H3MP
 		private readonly ManualLogSource _serverLog;
 		private readonly ManualLogSource _discordLog;
 
-		private readonly ChangelogPanel _changelogPanel;
 		private readonly WristMenuButtons _wristMenuButtons;
 		private readonly PrivacyManager _privacyManager;
 
@@ -88,8 +85,6 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing Discord game SDK...");
 			{
-				LoadLibrary("BepInEx\\plugins\\H3MP\\" + Discord.Constants.DllName + ".dll");
-
 				DiscordClient = new Discord.Discord(DISCORD_APP_ID, (ulong) CreateFlags.Default);
 				DiscordClient.SetLogHook(Discord.LogLevel.Debug, (level, message) =>
 				{
@@ -158,10 +153,6 @@ namespace H3MP
 
 			Logger.LogDebug("Initializing shared Harmony state...");
 			HarmonyState.Init(Activity, _wristMenuButtons);
-
-			Logger.LogDebug("Hooking into sceneLoaded...");
-			_changelogPanel = new ChangelogPanel(Logger, StartCoroutine, _version);
-
 		}
 
 		private void DiscordCallbackHandler(Result result)
@@ -270,7 +261,6 @@ namespace H3MP
 				publicEndPoint = new IPEndPoint(publicAddress, publicPort);
 			}
 
-
 			float ups = 1 / Time.fixedDeltaTime; // 90
 			double tps = config.TickRate.Value;
 			if (tps <= 0)
@@ -351,7 +341,7 @@ namespace H3MP
 		{
 			Instance = this;
 
-			new Harmony(Info.Metadata.GUID).PatchAll();
+			new Harmony(GUID).PatchAll();
 		}
 
 		private void Start()
@@ -380,7 +370,7 @@ namespace H3MP
 		private void OnDestroy()
 		{
 			DiscordClient.Dispose();
-			_changelogPanel.Dispose();
+			_wristMenuButtons.Dispose();
 
 			Server?.Dispose();
 			Client?.Dispose();
