@@ -1,3 +1,8 @@
+# This project is now archived
+I have archived this project because I do not have the time to work on it, and by my metrics it is in a complete state of disrepair. I had begun to rewrite it, but due to shifts in interests I don't intend to work on this anytime soon.
+
+Feel free to fork this project to continue it, but remember to not remove me from license and authoring info.
+
 # H3MP 
 [![version](https://img.shields.io/github/v/release/ash-hat/H3MP?&label=version&style=flat-square)](https://github.com/ash-hat/H3MP/releases/latest) [![discord](https://img.shields.io/discord/777351065950879744?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2&style=flat-square)](https://discord.gg/g8xeFyt42j)
 
